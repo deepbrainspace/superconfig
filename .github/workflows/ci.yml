@@ -29,11 +29,22 @@ jobs:
         with:
           rust-version: ${{ matrix.rust-version }}
 
-      - name: Run Moon checks and tests
+      - name: Debug Moon environment
         run: |
-          moon check --all
-          moon run :test --query="language=rust"
-          moon run :test-doc --query="language=rust"
+          echo "Current directory: $(pwd)"
+          echo "Moon version: $(moon --version)"
+          echo "Proto version: $(proto --version)"
+          echo "Rust version: $(rustc --version)"
+          ls -la
+
+      - name: Run Moon checks
+        run: moon check --all
+
+      - name: Run tests
+        run: moon run :test --query="language=rust"
+
+      - name: Run doc tests
+        run: moon run :test-doc --query="language=rust"
 
   lint:
     name: Lint & Format
