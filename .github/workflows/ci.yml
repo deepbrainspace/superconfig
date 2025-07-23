@@ -23,6 +23,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+        with:
+          fetch-depth: 0
 
       - name: Setup Moon build system
         uses: ./.github/actions/setup-moon
@@ -58,15 +60,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Moon build system
         uses: ./.github/actions/setup-moon
 
       - name: Check formatting
-        run: moon run :format --query="language=rust" -- --check
+        run: moon run :fmt-check --query="language=rust"
 
       - name: Run clippy
-        run: moon run :lint --query="language=rust"
+        run: moon run :clippy --query="language=rust"
 
   build:
     name: Build
@@ -78,6 +82,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Moon build system
         uses: ./.github/actions/setup-moon
@@ -97,6 +103,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Moon build system
         uses: ./.github/actions/setup-moon
@@ -114,6 +122,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Moon build system
         uses: ./.github/actions/setup-moon
