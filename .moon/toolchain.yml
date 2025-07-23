@@ -3,5 +3,5 @@ $schema: './cache/schemas/toolchain.json'
 
 # Use proto to manage Rust toolchain  
 rust:
-  version: '1.88.0'  # Latest stable
+  version: '1.86.0'  # Latest stable
   syncToolchainConfig: true
