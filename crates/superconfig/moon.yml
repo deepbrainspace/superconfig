@@ -71,15 +71,9 @@ tasks:
     options:
       cache: false
       
-  # Security and maintenance  
-  audit:
-    command: 'cd ../../ && cargo audit'
-    options:
-      cache: false
-      
+  # Security and maintenance (audit moved to GitHub Actions for best practices)
   outdated:
     command: 'cargo outdated'
-    deps: ['audit']  # Run after audit to avoid index conflicts
     options:
       cache: false
       

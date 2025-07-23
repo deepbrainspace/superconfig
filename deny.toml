@@ -1,0 +1,62 @@
+# cargo-deny configuration
+# https://embarkstudios.github.io/cargo-deny/
+
+[graph]
+# All available targets
+targets = [
+    { triple = "x86_64-unknown-linux-gnu" },
+    { triple = "x86_64-pc-windows-msvc" },
+    { triple = "x86_64-apple-darwin" },
+]
+
+[advisories]
+# Deny crates with security vulnerabilities
+vulnerability = "deny"
+# Warn on unmaintained crates
+unmaintained = "warn"
+# Deny crates that have been yanked
+yanked = "deny"
+# Ignore advisories for specified crate versions
+ignore = []
+
+[licenses]
+# Deny licenses that are not explicitly allowed
+unlicensed = "deny"
+# Allow common permissive licenses
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-DFS-2016",
+]
+# Deny problematic licenses
+deny = [
+    "GPL-2.0",
+    "GPL-3.0", 
+    "AGPL-1.0",
+    "AGPL-3.0",
+]
+# Confidence threshold for license detection
+confidence-threshold = 0.8
+
+[bans]
+# Deny specific crates entirely
+deny = []
+# Allow only specific versions of crates (if needed)
+allow = []
+# Skip dependency trees rooted at these crates
+skip = []
+# Skip checking these crates entirely
+skip-tree = []
+
+[sources]
+# Deny crates from unknown registries/git sources
+unknown-registry = "deny"
+unknown-git = "deny"
+# Allow crates from these git repositories
+allow-git = []
+# Allow crates from these registries
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
