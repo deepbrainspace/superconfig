@@ -1,0 +1,103 @@
+type: 'library'
+language: 'rust'
+platform: 'system'
+stack: 'backend'
+
+# Project metadata  
+tags: ['configuration', 'universal', 'multi-language', 'figment', 'enterprise']
+
+tasks:
+  # Core development tasks
+  build:
+    command: 'cargo build'
+    inputs: 
+      - 'src/**/*'
+      - 'Cargo.toml'
+  
+  build-release:
+    command: 'cargo build --release'
+    inputs: 
+      - 'src/**/*'
+      - 'Cargo.toml'
+    
+  test:
+    command: 'cargo test --all-features'
+    inputs:
+      - 'src/**/*'
+      - 'tests/**/*'
+      - 'Cargo.toml'
+    deps: ['build']
+    
+  test-doc:
+    command: 'cargo test --doc'
+    inputs:
+      - 'src/**/*'
+      - 'Cargo.toml'
+    deps: ['build']
+    
+  # Code quality tasks
+  clippy:
+    command: 'cargo clippy --all-features -- -D warnings'
+    inputs:
+      - 'src/**/*'
+      - 'Cargo.toml'
+    deps: ['check']
+    
+  fmt:
+    command: 'cargo fmt'
+    inputs:
+      - 'src/**/*'
+    options:
+      cache: false
+      
+  fmt-check:
+    command: 'cargo fmt --check'
+    inputs:
+      - 'src/**/*'
+    
+  check:
+    command: 'cargo check --all-features'
+    inputs:
+      - 'src/**/*'
+      - 'Cargo.toml'
+    
+  # Documentation tasks  
+  doc:
+    command: 'cargo doc --no-deps --all-features'
+    inputs:
+      - 'src/**/*'
+      - 'Cargo.toml'
+    deps: ['build']
+    
+  doc-open:
+    command: 'cargo doc --no-deps --all-features --open'
+    deps: ['doc']
+    options:
+      cache: false
+      
+  # Security and maintenance
+  audit:
+    command: 'cargo audit'
+    options:
+      cache: false
+      
+  outdated:
+    command: 'cargo outdated'
+    options:
+      cache: false
+      
+  # Publishing tasks
+  publish-dry:
+    command: 'cargo publish --dry-run'
+    deps: ['build', 'test', 'test-doc', 'clippy', 'fmt-check']
+    
+  publish:
+    command: 'cargo publish'
+    deps: ['publish-dry']
+    options:
+      cache: false
+
+# Project dependencies and relationships  
+# dependsOn:
+#   - id: 'workspace-root'
+#     scope: 'self'

@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust-version: ["1.75", "stable"]
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Moon build system
+        uses: ./.github/actions/setup-moon
+        with:
+          rust-version: ${{ matrix.rust-version }}
+
+      - name: Run Moon checks
+        run: moon check --all
+
+      - name: Run tests
+        run: moon run :test
+
+      - name: Run doctests
+        run: moon run superconfig:test --query="language=rust"
+
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Moon build system
+        uses: ./.github/actions/setup-moon
+
+      - name: Check formatting
+        run: moon run :format --query="language=rust" -- --check
+
+      - name: Run clippy
+        run: moon run :lint --query="language=rust"
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        profile: ["dev", "release"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Moon build system
+        uses: ./.github/actions/setup-moon
+
+      - name: Build with Moon
+        run: |
+          if [ "${{ matrix.profile }}" = "release" ]; then
+            moon run :build --query="language=rust" -- --release
+          else
+            moon run :build --query="language=rust"
+          fi
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Moon build system
+        uses: ./.github/actions/setup-moon
+
+      - name: Install cargo-audit
+        run: cargo install --force cargo-audit
+
+      - name: Run security audit
+        run: cargo audit
+
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Moon build system
+        uses: ./.github/actions/setup-moon
+
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin
+
+      - name: Generate coverage report
+        run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./cobertura.xml
+          fail_ci_if_error: false

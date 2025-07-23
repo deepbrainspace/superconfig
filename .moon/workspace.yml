@@ -1,11 +1,27 @@
 # https://moonrepo.dev/docs/config/workspace
 $schema: './cache/schemas/workspace.json'
 
-# extends: './shared/workspace.yml'
-
 projects:
-  - 'apps/*'
-  - 'packages/*'
+  - 'crates/*'
+
 vcs:
   manager: 'git'
   defaultBranch: 'main'
+
+# Runner configuration
+runner:
+  cacheLifetime: '7 days'
+  logRunningCommand: true
+
+# Code quality settings
+codeowners:
+  syncOnRun: true
+  globalPaths:
+    '/.github': 
+      - '@deepbrainspace/maintainers'
+    '/.moon': 
+      - '@deepbrainspace/maintainers'
+    '/Cargo.toml': 
+      - '@deepbrainspace/maintainers'
+    '/README.md': 
+      - '@deepbrainspace/maintainers'

@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Get version from tag
+        id: get_version
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          release_name: SuperConfig ${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: ${{ contains(steps.get_version.outputs.version, '-') }}
+
+  test-release:
+    name: Test Release Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Moon build system
+        uses: ./.github/actions/setup-moon
+
+      - name: Run tests
+        run: moon run :test
+
+      - name: Build release
+        run: moon run :build --query="language=rust" -- --release
+
+  publish-crate:
+    name: Publish to crates.io
+    needs: [create-release, test-release]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Moon build system
+        uses: ./.github/actions/setup-moon
+        
+      - name: Publish to crates.io
+        run: |
+          cd crates/superconfig
+          cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
+        continue-on-error: true  # Don't fail if already published
+
+  build-documentation:
+    name: Build and Deploy Documentation
+    needs: [create-release, test-release]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Moon build system
+        uses: ./.github/actions/setup-moon
+
+      - name: Build documentation
+        run: |
+          cd crates/superconfig
+          cargo doc --no-deps --all-features
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/doc
+          destination_dir: docs
