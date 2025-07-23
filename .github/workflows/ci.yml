@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        rust-version: ["1.85", "stable"]
+        rust-version: ["1.88", "stable"]
       fail-fast: false
 
     steps:
@@ -29,14 +29,11 @@ jobs:
         with:
           rust-version: ${{ matrix.rust-version }}
 
-      - name: Run Moon checks
-        run: moon check --all
-
-      - name: Run tests
-        run: moon run :test
-
-      - name: Run doctests
-        run: moon run superconfig:test --query="language=rust"
+      - name: Run Moon checks and tests
+        run: |
+          moon check --all
+          moon run :test
+          moon run superconfig:test-doc --query="language=rust"
 
   lint:
     name: Lint & Format
