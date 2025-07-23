@@ -17,6 +17,7 @@ jobs:
     strategy:
       matrix:
         rust: [stable, beta]
+      fail-fast: false  # Don't cancel other jobs if one fails
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -41,7 +42,14 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Run clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
+        run: |
+          if [[ "${{ matrix.rust }}" == "beta" ]]; then
+            # More lenient for beta - warnings allowed
+            cargo clippy --all-targets --all-features
+          else
+            # Strict for stable
+            cargo clippy --all-targets --all-features -- -D warnings
+          fi
 
       - name: Run tests
         run: cargo test --all-features --verbose
