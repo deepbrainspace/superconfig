@@ -77,16 +77,10 @@ tasks:
     options:
       cache: false
       
-  # Publishing tasks
+  # Publishing tasks (actual publishing handled by GitHub Actions)
   publish-dry:
-    command: 'cargo publish --dry-run'
+    command: 'cargo publish --dry-run --allow-dirty'
     deps: ['build', 'test', 'test-doc', 'clippy', 'fmt-check']
-    
-  publish:
-    command: 'cargo publish'
-    deps: ['publish-dry']
-    options:
-      cache: false
 
 # Project dependencies and relationships  
 # dependsOn:
