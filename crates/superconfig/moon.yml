@@ -77,7 +77,7 @@ tasks:
       
   # Security and maintenance
   audit:
-    command: 'cargo audit'
+    command: 'cd ../../ && cargo audit'
     options:
       cache: false
       

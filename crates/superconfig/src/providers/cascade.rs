@@ -14,6 +14,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
+/// Type alias for provider factory function to reduce complexity
+type ProviderFactory = Box<dyn Fn(&Path) -> Box<dyn Provider> + Send + Sync>;
+
 /// Hierarchical configuration provider that searches and merges config files across directory hierarchy
 ///
 /// ## Search Strategy
@@ -102,7 +105,7 @@ use std::{
 pub struct Hierarchical {
     base_name: String,
     search_paths: Vec<PathBuf>,
-    provider_factory: Box<dyn Fn(&Path) -> Box<dyn Provider> + Send + Sync>,
+    provider_factory: ProviderFactory,
 }
 
 impl Hierarchical {
@@ -396,7 +399,7 @@ impl Provider for Hierarchical {
                     for (profile, profile_data) in provider_data {
                         profile_data_by_profile
                             .entry(profile)
-                            .or_insert_with(Vec::new)
+                            .or_default()
                             .push(profile_data);
                     }
                 }

@@ -1,0 +1,7 @@
+# https://moonrepo.dev/docs/config/toolchain
+$schema: './cache/schemas/toolchain.json'
+
+# Use proto to manage Rust toolchain
+rust:
+  version: '1.88.0'
+  syncToolchainConfig: true
