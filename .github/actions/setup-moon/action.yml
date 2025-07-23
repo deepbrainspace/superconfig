@@ -5,11 +5,11 @@ inputs:
   moon-version:
     description: 'Moon version to install'
     required: false
-    default: '1.33.0'
+    default: '1.38.6'
   proto-version:
     description: 'Proto version to install'
     required: false
-    default: '0.43.5'
+    default: '0.51.4'
   rust-version:
     description: 'Rust version to install via Proto'
     required: false
@@ -71,9 +71,22 @@ runs:
       with:
         key: ${{ inputs.rust-version }}
 
+    - name: Install cargo tools for dependency management
+      shell: bash
+      run: |
+        export PATH="$HOME/.proto/bin:$PATH"
+        cargo install cargo-outdated
+
+    - name: Check for outdated dependencies
+      shell: bash
+      run: |
+        export PATH="$HOME/.proto/bin:$PATH"
+        cargo outdated || echo "Some dependencies may be outdated - review before release"
+
     - name: Verify Moon installation
       shell: bash
       run: |
         export PATH="$HOME/.proto/bin:$HOME/.moon/bin:$PATH"
         moon --version
         proto --version
+        cargo --version
