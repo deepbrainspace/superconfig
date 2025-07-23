@@ -26,14 +26,12 @@ tasks:
       - 'src/**/*'
       - 'tests/**/*'
       - 'Cargo.toml'
-    deps: ['build']
     
   test-doc:
     command: 'cargo test --doc'
     inputs:
       - 'src/**/*'
       - 'Cargo.toml'
-    deps: ['build']
     
   # Code quality tasks
   clippy:
@@ -41,7 +39,6 @@ tasks:
     inputs:
       - 'src/**/*'
       - 'Cargo.toml'
-    deps: ['check']
     
   fmt:
     command: 'cargo fmt'
@@ -67,7 +64,6 @@ tasks:
     inputs:
       - 'src/**/*'
       - 'Cargo.toml'
-    deps: ['build']
     
   doc-open:
     command: 'cargo doc --no-deps --all-features --open'
@@ -75,7 +71,7 @@ tasks:
     options:
       cache: false
       
-  # Security and maintenance
+  # Security and maintenance  
   audit:
     command: 'cd ../../ && cargo audit'
     options:
@@ -83,6 +79,7 @@ tasks:
       
   outdated:
     command: 'cargo outdated'
+    deps: ['audit']  # Run after audit to avoid index conflicts
     options:
       cache: false
       
