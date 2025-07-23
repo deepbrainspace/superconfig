@@ -32,8 +32,8 @@ jobs:
       - name: Run Moon checks and tests
         run: |
           moon check --all
-          moon run :test
-          moon run superconfig:test-doc --query="language=rust"
+          moon run :test --query="language=rust"
+          moon run :test-doc --query="language=rust"
 
   lint:
     name: Lint & Format
