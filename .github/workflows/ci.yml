@@ -37,13 +37,18 @@ jobs:
           echo "Rust version: $(rustc --version)"
           ls -la
 
-      - name: Run Moon checks
-        run: moon check --all
+      - name: Test Moon basic functionality
+        run: |
+          moon --version
+          moon project list
+          
+      - name: Run Moon checks (with verbose logging)
+        run: moon check --all --log trace
 
-      - name: Run tests
+      - name: Run tests (Moon)
         run: moon run :test --query="language=rust"
 
-      - name: Run doc tests
+      - name: Run doc tests (Moon)
         run: moon run :test-doc --query="language=rust"
 
   lint:
