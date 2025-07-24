@@ -51,6 +51,12 @@ serde_json = { workspace = true }
 # vaultrs = { version = "0.7", optional = true }
 # wasm-bindgen = { version = "0.2", optional = true }
 
+[lints.clippy]
+# Allow large error types to maintain 100% Figment compatibility.
+# Figment's Error type is 208+ bytes, but changing to Box<Error> would break API compatibility.
+# Users expect seamless integration between SuperConfig traits and standard Figment methods.
+result_large_err = "allow"
+
 [dev-dependencies]
 serde = { workspace = true, features = ["derive"] }
 tempfile = "3.10"

@@ -416,8 +416,8 @@ impl SuperConfig {
     ///     .extract()?;                 // Direct extraction with all enhancements
     /// # Ok::<(), figment::Error>(())
     /// ```
-    pub fn extract<'de, T: serde::Deserialize<'de>>(&self) -> Result<T, Box<figment::Error>> {
-        self.figment.extract().map_err(Box::new)
+    pub fn extract<'de, T: serde::Deserialize<'de>>(&self) -> Result<T, figment::Error> {
+        self.figment.extract()
     }
 }
 

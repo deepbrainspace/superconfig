@@ -75,30 +75,30 @@ use figment::{Error, Figment};
 /// ```
 pub trait AccessExt {
     /// Export configuration as pretty-formatted JSON string
-    fn as_json(&self) -> Result<String, Box<Error>>;
+    fn as_json(&self) -> Result<String, Error>;
 
     /// Export configuration as YAML string
-    fn as_yaml(&self) -> Result<String, Box<Error>>;
+    fn as_yaml(&self) -> Result<String, Error>;
 
     /// Export configuration as TOML string
-    fn as_toml(&self) -> Result<String, Box<Error>>;
+    fn as_toml(&self) -> Result<String, Error>;
 
     /// Get a string value from configuration
-    fn get_string<K: AsRef<str>>(&self, key: K) -> Result<String, Box<Error>>;
+    fn get_string<K: AsRef<str>>(&self, key: K) -> Result<String, Error>;
 
     /// Get an array value from configuration
-    fn get_array<T>(&self, key: &str) -> Result<Vec<T>, Box<Error>>
+    fn get_array<T>(&self, key: &str) -> Result<Vec<T>, Error>
     where
         T: serde::de::DeserializeOwned;
 
     /// Check if a configuration key exists
-    fn has_key(&self, key: &str) -> Result<bool, Box<Error>>;
+    fn has_key(&self, key: &str) -> Result<bool, Error>;
 
     /// Get all top-level configuration keys
-    fn keys(&self) -> Result<Vec<String>, Box<Error>>;
+    fn keys(&self) -> Result<Vec<String>, Error>;
 
     /// Debug configuration with pretty-printed values and source information
-    fn debug_config(&self) -> Result<String, Box<Error>>;
+    fn debug_config(&self) -> Result<String, Error>;
 
     /// Get debug information about configuration sources
     fn debug_sources(&self) -> Vec<figment::Metadata>;
@@ -125,13 +125,13 @@ impl AccessExt for Figment {
     /// println!("{}", json_str); // Pretty-printed JSON
     /// # Ok::<(), figment::Error>(())
     /// ```
-    fn as_json(&self) -> Result<String, Box<Error>> {
-        let value = self.extract::<serde_json::Value>().map_err(Box::new)?;
+    fn as_json(&self) -> Result<String, Error> {
+        let value = self.extract::<serde_json::Value>()?;
         serde_json::to_string_pretty(&value).map_err(|e| {
-            Box::new(Error::from(figment::error::Kind::InvalidType(
+            Error::from(figment::error::Kind::InvalidType(
                 Actual::Other(e.to_string()),
                 "valid JSON".into(),
-            )))
+            ))
         })
     }
 
@@ -155,13 +155,13 @@ impl AccessExt for Figment {
     /// println!("{}", yaml_str);
     /// # Ok::<(), figment::Error>(())
     /// ```
-    fn as_yaml(&self) -> Result<String, Box<Error>> {
-        let value = self.extract::<serde_json::Value>().map_err(Box::new)?;
+    fn as_yaml(&self) -> Result<String, Error> {
+        let value = self.extract::<serde_json::Value>()?;
         serde_yml::to_string(&value).map_err(|e| {
-            Box::new(Error::from(figment::error::Kind::InvalidType(
+            Error::from(figment::error::Kind::InvalidType(
                 Actual::Other(e.to_string()),
                 "valid YAML".into(),
-            )))
+            ))
         })
     }
 
@@ -185,13 +185,13 @@ impl AccessExt for Figment {
     /// println!("{}", toml_str);
     /// # Ok::<(), figment::Error>(())
     /// ```
-    fn as_toml(&self) -> Result<String, Box<Error>> {
-        let value = self.extract::<toml::Value>().map_err(Box::new)?;
+    fn as_toml(&self) -> Result<String, Error> {
+        let value = self.extract::<toml::Value>()?;
         toml::to_string_pretty(&value).map_err(|e| {
-            Box::new(Error::from(figment::error::Kind::InvalidType(
+            Error::from(figment::error::Kind::InvalidType(
                 Actual::Other(e.to_string()),
                 "valid TOML".into(),
-            )))
+            ))
         })
     }
 
@@ -220,8 +220,8 @@ impl AccessExt for Figment {
     /// println!("Database host: {}", host);
     /// # Ok::<(), figment::Error>(())
     /// ```
-    fn get_string<K: AsRef<str>>(&self, key: K) -> Result<String, Box<Error>> {
-        self.extract_inner(key.as_ref()).map_err(Box::new)
+    fn get_string<K: AsRef<str>>(&self, key: K) -> Result<String, Error> {
+        self.extract_inner(key.as_ref())
     }
 
     /// Get an array value from configuration
@@ -249,11 +249,11 @@ impl AccessExt for Figment {
     /// println!("CORS origins: {:?}", origins);
     /// # Ok::<(), figment::Error>(())
     /// ```
-    fn get_array<T>(&self, key: &str) -> Result<Vec<T>, Box<Error>>
+    fn get_array<T>(&self, key: &str) -> Result<Vec<T>, Error>
     where
         T: serde::de::DeserializeOwned,
     {
-        self.extract_inner(key).map_err(Box::new)
+        self.extract_inner(key)
     }
 
     /// Check if a configuration key exists
@@ -282,14 +282,14 @@ impl AccessExt for Figment {
     /// }
     /// # Ok::<(), figment::Error>(())
     /// ```
-    fn has_key(&self, key: &str) -> Result<bool, Box<Error>> {
+    fn has_key(&self, key: &str) -> Result<bool, Error> {
         match self.find_value(key) {
             Ok(_) => Ok(true),
             Err(Error {
                 kind: figment::error::Kind::MissingField(_),
                 ..
             }) => Ok(false),
-            Err(e) => Err(Box::new(e)),
+            Err(e) => Err(e),
         }
     }
 
@@ -316,8 +316,8 @@ impl AccessExt for Figment {
     /// println!("Config sections: {:?}", keys);
     /// # Ok::<(), figment::Error>(())
     /// ```
-    fn keys(&self) -> Result<Vec<String>, Box<Error>> {
-        let value = self.extract::<serde_json::Value>().map_err(Box::new)?;
+    fn keys(&self) -> Result<Vec<String>, Error> {
+        let value = self.extract::<serde_json::Value>()?;
         match value {
             serde_json::Value::Object(map) => Ok(map.keys().cloned().collect()),
             _ => Ok(vec![]),
@@ -347,13 +347,13 @@ impl AccessExt for Figment {
     /// // Output shows merged config with provider information
     /// # Ok::<(), figment::Error>(())
     /// ```
-    fn debug_config(&self) -> Result<String, Box<Error>> {
-        let json_value = self.extract::<serde_json::Value>().map_err(Box::new)?;
+    fn debug_config(&self) -> Result<String, Error> {
+        let json_value = self.extract::<serde_json::Value>()?;
         let pretty_json = serde_json::to_string_pretty(&json_value).map_err(|e| {
-            Box::new(Error::from(figment::error::Kind::InvalidType(
+            Error::from(figment::error::Kind::InvalidType(
                 Actual::Other(e.to_string()),
                 "valid JSON".into(),
-            )))
+            ))
         })?;
 
         Ok(format!(
