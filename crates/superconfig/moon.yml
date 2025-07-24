@@ -79,6 +79,14 @@ tasks:
     options:
       cache: true  # Time-based invalidation handled by CI cache keys
       
+  deny:
+    command: 'cargo deny check --all-features'
+    inputs:
+      - 'Cargo.lock'
+      - 'deny.toml'
+    options:
+      cache: true
+      
   coverage:
     command: 'cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml'
     options:
