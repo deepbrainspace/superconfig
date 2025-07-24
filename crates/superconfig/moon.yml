@@ -76,7 +76,8 @@ tasks:
     command: 'cargo audit'
     inputs:
       - 'Cargo.lock'  # Re-run if dependencies change
-    # Cache enabled - time-based invalidation handled by CI cache keys
+    options:
+      cache: true  # Time-based invalidation handled by CI cache keys
       
   coverage:
     command: 'cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml'
