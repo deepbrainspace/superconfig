@@ -426,7 +426,7 @@ impl Provider for Universal {
         let inner_metadata = self.provider.metadata();
         let format = inner_metadata.name;
 
-        let metadata_name = format!("Format::Universal::{}", format);
+        let metadata_name = format!("Format::Universal::{format}");
         let mut metadata = Metadata::named(metadata_name);
         if let Some(source) = inner_metadata.source {
             metadata = metadata.source(source);

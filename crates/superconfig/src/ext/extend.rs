@@ -175,8 +175,8 @@ impl ArrayMergeHelper {
 
                 // Process each base array that has merge operations
                 for base_field in base_fields {
-                    let add_key = format!("{}_add", base_field);
-                    let remove_key = format!("{}_remove", base_field);
+                    let add_key = format!("{base_field}_add");
+                    let remove_key = format!("{base_field}_remove");
 
                     // Get base array (or create empty if not exists)
                     let mut result_array = obj

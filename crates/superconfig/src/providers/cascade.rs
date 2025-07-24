@@ -213,7 +213,7 @@ impl Hierarchical {
             paths.push(home.join(".config").join(base_name));
 
             // Traditional dot directory: ~/.app/
-            paths.push(home.join(format!(".{}", base_name)));
+            paths.push(home.join(format!(".{base_name}")));
 
             // Home directory root: ~/
             paths.push(home);
