@@ -33,7 +33,7 @@ all = ["providers"]
 # Core dependencies (always included)
 figment = { version = "0.10.19", features = ["json", "toml", "yaml", "env"] }
 serde = { version = "1.0", features = ["derive"] }
-toml = "0.9"
+toml = "0.8"
 serde_yml = "0.0.12"
 lazy_static = "1.4"
 

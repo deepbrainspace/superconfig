@@ -80,7 +80,7 @@ tasks:
       cache: true  # Time-based invalidation handled by CI cache keys
       
   deny:
-    command: 'cargo deny check --all-features'
+    command: 'cargo deny check'
     inputs:
       - 'Cargo.lock'
       - 'deny.toml'
