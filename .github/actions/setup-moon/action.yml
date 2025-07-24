@@ -66,22 +66,14 @@ runs:
         proto install rust ${{ inputs.rust-version }}
         proto use rust ${{ inputs.rust-version }}
 
-    - name: Setup Rust cache
-      uses: Swatinem/rust-cache@v2
+    - name: Cache Moon workspace outputs
+      uses: actions/cache@v4  
       with:
-        key: ${{ inputs.rust-version }}
-
-    - name: Install cargo tools for dependency management
-      shell: bash
-      run: |
-        export PATH="$HOME/.proto/bin:$PATH"
-        cargo install cargo-outdated
-
-    - name: Check for outdated dependencies
-      shell: bash
-      run: |
-        export PATH="$HOME/.proto/bin:$PATH"
-        cargo outdated || echo "Some dependencies may be outdated - review before release"
+        path: .moon/cache
+        key: moon-workspace-${{ runner.os }}-${{ inputs.rust-version }}-${{ hashFiles('Cargo.lock', '**/Cargo.toml') }}
+        restore-keys: |
+          moon-workspace-${{ runner.os }}-${{ inputs.rust-version }}-
+          moon-workspace-${{ runner.os }}-
 
     - name: Verify Moon installation
       shell: bash

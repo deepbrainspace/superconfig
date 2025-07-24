@@ -71,7 +71,18 @@ tasks:
     options:
       cache: false
       
-  # Security and maintenance (audit moved to GitHub Actions for best practices)
+  # Security and maintenance tasks
+  security-audit:
+    command: 'cargo audit'
+    inputs:
+      - 'Cargo.lock'  # Re-run if dependencies change
+    # Cache enabled - time-based invalidation handled by CI cache keys
+      
+  coverage:
+    command: 'cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml'
+    options:
+      cache: false  # Always generate fresh coverage
+      
   outdated:
     command: 'cargo outdated'
     options:

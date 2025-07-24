@@ -104,14 +104,26 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Generate time-based cache key for security audits
+        id: security-cache
+        run: |
+          # Create 6-hour time windows (4 periods per day: 00, 06, 12, 18)
+          TIME_WINDOW=$(date +%Y%m%d%H | awk '{print int($1/6)*6}')
+          echo "window=$TIME_WINDOW" >> $GITHUB_OUTPUT
+
       - name: Setup Moon build system
         uses: ./.github/actions/setup-moon
 
-      - name: Install cargo-audit
-        run: cargo install --force cargo-audit
+      - name: Cache security audit results
+        uses: actions/cache@v4
+        with:
+          path: .moon/cache/outputs/**/security-audit
+          key: security-audit-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}-${{ steps.security-cache.outputs.window }}
+          restore-keys: |
+            security-audit-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}-
 
-      - name: Run security audit
-        run: cargo audit
+      - name: Run security audit (Moon)
+        run: moon run :security-audit --query="language=rust"
 
   coverage:
     name: Code Coverage
