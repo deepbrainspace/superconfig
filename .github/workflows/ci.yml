@@ -109,6 +109,9 @@ jobs:
 
       - name: Run security audit (Moon)
         run: moon run :security-audit --query="language=rust"
+        
+      - name: Run cargo deny checks (Moon)
+        run: moon run :deny --query="language=rust"
 
   coverage:
     name: Code Coverage
