@@ -40,7 +40,7 @@ jobs:
       - name: Test Moon basic functionality
         run: |
           moon --version
-          moon project list
+          moon query projects
           
       - name: Run Moon checks (with verbose logging)
         run: moon check --all --log trace
