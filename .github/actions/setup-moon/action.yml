@@ -57,7 +57,6 @@ runs:
       shell: bash
       run: |
         echo "$HOME/.proto/bin" >> $GITHUB_PATH
-        echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
     - name: Install Rust toolchain
       shell: bash
@@ -65,6 +64,27 @@ runs:
         export PATH="$HOME/.proto/bin:$PATH"
         proto install rust ${{ inputs.rust-version }}
         proto use rust ${{ inputs.rust-version }}
+
+    - name: Cache Cargo registry and git
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+        key: cargo-${{ runner.os }}-${{ inputs.rust-version }}-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          cargo-${{ runner.os }}-${{ inputs.rust-version }}-
+          cargo-${{ runner.os }}-
+
+    - name: Cache Rust target directory
+      uses: actions/cache@v4
+      with:
+        path: target/
+        key: cargo-target-${{ runner.os }}-${{ inputs.rust-version }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
+        restore-keys: |
+          cargo-target-${{ runner.os }}-${{ inputs.rust-version }}-
+          cargo-target-${{ runner.os }}-
 
     - name: Cache Moon workspace outputs
       uses: actions/cache@v4  
@@ -78,13 +98,13 @@ runs:
     - name: Install Rust security tools
       shell: bash
       run: |
-        export PATH="$HOME/.proto/bin:$HOME/.moon/bin:$PATH"
+        export PATH="$HOME/.proto/bin:$PATH"
         cargo install cargo-audit cargo-deny
 
     - name: Verify Moon installation
       shell: bash
       run: |
-        export PATH="$HOME/.proto/bin:$HOME/.moon/bin:$PATH"
+        export PATH="$HOME/.proto/bin:$PATH"
         moon --version
         proto --version
         cargo --version

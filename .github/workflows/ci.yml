@@ -42,8 +42,8 @@ jobs:
           moon --version
           moon query projects
           
-      - name: Run Moon checks (with verbose logging)
-        run: moon check --all --log trace
+      - name: Run Moon checks
+        run: moon check --all
 
       - name: Run tests (Moon)
         run: moon run :test --query="language=rust"
@@ -127,10 +127,14 @@ jobs:
         uses: ./.github/actions/setup-moon
 
       - name: Install cargo-tarpaulin
-        run: cargo install cargo-tarpaulin
+        run: |
+          export PATH="$HOME/.proto/bin:$HOME/.moon/bin:$PATH"
+          cargo install cargo-tarpaulin
 
       - name: Generate coverage report
-        run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml
+        run: |
+          export PATH="$HOME/.proto/bin:$HOME/.moon/bin:$PATH"
+          cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
