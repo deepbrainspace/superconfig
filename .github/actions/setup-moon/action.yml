@@ -10,10 +10,6 @@ inputs:
     description: 'Proto version to install'
     required: false
     default: '0.51.4'
-  rust-version:
-    description: 'Rust version to install via Proto'
-    required: false
-    default: 'stable'
 
 outputs:
   cache-hit:
@@ -26,7 +22,7 @@ runs:
     - name: Generate cache key
       id: cache-key
       shell: bash
-      run: echo "key=moon-tools-${{ runner.os }}-${{ inputs.moon-version }}-${{ inputs.proto-version }}-${{ inputs.rust-version }}" >> $GITHUB_OUTPUT
+      run: echo "key=moon-tools-${{ runner.os }}-${{ inputs.moon-version }}-${{ inputs.proto-version }}-${{ hashFiles('.prototools') }}" >> $GITHUB_OUTPUT
 
     - name: Cache Moon and Proto tools
       uses: actions/cache@v4
@@ -58,12 +54,12 @@ runs:
       run: |
         echo "$HOME/.proto/bin" >> $GITHUB_PATH
 
-    - name: Install Rust toolchain
+    - name: Install Rust toolchain from .prototools
       shell: bash
       run: |
         export PATH="$HOME/.proto/bin:$PATH"
-        proto install rust ${{ inputs.rust-version }}
-        proto use rust ${{ inputs.rust-version }}
+        proto install rust
+        proto use rust
 
     - name: Cache Cargo registry and git
       uses: actions/cache@v4
