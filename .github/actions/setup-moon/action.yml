@@ -68,27 +68,27 @@ runs:
           ~/.cargo/registry/index/
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
-        key: cargo-${{ runner.os }}-${{ inputs.rust-version }}-${{ hashFiles('**/Cargo.lock') }}
+        key: cargo-${{ runner.os }}-${{ hashFiles('.prototools') }}-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
-          cargo-${{ runner.os }}-${{ inputs.rust-version }}-
+          cargo-${{ runner.os }}-${{ hashFiles('.prototools') }}-
           cargo-${{ runner.os }}-
 
     - name: Cache Rust target directory
       uses: actions/cache@v4
       with:
         path: target/
-        key: cargo-target-${{ runner.os }}-${{ inputs.rust-version }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
+        key: cargo-target-${{ runner.os }}-${{ hashFiles('.prototools') }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
         restore-keys: |
-          cargo-target-${{ runner.os }}-${{ inputs.rust-version }}-
+          cargo-target-${{ runner.os }}-${{ hashFiles('.prototools') }}-
           cargo-target-${{ runner.os }}-
 
     - name: Cache Moon workspace outputs
       uses: actions/cache@v4  
       with:
         path: .moon/cache
-        key: moon-workspace-${{ runner.os }}-${{ inputs.rust-version }}-${{ hashFiles('Cargo.lock', '**/Cargo.toml') }}
+        key: moon-workspace-${{ runner.os }}-${{ hashFiles('.prototools') }}-${{ hashFiles('Cargo.lock', '**/Cargo.toml') }}
         restore-keys: |
-          moon-workspace-${{ runner.os }}-${{ inputs.rust-version }}-
+          moon-workspace-${{ runner.os }}-${{ hashFiles('.prototools') }}-
           moon-workspace-${{ runner.os }}-
 
     - name: Cache Cargo tools
@@ -96,9 +96,9 @@ runs:
       id: cargo-tools-cache
       with:
         path: ~/.cargo/bin
-        key: cargo-tools-${{ runner.os }}-${{ inputs.rust-version }}-v1
+        key: cargo-tools-${{ runner.os }}-${{ hashFiles('.prototools') }}-v1
         restore-keys: |
-          cargo-tools-${{ runner.os }}-${{ inputs.rust-version }}-
+          cargo-tools-${{ runner.os }}-${{ hashFiles('.prototools') }}-
           cargo-tools-${{ runner.os }}-
 
     - name: Install Rust tools and utilities
