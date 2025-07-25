@@ -189,4 +189,4 @@ Licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 
-**SuperConfig**: From Figment-compatible library to universal configuration platform. 🚀
+**SuperConfig**: From Figment-compatible library to universal configuration platform. 🚀# CI test run
