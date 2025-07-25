@@ -23,3 +23,9 @@ target
 # moon
 .moon/cache
 .moon/docker
+
+# Coverage reports
+cobertura.xml
+tarpaulin-report.html
+*.profraw
+lcov.info
