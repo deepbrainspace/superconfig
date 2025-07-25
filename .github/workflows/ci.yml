@@ -13,6 +13,10 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust-version: ["stable"]
+      fail-fast: false
 
     steps:
       - name: Checkout code
@@ -22,6 +26,8 @@ jobs:
 
       - name: Setup Moon build system
         uses: ./.github/actions/setup-moon
+        with:
+          rust-version: ${{ matrix.rust-version }}
 
       - name: Debug Moon environment
         run: |
