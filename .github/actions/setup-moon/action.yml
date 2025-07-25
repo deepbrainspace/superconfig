@@ -60,7 +60,6 @@ runs:
         export PATH="$HOME/.proto/bin:$PATH"
         proto install rust
         proto use rust
-        rustup component add rustfmt clippy
 
     - name: Cache Cargo registry and git
       uses: actions/cache@v4

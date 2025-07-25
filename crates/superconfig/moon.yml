@@ -3,11 +3,6 @@ language: 'rust'
 platform: 'system'
 stack: 'backend'
 
-# Toolchain configuration
-toolchain:
-  rust:
-    version: '1.88.0'
-
 # Project metadata  
 tags: ['configuration', 'universal', 'multi-language', 'figment', 'enterprise']
 
