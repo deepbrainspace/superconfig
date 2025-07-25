@@ -34,8 +34,8 @@ jobs:
           # Get affected projects from Moon with proper base comparison
           AFFECTED_JSON=$(moon query projects --affected --json)
           
-          # Extract just the project IDs
-          CRATES=$(echo "$AFFECTED_JSON" | jq -r '.[].id' | jq -R -s -c 'split("\n")[:-1]')
+          # Extract just the project IDs from Moon's JSON structure
+          CRATES=$(echo "$AFFECTED_JSON" | jq -r '.projects[].id' | jq -R -s -c 'split("\n")[:-1]')
           
           echo "crates=$CRATES" >> $GITHUB_OUTPUT
           
