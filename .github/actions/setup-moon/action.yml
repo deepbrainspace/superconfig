@@ -69,27 +69,18 @@ runs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
         key: cargo-${{ runner.os }}-${{ hashFiles('.prototools') }}-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          cargo-${{ runner.os }}-${{ hashFiles('.prototools') }}-
-          cargo-${{ runner.os }}-
 
     - name: Cache Rust target directory
       uses: actions/cache@v4
       with:
         path: target/
         key: cargo-target-${{ runner.os }}-${{ hashFiles('.prototools') }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
-        restore-keys: |
-          cargo-target-${{ runner.os }}-${{ hashFiles('.prototools') }}-
-          cargo-target-${{ runner.os }}-
 
     - name: Cache Moon workspace outputs
       uses: actions/cache@v4  
       with:
         path: .moon/cache
         key: moon-workspace-${{ runner.os }}-${{ hashFiles('.prototools') }}-${{ hashFiles('Cargo.lock', '**/Cargo.toml') }}
-        restore-keys: |
-          moon-workspace-${{ runner.os }}-${{ hashFiles('.prototools') }}-
-          moon-workspace-${{ runner.os }}-
 
     - name: Cache Cargo tools
       uses: actions/cache@v4
@@ -97,20 +88,16 @@ runs:
       with:
         path: ~/.cargo/bin
         key: cargo-tools-${{ runner.os }}-${{ hashFiles('.prototools') }}-v1
-        restore-keys: |
-          cargo-tools-${{ runner.os }}-${{ hashFiles('.prototools') }}-
-          cargo-tools-${{ runner.os }}-
 
     - name: Install Rust tools and utilities
       if: steps.cargo-tools-cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
         export PATH="$HOME/.proto/bin:$PATH"
-        # Install tools only if they don't exist
-        command -v cargo-audit >/dev/null 2>&1 || cargo install cargo-audit
-        command -v cargo-deny >/dev/null 2>&1 || cargo install cargo-deny  
-        command -v cargo-outdated >/dev/null 2>&1 || cargo install cargo-outdated
-        command -v cargo-tarpaulin >/dev/null 2>&1 || cargo install cargo-tarpaulin
+        cargo install cargo-audit
+        cargo install cargo-deny
+        cargo install cargo-outdated
+        cargo install cargo-tarpaulin
 
     - name: Verify Moon installation
       shell: bash

@@ -7,6 +7,7 @@ projects:
 vcs:
   manager: 'git'
   defaultBranch: 'main'
+  remoteCandidates: ['origin']
 
 # Runner configuration
 runner:

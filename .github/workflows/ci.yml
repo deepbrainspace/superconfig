@@ -8,12 +8,16 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  MOON_BASE: origin/main
 
 jobs:
-  # Setup job runs first, installs all tools and populates caches
-  setup:
-    name: Setup
+  # Detect which crates are affected by changes
+  detect-affected:
+    name: Detect Affected Crates
     runs-on: ubuntu-latest
+    outputs:
+      affected-crates: ${{ steps.affected.outputs.crates }}
+      has-changes: ${{ steps.affected.outputs.has-changes }}
     
     steps:
       - name: Checkout code
@@ -24,73 +28,84 @@ jobs:
       - name: Setup Moon build system
         uses: ./.github/actions/setup-moon
 
-      - name: Debug Moon environment
+      - name: Detect affected projects
+        id: affected
         run: |
-          echo "Current directory: $(pwd)"
-          echo "Moon version: $(moon --version)"
-          echo "Proto version: $(proto --version)"
-          echo "Rust version: $(rustc --version)"
-          ls -la
-
-      - name: Test Moon basic functionality
-        run: |
-          moon --version
-          moon query projects
-
-  # All subsequent jobs depend on setup and use cached tools
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    needs: setup
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Moon build system (cached)
-        uses: ./.github/actions/setup-moon
-        with:
-          rust-version: "1.88.0"
+          # Get affected projects from Moon with proper base comparison
+          AFFECTED_JSON=$(moon query projects --affected --json)
           
-      - name: Run Moon checks
-        run: moon check --all
+          # Extract just the project IDs
+          CRATES=$(echo "$AFFECTED_JSON" | jq -r '.[].id' | jq -R -s -c 'split("\n")[:-1]')
+          
+          echo "crates=$CRATES" >> $GITHUB_OUTPUT
+          
+          # Check if we have any affected crates
+          HAS_CHANGES=$(echo "$CRATES" | jq -r 'length > 0')
+          echo "has-changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
+          
+          echo "Affected crates: $CRATES"
+          echo "Has changes: $HAS_CHANGES"
 
-      - name: Run tests (Moon)
-        run: moon run :test --query="language=rust"
-
-      - name: Run doc tests (Moon)
-        run: moon run :test-doc --query="language=rust"
-
-  quality:
-    name: Code Quality
+  # Per-crate jobs that run in parallel for affected crates only
+  test:
+    name: Test (${{ matrix.crate }})
     runs-on: ubuntu-latest
-    needs: setup
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Moon build system (cached)
-        uses: ./.github/actions/setup-moon
-        with:
-          rust-version: "1.88.0"
-
-      - name: Check formatting
-        run: moon run :fmt-check --query="language=rust"
-
-      - name: Run clippy
-        run: moon run :clippy --query="language=rust"
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    needs: setup
+    needs: detect-affected
+    if: needs.detect-affected.outputs.has-changes == 'true'
     strategy:
       matrix:
+        crate: ${{ fromJson(needs.detect-affected.outputs.affected-crates) }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Moon build system for ${{ matrix.crate }}
+        uses: ./.github/actions/setup-moon
+          
+      - name: Run Moon checks for ${{ matrix.crate }}
+        run: moon check ${{ matrix.crate }}
+
+      - name: Run tests for ${{ matrix.crate }}
+        run: moon run ${{ matrix.crate }}:test
+
+      - name: Run doc tests for ${{ matrix.crate }}
+        run: moon run ${{ matrix.crate }}:test-doc
+
+  quality:
+    name: Code Quality (${{ matrix.crate }})
+    runs-on: ubuntu-latest
+    needs: detect-affected
+    if: needs.detect-affected.outputs.has-changes == 'true'
+    strategy:
+      matrix:
+        crate: ${{ fromJson(needs.detect-affected.outputs.affected-crates) }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Moon build system for ${{ matrix.crate }}
+        uses: ./.github/actions/setup-moon
+
+      - name: Check formatting for ${{ matrix.crate }}
+        run: moon run ${{ matrix.crate }}:fmt-check
+
+      - name: Run clippy for ${{ matrix.crate }}
+        run: moon run ${{ matrix.crate }}:clippy
+
+  build:
+    name: Build (${{ matrix.crate }}, ${{ matrix.profile }})
+    runs-on: ubuntu-latest
+    needs: detect-affected
+    if: needs.detect-affected.outputs.has-changes == 'true'
+    strategy:
+      matrix:
+        crate: ${{ fromJson(needs.detect-affected.outputs.affected-crates) }}
         profile: ["dev", "release"]
 
     steps:
@@ -99,23 +114,25 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Moon build system (cached)
+      - name: Setup Moon build system for ${{ matrix.crate }}
         uses: ./.github/actions/setup-moon
-        with:
-          rust-version: "1.88.0"
 
-      - name: Build with Moon
+      - name: Build ${{ matrix.crate }} (${{ matrix.profile }})
         run: |
           if [ "${{ matrix.profile }}" = "release" ]; then
-            moon run :build --query="language=rust" -- --release
+            moon run ${{ matrix.crate }}:build -- --release
           else
-            moon run :build --query="language=rust"
+            moon run ${{ matrix.crate }}:build
           fi
 
   security:
-    name: Security Audit
+    name: Security Audit (${{ matrix.crate }})
     runs-on: ubuntu-latest
-    needs: setup
+    needs: detect-affected
+    if: needs.detect-affected.outputs.has-changes == 'true'
+    strategy:
+      matrix:
+        crate: ${{ fromJson(needs.detect-affected.outputs.affected-crates) }}
 
     steps:
       - name: Checkout code
@@ -123,21 +140,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Moon build system (cached)
+      - name: Setup Moon build system for ${{ matrix.crate }}
         uses: ./.github/actions/setup-moon
-        with:
-          rust-version: "1.88.0"
 
-      - name: Run security audit (Moon)
-        run: moon run :security-audit --query="language=rust"
+      - name: Run security audit for ${{ matrix.crate }}
+        run: moon run ${{ matrix.crate }}:security-audit
         
-      - name: Run cargo deny checks (Moon)
-        run: moon run :deny --query="language=rust"
+      - name: Run cargo deny checks for ${{ matrix.crate }}
+        run: moon run ${{ matrix.crate }}:deny
 
   coverage:
-    name: Code Coverage
+    name: Code Coverage (${{ matrix.crate }})
     runs-on: ubuntu-latest
-    needs: setup
+    needs: detect-affected
+    if: needs.detect-affected.outputs.has-changes == 'true'
+    strategy:
+      matrix:
+        crate: ${{ fromJson(needs.detect-affected.outputs.affected-crates) }}
 
     steps:
       - name: Checkout code
@@ -145,13 +164,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Moon build system (cached)
+      - name: Setup Moon build system for ${{ matrix.crate }}
         uses: ./.github/actions/setup-moon
-        with:
-          rust-version: "1.88.0"
 
-      - name: Generate coverage report
-        run: moon run :coverage --query="language=rust"
+      - name: Generate coverage report for ${{ matrix.crate }}
+        run: moon run ${{ matrix.crate }}:coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -159,3 +176,4 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./cobertura.xml
           fail_ci_if_error: false
+          flags: ${{ matrix.crate }}
