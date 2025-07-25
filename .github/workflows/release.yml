@@ -1,5 +1,6 @@
 name: Release
 
+# Only trigger manually - never on push/PR
 on:
   workflow_dispatch:
     inputs:
