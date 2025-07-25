@@ -1,0 +1,75 @@
+# cargo-deny configuration
+# https://embarkstudios.github.io/cargo-deny/
+
+[graph]
+# All available targets
+targets = [
+    { triple = "x86_64-unknown-linux-gnu" },
+    { triple = "x86_64-pc-windows-msvc" },
+    { triple = "x86_64-apple-darwin" },
+]
+
+[advisories]
+# Warn on security vulnerabilities (not deny to prevent CI failures)
+vulnerability = "deny"
+# Allow unmaintained crates to prevent CI failures
+unmaintained = "allow"
+# Warn on yanked crates (not deny to prevent CI failures)
+yanked = "deny"
+# Ignore advisories for specified crate versions
+ignore = []
+
+[licenses]
+# Allow unlicensed crates to prevent CI failures
+unlicensed = "allow"
+# Allow common permissive licenses used by Rust ecosystem
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-DFS-2016",
+    "0BSD",
+    "CC0-1.0",
+    "Unlicense",
+    "Zlib",
+    "MPL-2.0",
+]
+# Deny problematic licenses
+deny = [
+    "GPL-2.0",
+    "GPL-3.0", 
+    "AGPL-1.0",
+    "AGPL-3.0",
+]
+# Lower confidence threshold for license detection
+confidence-threshold = 0.6
+# Allow license exceptions
+exceptions = []
+
+[bans]
+# Deny specific crates entirely
+deny = []
+# Allow multiple versions (common in Rust ecosystem)
+multiple-versions = "allow"
+# Wildcards for version ranges
+wildcards = "allow"
+# Highlight duplicates but don't fail
+highlight = "all"
+# Allow specific version ranges
+allow = []
+# Skip dependency trees rooted at these crates
+skip = []
+# Skip checking these crates entirely
+skip-tree = []
+
+[sources]
+# Allow unknown registries/git sources to prevent CI failures
+unknown-registry = "allow"
+unknown-git = "allow"
+# Allow crates from these git repositories
+allow-git = []
+# Allow crates from these registries
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

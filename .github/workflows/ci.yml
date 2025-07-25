@@ -1,0 +1,179 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  CARGO_TERM_COLOR: always
+  MOON_BASE: origin/main
+
+jobs:
+  # Detect which crates are affected by changes
+  detect-affected:
+    name: Detect Affected Crates
+    runs-on: ubuntu-latest
+    outputs:
+      affected-crates: ${{ steps.affected.outputs.crates }}
+      has-changes: ${{ steps.affected.outputs.has-changes }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Moon build system
+        uses: ./.github/actions/setup-moon
+
+      - name: Detect affected projects
+        id: affected
+        run: |
+          # Get affected projects from Moon with proper base comparison
+          AFFECTED_JSON=$(moon query projects --affected --json)
+          
+          # Extract just the project IDs from Moon's JSON structure
+          CRATES=$(echo "$AFFECTED_JSON" | jq -r '.projects[].id' | jq -R -s -c 'split("\n")[:-1]')
+          
+          echo "crates=$CRATES" >> $GITHUB_OUTPUT
+          
+          # Check if we have any affected crates
+          HAS_CHANGES=$(echo "$CRATES" | jq -r 'length > 0')
+          echo "has-changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
+          
+          echo "Affected crates: $CRATES"
+          echo "Has changes: $HAS_CHANGES"
+
+  # Per-crate jobs that run in parallel for affected crates only
+  test:
+    name: Test (${{ matrix.crate }})
+    runs-on: ubuntu-latest
+    needs: detect-affected
+    if: needs.detect-affected.outputs.has-changes == 'true'
+    strategy:
+      matrix:
+        crate: ${{ fromJson(needs.detect-affected.outputs.affected-crates) }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Moon build system for ${{ matrix.crate }}
+        uses: ./.github/actions/setup-moon
+          
+      - name: Run Moon checks for ${{ matrix.crate }}
+        run: moon check ${{ matrix.crate }}
+
+      - name: Run tests for ${{ matrix.crate }}
+        run: moon run ${{ matrix.crate }}:test
+
+      - name: Run doc tests for ${{ matrix.crate }}
+        run: moon run ${{ matrix.crate }}:test-doc
+
+  quality:
+    name: Code Quality (${{ matrix.crate }})
+    runs-on: ubuntu-latest
+    needs: detect-affected
+    if: needs.detect-affected.outputs.has-changes == 'true'
+    strategy:
+      matrix:
+        crate: ${{ fromJson(needs.detect-affected.outputs.affected-crates) }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Moon build system for ${{ matrix.crate }}
+        uses: ./.github/actions/setup-moon
+
+      - name: Check formatting for ${{ matrix.crate }}
+        run: moon run ${{ matrix.crate }}:fmt-check
+
+      - name: Run clippy for ${{ matrix.crate }}
+        run: moon run ${{ matrix.crate }}:clippy
+
+  build:
+    name: Build (${{ matrix.crate }}, ${{ matrix.profile }})
+    runs-on: ubuntu-latest
+    needs: detect-affected
+    if: needs.detect-affected.outputs.has-changes == 'true'
+    strategy:
+      matrix:
+        crate: ${{ fromJson(needs.detect-affected.outputs.affected-crates) }}
+        profile: ["dev", "release"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Moon build system for ${{ matrix.crate }}
+        uses: ./.github/actions/setup-moon
+
+      - name: Build ${{ matrix.crate }} (${{ matrix.profile }})
+        run: |
+          if [ "${{ matrix.profile }}" = "release" ]; then
+            moon run ${{ matrix.crate }}:build -- --release
+          else
+            moon run ${{ matrix.crate }}:build
+          fi
+
+  security:
+    name: Security Audit (${{ matrix.crate }})
+    runs-on: ubuntu-latest
+    needs: detect-affected
+    if: needs.detect-affected.outputs.has-changes == 'true'
+    strategy:
+      matrix:
+        crate: ${{ fromJson(needs.detect-affected.outputs.affected-crates) }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Moon build system for ${{ matrix.crate }}
+        uses: ./.github/actions/setup-moon
+
+      - name: Run security audit for ${{ matrix.crate }}
+        run: moon run ${{ matrix.crate }}:security-audit
+        
+      - name: Run cargo deny checks for ${{ matrix.crate }}
+        run: moon run ${{ matrix.crate }}:deny
+
+  coverage:
+    name: Code Coverage (${{ matrix.crate }})
+    runs-on: ubuntu-latest
+    needs: detect-affected
+    if: needs.detect-affected.outputs.has-changes == 'true'
+    strategy:
+      matrix:
+        crate: ${{ fromJson(needs.detect-affected.outputs.affected-crates) }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Moon build system for ${{ matrix.crate }}
+        uses: ./.github/actions/setup-moon
+
+      - name: Generate coverage report for ${{ matrix.crate }}
+        run: moon run ${{ matrix.crate }}:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./cobertura.xml
+          fail_ci_if_error: false
+          flags: ${{ matrix.crate }}

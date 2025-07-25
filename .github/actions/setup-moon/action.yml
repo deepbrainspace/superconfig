@@ -1,0 +1,112 @@
+name: 'Setup Moon Build System'
+description: 'Install Moon and Proto with caching for SuperConfig monorepo'
+
+inputs:
+  moon-version:
+    description: 'Moon version to install'
+    required: false
+    default: '1.38.6'
+  proto-version:
+    description: 'Proto version to install'
+    required: false
+    default: '0.51.4'
+
+outputs:
+  cache-hit:
+    description: 'Whether tools were loaded from cache'
+    value: ${{ steps.tools-cache.outputs.cache-hit }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate cache key
+      id: cache-key
+      shell: bash
+      run: echo "key=moon-tools-${{ runner.os }}-${{ inputs.moon-version }}-${{ inputs.proto-version }}-${{ hashFiles('.prototools') }}" >> $GITHUB_OUTPUT
+
+    - name: Cache Moon and Proto tools
+      uses: actions/cache@v4
+      id: tools-cache
+      with:
+        path: |
+          ~/.proto
+          ~/.moon
+        key: ${{ steps.cache-key.outputs.key }}
+
+    - name: Install Proto
+      if: steps.tools-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        curl -fsSL https://moonrepo.dev/install/proto.sh | bash -s -- --version ${{ inputs.proto-version }}
+        echo "$HOME/.proto/bin" >> $GITHUB_PATH
+
+    - name: Install Moon
+      if: steps.tools-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        # Need to source proto in current shell for installation
+        export PATH="$HOME/.proto/bin:$PATH"
+        proto install moon ${{ inputs.moon-version }}
+
+    - name: Setup PATH for cached tools
+      if: steps.tools-cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: |
+        echo "$HOME/.proto/bin" >> $GITHUB_PATH
+
+    - name: Install Rust toolchain from .prototools
+      shell: bash
+      run: |
+        export PATH="$HOME/.proto/bin:$PATH"
+        proto install rust
+        proto use rust
+
+    - name: Cache Cargo registry and git
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+        key: cargo-${{ runner.os }}-${{ hashFiles('.prototools') }}-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Cache Rust target directory
+      uses: actions/cache@v4
+      with:
+        path: target/
+        key: cargo-target-${{ runner.os }}-${{ hashFiles('.prototools') }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
+
+    - name: Cache Moon workspace outputs
+      uses: actions/cache@v4  
+      with:
+        path: .moon/cache
+        key: moon-workspace-${{ runner.os }}-${{ hashFiles('.prototools') }}-${{ hashFiles('Cargo.lock', '**/Cargo.toml') }}
+
+    - name: Cache Cargo tools
+      uses: actions/cache@v4
+      id: cargo-tools-cache
+      with:
+        path: ~/.cargo/bin
+        key: cargo-tools-${{ runner.os }}-${{ hashFiles('.prototools') }}-v1
+
+    - name: Install Rust tools and utilities
+      if: steps.cargo-tools-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        export PATH="$HOME/.proto/bin:$PATH"
+        cargo install cargo-audit
+        cargo install cargo-deny
+        cargo install cargo-outdated
+        cargo install cargo-tarpaulin
+
+    - name: Verify Moon installation
+      shell: bash
+      run: |
+        export PATH="$HOME/.proto/bin:$PATH"
+        moon --version
+        proto --version
+        cargo --version
+        cargo audit --version
+        cargo deny --version
+        cargo outdated --version
+        cargo tarpaulin --version
