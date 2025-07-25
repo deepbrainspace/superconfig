@@ -6,6 +6,11 @@ stack: 'backend'
 # Project metadata  
 tags: ['configuration', 'universal', 'multi-language', 'figment', 'enterprise']
 
+# Environment variables for consistent affected detection
+env:
+  CI: 'true'
+  MOON_BASE: 'origin/main'
+
 tasks:
   # Core development tasks
   build:
