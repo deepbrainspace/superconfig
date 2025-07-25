@@ -95,7 +95,18 @@ runs:
           moon-workspace-${{ runner.os }}-${{ inputs.rust-version }}-
           moon-workspace-${{ runner.os }}-
 
+    - name: Cache Cargo tools
+      uses: actions/cache@v4
+      id: cargo-tools-cache
+      with:
+        path: ~/.cargo/bin
+        key: cargo-tools-${{ runner.os }}-${{ inputs.rust-version }}-v1
+        restore-keys: |
+          cargo-tools-${{ runner.os }}-${{ inputs.rust-version }}-
+          cargo-tools-${{ runner.os }}-
+
     - name: Install Rust tools and utilities
+      if: steps.cargo-tools-cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
         export PATH="$HOME/.proto/bin:$PATH"
