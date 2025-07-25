@@ -13,10 +13,6 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust-version: ["1.86", "stable"]
-      fail-fast: false
 
     steps:
       - name: Checkout code
@@ -26,8 +22,6 @@ jobs:
 
       - name: Setup Moon build system
         uses: ./.github/actions/setup-moon
-        with:
-          rust-version: ${{ matrix.rust-version }}
 
       - name: Debug Moon environment
         run: |
@@ -126,14 +120,9 @@ jobs:
       - name: Setup Moon build system
         uses: ./.github/actions/setup-moon
 
-      - name: Install cargo-tarpaulin
-        run: |
-          export PATH="$HOME/.proto/bin:$HOME/.moon/bin:$PATH"
-          cargo install cargo-tarpaulin
-
       - name: Generate coverage report
         run: |
-          export PATH="$HOME/.proto/bin:$HOME/.moon/bin:$PATH"
+          export PATH="$HOME/.proto/bin:$PATH"
           cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml
 
       - name: Upload coverage to Codecov

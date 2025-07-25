@@ -95,11 +95,11 @@ runs:
           moon-workspace-${{ runner.os }}-${{ inputs.rust-version }}-
           moon-workspace-${{ runner.os }}-
 
-    - name: Install Rust security tools
+    - name: Install Rust tools and utilities
       shell: bash
       run: |
         export PATH="$HOME/.proto/bin:$PATH"
-        cargo install cargo-audit cargo-deny
+        cargo install cargo-audit cargo-deny cargo-outdated cargo-tarpaulin
 
     - name: Verify Moon installation
       shell: bash
@@ -110,3 +110,5 @@ runs:
         cargo --version
         cargo audit --version
         cargo deny --version
+        cargo outdated --version
+        cargo tarpaulin --version
