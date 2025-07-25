@@ -62,12 +62,12 @@ use figment::{Error, Figment};
 ///
 /// ### Debug Information
 /// ```rust,no_run
-/// use superconfig::SuperConfig;
-/// use superconfig::AccessExt;
+/// use superconfig::{SuperConfig, AccessExt, with_file, with_env};
 ///
-/// let config = SuperConfig::new()
-///     .with_file("config.toml")
-///     .with_env("APP_");
+/// let config = with_env!(
+///     with_file!(SuperConfig::new(), "config.toml"),
+///     "APP_"
+/// );
 ///     
 /// println!("{}", config.debug_config()?);
 /// let sources = config.debug_sources();

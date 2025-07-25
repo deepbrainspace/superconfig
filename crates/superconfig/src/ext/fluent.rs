@@ -1,7 +1,9 @@
-//! Fluent builder extension trait for enhanced Figment functionality
+//! Fluent builder extension trait and macros for unified configuration interface
 //!
-//! The FluentExt trait provides builder-style methods for common configuration patterns
-//! using SuperFigment's enhanced providers with automatic array merging.
+//! This module contains all fluent API methods for building configurations, including:
+//! - FluentExt trait for extending Figment with builder methods
+//! - Unified macros that handle both T and Option<T> parameters
+//! - SuperConfig-specific builder methods
 //!
 //! ## ⚠️ Important Note
 //!
@@ -11,8 +13,30 @@
 
 use super::ExtendExt;
 use crate::providers::{Empty, Hierarchical, Nested, Universal};
+use crate::SuperConfig;
 use figment::{Figment, Provider};
-use std::path::Path; // Import array merging functionality
+use std::path::Path;
+
+/// Unified trait to convert both T and Option<T> into Option<T> for macro usage
+/// 
+/// This trait provides flexible parameter handling for all configuration macros,
+/// supporting both direct values and optional values for any type T.
+pub trait IntoOptions<T> {
+    fn into_option(self) -> Option<T>;
+}
+
+impl<T> IntoOptions<T> for T {
+    fn into_option(self) -> Option<T> {
+        Some(self)
+    }
+}
+
+impl<T> IntoOptions<T> for Option<T> {
+    fn into_option(self) -> Option<T> {
+        self
+    }
+}
+
 
 /// Extension trait that adds fluent builder methods to Figment
 ///
@@ -202,5 +226,205 @@ impl FluentExt for Figment {
 
     fn with_provider<P: Provider>(self, provider: P) -> Self {
         self.merge_extend(provider) // Uses ExtendExt::merge_extend
+    }
+}
+
+/// Macro for file-based configuration with optional flags
+/// 
+/// # Parameters
+/// - `$self`: SuperConfig instance
+/// - `$path`: File path (String, &str, PathBuf, or Option of these)
+/// - `$flags`: Optional bitwise flags to control behavior
+///
+/// # Examples
+/// ```rust
+/// use superconfig::{SuperConfig, with_file, flags};
+/// 
+/// let config1 = SuperConfig::new();
+/// with_file!(config1, "config.toml");                    // Direct path, default flags
+/// 
+/// let config2 = SuperConfig::new();
+/// with_file!(config2, "config.toml", flags::REQUIRED);   // Direct path with flags
+/// 
+/// let config3 = SuperConfig::new();
+/// with_file!(config3, "config.toml", flags::REQUIRED | flags::FOLLOW_SYMLINKS); // Direct path with multiple flags
+/// ```
+#[macro_export]
+macro_rules! with_file {
+    // Without flags (default behavior)
+    ($self:expr, $path:expr) => {{
+        with_file!($self, $path, $crate::flags::DEFAULT)
+    }};
+    
+    // With flags
+    ($self:expr, $path:expr, $flags:expr) => {{
+        use std::path::Path;
+        use $crate::ext::fluent::IntoOptions;
+        
+        let actual_flags = $flags;
+        
+        use $crate::ext::ExtendExt;
+        use $crate::providers::Universal;
+        
+        // TODO: Use flags to modify behavior (REQUIRED, FOLLOW_SYMLINKS, etc.)
+        // For now, basic file loading regardless of flags
+        SuperConfig {
+            figment: $self.figment.merge_extend(Universal::file($path)),
+        }
+    }};
+}
+
+/// Macro for CLI configuration with optional flags
+/// 
+/// # Parameters
+/// - `$self`: SuperConfig instance
+/// - `$cli`: CLI arguments (any serializable type or Option of it)
+/// - `$flags`: Optional bitwise flags to control behavior
+///
+/// # Examples
+/// ```rust
+/// use superconfig::{SuperConfig, with_cli, flags};
+/// use serde::Serialize;
+/// 
+/// #[derive(Serialize)]
+/// struct Args { verbose: bool }
+/// 
+/// let config1 = SuperConfig::new();
+/// with_cli!(config1, Args { verbose: true });              // Direct value, default flags
+/// 
+/// let config2 = SuperConfig::new();
+/// with_cli!(config2, Args { verbose: true }, flags::FILTER_EMPTY); // Direct value with flags
+/// 
+/// let config3 = SuperConfig::new();
+/// let args: Option<Args> = Some(Args { verbose: true });
+/// with_cli!(config3, args, flags::STRICT_MODE);            // Option<T> with flags
+/// ```
+#[macro_export]
+macro_rules! with_cli {
+    // Without flags (default behavior)
+    ($self:expr, $cli:expr) => {{
+        with_cli!($self, $cli, $crate::flags::DEFAULT)
+    }};
+    
+    // With flags
+    ($self:expr, $cli:expr, $flags:expr) => {{
+        let actual_flags = $flags;
+        
+        use $crate::ext::ExtendExt;
+        use $crate::providers::Empty;
+        
+        let provider = figment::providers::Serialized::defaults($cli);
+        
+        // Apply FILTER_EMPTY flag if specified
+        if actual_flags.contains($crate::flags::FILTER_EMPTY) {
+            SuperConfig {
+                figment: $self.figment.merge_extend(Empty::new(provider)),
+            }
+        } else {
+            SuperConfig {
+                figment: $self.figment.merge_extend(provider),
+            }
+        }
+    }};
+}
+
+/// Macro for environment variable configuration with optional flags
+/// 
+/// # Parameters
+/// - `$self`: SuperConfig instance
+/// - `$prefix`: Environment variable prefix (e.g., "APP_")
+/// - `$flags`: Optional bitwise flags to control behavior
+///
+/// # Examples
+/// ```rust
+/// use superconfig::{SuperConfig, with_env, flags};
+/// 
+/// let config1 = SuperConfig::new();
+/// with_env!(config1, "APP_");                          // Standard env parsing
+/// 
+/// let config2 = SuperConfig::new();
+/// with_env!(config2, "APP_", flags::FILTER_EMPTY);     // Filter empty values
+/// 
+/// let config3 = SuperConfig::new();
+/// with_env!(config3, "APP_", flags::FILTER_EMPTY | flags::STRICT_MODE); // Multiple flags
+/// ```
+#[macro_export]
+macro_rules! with_env {
+    // Without flags (default behavior)
+    ($self:expr, $prefix:expr) => {{
+        with_env!($self, $prefix, $crate::flags::DEFAULT)
+    }};
+    
+    // With flags
+    ($self:expr, $prefix:expr, $flags:expr) => {{
+        let actual_flags = $flags;
+        
+        use $crate::ext::ExtendExt;
+        use $crate::providers::{Empty, Nested};
+        
+        let provider = Nested::prefixed($prefix);
+        
+        // Apply FILTER_EMPTY flag if specified
+        if actual_flags.contains($crate::flags::FILTER_EMPTY) {
+            SuperConfig {
+                figment: $self.figment.merge_extend(Empty::new(provider)),
+            }
+        } else {
+            SuperConfig {
+                figment: $self.figment.merge_extend(provider),
+            }
+        }
+    }};
+}
+
+/// SuperConfig-specific fluent methods
+impl SuperConfig {
+    /// Add default configuration values with automatic array merging
+    pub fn with_defaults<T: serde::Serialize>(self, defaults: T) -> Self {
+        use crate::ext::ExtendExt;
+        Self {
+            figment: self
+                .figment
+                .merge_extend(figment::providers::Serialized::defaults(defaults)),
+        }
+    }
+
+    /// Add environment variable configuration with automatic nesting and array merging
+    pub fn with_env<S: AsRef<str>>(self, prefix: S) -> Self {
+        use crate::ext::ExtendExt;
+        Self {
+            figment: self.figment.merge_extend(Nested::prefixed(prefix)),
+        }
+    }
+
+    /// Add environment variable configuration with empty value filtering and array merging
+    pub fn with_env_ignore_empty<S: AsRef<str>>(self, prefix: S) -> Self {
+        use crate::ext::ExtendExt;
+        Self {
+            figment: self
+                .figment
+                .merge_extend(Empty::new(Nested::prefixed(prefix))),
+        }
+    }
+
+    /// Add any provider with automatic array merging
+    pub fn with_provider<P: figment::Provider>(self, provider: P) -> Self {
+        use crate::ext::ExtendExt;
+        Self {
+            figment: self.figment.merge_extend(provider),
+        }
+    }
+
+    /// Add hierarchical configuration files with automatic cascade merging
+    pub fn with_hierarchical_config<S: AsRef<str>>(self, base_name: S) -> Self {
+        use crate::ext::ExtendExt;
+        Self {
+            figment: self.figment.merge_extend(Hierarchical::new(base_name)),
+        }
+    }
+
+    /// Extract configuration directly (equivalent to calling .extract() on the inner Figment)
+    pub fn extract<'de, T: serde::Deserialize<'de>>(&self) -> Result<T, figment::Error> {
+        self.figment.extract()
     }
 }

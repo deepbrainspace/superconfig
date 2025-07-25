@@ -23,11 +23,12 @@
 //!
 //! ### With SuperConfig (Built-in Methods)
 //! ```rust
-//! use superconfig::SuperConfig;  // No prelude needed
+//! use superconfig::{SuperConfig, with_file, with_env};
 //!
-//! let config = SuperConfig::new()
-//!     .with_file("config")    // Built-in method
-//!     .with_env("APP_");      // Built-in method
+//! let config = with_env!(
+//!     with_file!(SuperConfig::new(), "config"),
+//!     "APP_"
+//! );
 //! ```
 //!
 //! ### Selective Import (Advanced)
