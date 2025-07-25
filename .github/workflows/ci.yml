@@ -153,9 +153,7 @@ jobs:
           rust-version: stable
 
       - name: Generate coverage report
-        run: |
-          export PATH="$HOME/.proto/bin:$PATH"
-          cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml
+        run: moon run :coverage --query="language=rust"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
