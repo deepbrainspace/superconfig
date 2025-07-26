@@ -100,4 +100,4 @@ export APP_SETTINGS='{"debug": true}'          # → settings (JSON object)
 
 ## License
 
-Licensed under the MIT License.
+Licensed under the MIT License. See [LICENSE](LICENSE) for details.
