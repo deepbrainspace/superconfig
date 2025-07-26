@@ -4,7 +4,7 @@ Configuration management library with hierarchical cascading, advanced array mer
 
 [![Crates.io](https://img.shields.io/crates/v/superconfig)](https://crates.io/crates/superconfig)
 [![Documentation](https://docs.rs/superconfig/badge.svg)](https://docs.rs/superconfig)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Features
 
