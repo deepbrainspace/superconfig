@@ -40,9 +40,7 @@ use std::path::Path; // Import array merging functionality
 /// #[derive(Serialize)]
 /// struct CliArgs { verbose: bool }
 ///
-/// let cli_args = Some(figment::providers::Serialized::defaults(
-///     CliArgs { verbose: true }
-/// ));
+/// let cli_args = Some(CliArgs { verbose: true });
 ///
 /// let config = Figment::new()
 ///     .with_file("config")           // Auto-detects .toml/.json/.yaml
@@ -77,7 +75,7 @@ use std::path::Path; // Import array merging functionality
 /// #[derive(Serialize)]
 /// struct CliArgs { debug: bool }
 ///
-/// let cli_args = Some(Serialized::defaults(CliArgs { debug: true }));
+/// let cli_args = Some(CliArgs { debug: true });
 ///
 /// let config = Figment::new()
 ///     .merge_extend(Serialized::defaults(Defaults {
@@ -121,7 +119,7 @@ pub trait FluentExt {
     /// ```
     fn with_env<S: AsRef<str>>(self, prefix: S) -> Self;
 
-    /// Add CLI arguments with empty value filtering and array merging (if provided)
+    /// Add optional CLI arguments with empty value filtering and array merging
     ///
     /// Uses the Empty provider internally to filter out empty values that could
     /// mask meaningful configuration from files or environment variables.
@@ -130,18 +128,16 @@ pub trait FluentExt {
     /// ```rust
     /// use figment::Figment;
     /// use superconfig::prelude::*; // Import FluentExt trait
-    /// use figment::providers::Serialized;
     /// use serde::Serialize;
     ///
     /// #[derive(Serialize)]
     /// struct CliArgs { verbose: bool }
     ///
-    /// let cli_data = CliArgs { verbose: true };
-    /// let cli_args = Some(Serialized::defaults(cli_data));
+    /// let cli_args = Some(CliArgs { verbose: true });
     /// let config = Figment::new()
     ///     .with_cli_opt(cli_args);     // Only merged if Some(), empty values filtered
     /// ```
-    fn with_cli_opt<P: Provider>(self, provider: Option<P>) -> Self;
+    fn with_cli_opt<T: serde::Serialize>(self, cli: Option<T>) -> Self;
 
     /// Add hierarchical configuration files with automatic cascade merging
     ///
@@ -181,6 +177,110 @@ pub trait FluentExt {
     ///     .with_provider(Json::file("config.json"));
     /// ```
     fn with_provider<P: Provider>(self, provider: P) -> Self;
+
+    /// Add default configuration values with automatic array merging
+    ///
+    /// # Examples
+    /// ```rust
+    /// use figment::Figment;
+    /// use superconfig::prelude::*;
+    /// use serde::Serialize;
+    ///
+    /// #[derive(Serialize)]
+    /// struct Config {
+    ///     host: String,
+    ///     port: u16,
+    /// }
+    ///
+    /// let defaults = Config {
+    ///     host: "localhost".to_string(),
+    ///     port: 8080,
+    /// };
+    ///
+    /// let config = Figment::new()
+    ///     .with_defaults(defaults);
+    /// ```
+    fn with_defaults<T: serde::Serialize>(self, defaults: T) -> Self;
+
+    /// Add optional file-based configuration with automatic format detection and array merging
+    ///
+    /// Only adds the file if the Option is Some. Useful for conditional configuration loading.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use figment::Figment;
+    /// use superconfig::prelude::*;
+    ///
+    /// let custom_config: Option<&str> = Some("custom.toml");
+    /// let config = Figment::new()
+    ///     .with_file_opt(custom_config);  // Only adds if Some
+    /// ```
+    fn with_file_opt<P: AsRef<Path>>(self, path: Option<P>) -> Self;
+
+    /// Add environment variable configuration with empty value filtering and array merging
+    ///
+    /// Similar to `with_env` but filters out empty values (empty strings, arrays, objects)
+    /// to prevent meaningless overrides from masking meaningful configuration values.
+    ///
+    /// Uses both the Nested provider for advanced environment variable parsing and the
+    /// Empty provider for filtering, combined with ExtendExt for array merging support.
+    ///
+    /// **Filtered Values:**
+    /// - Empty strings: `""`
+    /// - Empty arrays: `[]`
+    /// - Empty objects: `{}`
+    ///
+    /// **Preserved Values:**
+    /// - Meaningful falsy values: `false`, `0`
+    /// - Non-empty strings, arrays, objects
+    /// - JSON arrays with array merging: `MYAPP_FEATURES_ADD=["new_item"]`
+    ///
+    /// # Examples
+    /// ```rust
+    /// use figment::Figment;
+    /// use superconfig::prelude::*;
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Debug, Deserialize, Serialize)]
+    /// struct Config {
+    ///     debug: bool,
+    ///     host: String,
+    ///     features: Vec<String>,
+    /// }
+    ///
+    /// // Environment variables:
+    /// // APP_DEBUG=""              <- filtered out (empty string)
+    /// // APP_HOST="localhost"       <- preserved (non-empty)  
+    /// // APP_FEATURES="[]"          <- filtered out (empty array)
+    /// // APP_FEATURES_ADD=["auth"]  <- merged with existing features
+    ///
+    /// let config = Figment::new()
+    ///     .with_env_ignore_empty("APP_");  // Empty values filtered, meaningful ones applied
+    /// ```
+    ///
+    /// # When to Use
+    /// - Use `with_env_ignore_empty()` when you want clean config overrides without empty noise
+    /// - Use `with_env()` when you need maximum flexibility and explicit empty values matter
+    fn with_env_ignore_empty<S: AsRef<str>>(self, prefix: S) -> Self;
+
+    /// Add CLI arguments with empty value filtering and array merging
+    ///
+    /// Uses the Empty provider internally to filter out empty values.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use figment::Figment;
+    /// use superconfig::prelude::*;
+    /// use serde::Serialize;
+    ///
+    /// #[derive(Serialize)]
+    /// struct CliArgs { verbose: bool }
+    ///
+    /// let config = Figment::new()
+    ///     .with_cli(CliArgs { verbose: true });
+    /// ```
+    fn with_cli<T: serde::Serialize>(self, cli: T) -> Self;
+
 }
 
 impl FluentExt for Figment {
@@ -192,8 +292,11 @@ impl FluentExt for Figment {
         self.merge_extend(Nested::prefixed(prefix)) // Uses ExtendExt::merge_extend
     }
 
-    fn with_cli_opt<P: Provider>(self, provider: Option<P>) -> Self {
-        self.merge_extend_opt(provider.map(Empty::new)) // Uses ExtendExt::merge_extend_opt
+    fn with_cli_opt<T: serde::Serialize>(self, cli: Option<T>) -> Self {
+        match cli {
+            Some(c) => self.with_cli(c),
+            None => self,
+        }
     }
 
     fn with_hierarchical_config<S: AsRef<str>>(self, base_name: S) -> Self {
@@ -202,5 +305,25 @@ impl FluentExt for Figment {
 
     fn with_provider<P: Provider>(self, provider: P) -> Self {
         self.merge_extend(provider) // Uses ExtendExt::merge_extend
+    }
+
+    fn with_defaults<T: serde::Serialize>(self, defaults: T) -> Self {
+        self.merge_extend(figment::providers::Serialized::defaults(defaults))
+    }
+
+    fn with_file_opt<P: AsRef<Path>>(self, path: Option<P>) -> Self {
+        match path {
+            Some(p) => self.with_file(p),
+            None => self,
+        }
+    }
+
+    fn with_env_ignore_empty<S: AsRef<str>>(self, prefix: S) -> Self {
+        self.merge_extend(Empty::new(Nested::prefixed(prefix)))
+    }
+
+    fn with_cli<T: serde::Serialize>(self, cli: T) -> Self {
+        let provider = figment::providers::Serialized::defaults(cli);
+        self.merge_extend(Empty::new(provider))
     }
 }
