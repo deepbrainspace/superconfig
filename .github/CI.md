@@ -6,78 +6,46 @@ This document explains the Continuous Integration workflow for the SuperConfig p
 
 Our CI pipeline is designed with a **3-phase sequential structure** to provide fast feedback while avoiding resource conflicts that can occur when multiple jobs run identical tasks simultaneously.
 
-## Complete CI Pipeline Flow
+## CI Pipeline Flow
 
 ```
-                             ┌─────────────────────┐
-                             │  Detect Affected    │
-                             │      Crates         │
-                             │                     │
-                             │ moon query projects │
-                             │ --affected --json   │
-                             └──────────┬──────────┘
-                                        │
-                                        ▼
-                   ┌─────────────────────────────────────────────────────┐
-                   │              PHASE 1: PARALLEL                      │
-                   │           (Fast Validation)                         │
-                   └─────────────────────────────────────────────────────┘
-                                        │
-              ┌─────────────────────────┼─────────────────────────┐
-              ▼                         ▼                         ▼
-    ┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
-    │   Test Job      │       │  Quality Job    │       │ Security Job    │
-    │                 │       │                 │       │                 │
-    │ moon run        │       │ moon run        │       │ moon run        │
-    │ superconfig:    │       │ superconfig:    │       │ superconfig:    │
-    │   test          │       │   fmt-check     │       │   audit         │
-    │                 │       │   clippy        │       │   deny          │
-    │ (unit + integ   │       │                 │       │                 │
-    │  + doc tests)   │       │                 │       │                 │
-    └─────────────────┘       └─────────────────┘       └─────────────────┘
-              │                         │                         │
-              └─────────────────────────┼─────────────────────────┘
-                                        │
-                                        ▼
-                             ┌─────────────────────┐
-                             │     All Phase 1     │
-                             │   Jobs Complete?    │
-                             └──────────┬──────────┘
-                                        │ ✅ SUCCESS
-                                        ▼
-                   ┌─────────────────────────────────────────────────────┐
-                   │              PHASE 2: SEQUENTIAL                    │
-                   │              (Build Validation)                     │
-                   └─────────────────────────────────────────────────────┘
-                                        │
-                                        ▼
-                             ┌─────────────────────┐
-                             │    Build Job        │
-                             │                     │
-                             │ moon run            │
-                             │ superconfig:build   │
-                             │ (dev + release)     │
-                             └──────────┬──────────┘
-                                        │ ✅ SUCCESS
-                                        ▼
-                   ┌─────────────────────────────────────────────────────┐
-                   │              PHASE 3: SEQUENTIAL                    │
-                   │            (Coverage Analysis)                      │
-                   └─────────────────────────────────────────────────────┘
-                                        │
-                                        ▼
-                             ┌─────────────────────┐
-                             │   Coverage Job      │
-                             │                     │
-                             │ moon run            │
-                             │ superconfig:        │
-                             │   coverage          │
-                             │                     │
-                             │ Upload to Codecov   │
-                             └─────────────────────┘
-
-                                    ❌ FAIL-FAST
-                           Any phase failure stops the pipeline
+┌─────────────────────┐
+│  Detect Affected    │
+│      Crates         │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────────────────────────────────────┐
+│              PHASE 1: PARALLEL                      │
+│   ┌─────────────┐ ┌─────────────┐ ┌─────────────┐   │
+│   │    Test     │ │   Quality   │ │  Security   │   │
+│   │             │ │             │ │             │   │
+│   │    test     │ │ fmt-check   │ │   audit     │   │
+│   │             │ │   clippy    │ │    deny     │   │
+│   └─────────────┘ └─────────────┘ └─────────────┘   │
+└─────────────────────────────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────────────────┐
+│              PHASE 2: SEQUENTIAL                    │
+│                ┌─────────────┐                      │
+│                │    Build    │                      │
+│                │             │                      │
+│                │    build    │                      │
+│                │ build-rel   │                      │
+│                └─────────────┘                      │
+└─────────────────────────────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────────────────┐
+│              PHASE 3: SEQUENTIAL                    │
+│                ┌─────────────┐                      │
+│                │  Coverage   │                      │
+│                │             │                      │
+│                │  coverage   │                      │
+│                │   upload    │                      │
+│                └─────────────┘                      │
+└─────────────────────────────────────────────────────┘
 ```
 
 **Key Benefits:**
@@ -148,40 +116,6 @@ The CI uses multiple layers of caching for performance:
 - **Target Cache**: Compiled artifacts
 - **Moon Cache**: Task outputs and intermediate results
 
-## Troubleshooting
-
-### Common Issues
-
-**"Process completed with exit code 1"**
-- One of the validation checks failed
-- Check the specific job logs to identify which task failed
-- Run the same Moon command locally to reproduce
-
-**"Blocking waiting for file lock"**  
-- Should be resolved with the new 3-phase structure
-- If still occurring, indicates a remaining parallel conflict
-
-**Cache Issues**
-- GitHub Actions caches persist across runs
-- Sometimes clearing cache helps with flaky behavior
-- Cache keys include dependency fingerprints for invalidation
-
-### Local Debugging
-
-1. **Reproduce the failure locally**:
-   ```bash
-   moon run superconfig:test  # Most common failures
-   ```
-
-2. **Check specific task logs**:
-   ```bash
-   moon run superconfig:clippy --log debug
-   ```
-
-3. **Clear local cache if needed**:
-   ```bash
-   moon clean
-   ```
 
 ## Workflow Files
 
