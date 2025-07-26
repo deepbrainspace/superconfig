@@ -114,6 +114,40 @@
 //! let has_redis = config.has_key("redis.enabled")?;    // AccessExt
 //! # Ok::<(), figment::Error>(())
 //! ```
+//!
+//! ## 🔍 Configuration Debugging
+//!
+//! SuperConfig provides rich debugging capabilities for development and troubleshooting:
+//!
+//! ```rust,no_run
+//! use superconfig::{SuperConfig, AccessExt};
+//!
+//! let config = SuperConfig::new()
+//!     .with_hierarchical_config("myapp")
+//!     .with_env("APP_");
+//!
+//! // Export in different formats
+//! let json_config = config.as_json()?;
+//! let yaml_config = config.as_yaml()?;
+//! let toml_config = config.as_toml()?;
+//!
+//! // Value extraction and validation  
+//! let db_host = config.get_string("database.host")?;
+//! let features = config.get_array::<String>("features")?;
+//! let has_redis = config.has_key("redis.enabled")?;
+//! let all_keys = config.keys()?;
+//!
+//! // Full debug output with source tracking
+//! let debug_output = config.debug_config()?;
+//! println!("{}", debug_output);
+//!
+//! // Source metadata for troubleshooting
+//! let sources = config.debug_sources();
+//! for source in sources {
+//!     println!("Provider: {:?}", source);
+//! }
+//! # Ok::<(), figment::Error>(())
+//! ```
 
 use figment::Figment;
 use std::ops::Deref;
