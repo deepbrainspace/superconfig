@@ -351,13 +351,13 @@ let config = Figment::new()
 - **Efficient Caching**: Parsed environment variables and file contents cached
 - **Memory Efficient**: Optimized data structures for large configurations
 
-### Benchmarks
+### Performance Benefits
 ```text
-Configuration Loading (vs. naive approaches):
-├── File format detection: 10x faster (cached)
-├── Environment parsing: 5x faster (optimized)
-├── Array merging: 3x faster (conditional)
-└── Hierarchical search: 8x faster (lazy)
+Optimization Strategies:
+├── File format detection: Smart caching by modification time
+├── Environment parsing: Single-pass parsing with type inference
+├── Array merging: Only processed when _add/_remove patterns detected
+└── Hierarchical search: Lazy evaluation - stops at first match per level
 ```
 
 ## 🛠️ Advanced Features
