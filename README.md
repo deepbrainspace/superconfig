@@ -450,8 +450,7 @@ let config = SuperConfig::new()
 
 - **[API Documentation](https://docs.rs/superconfig)** - Complete API reference with examples
 - **[Figment Documentation](https://docs.rs/figment)** - Core Figment concepts (100% compatible)
-- **[Examples Repository](https://github.com/deepbrainspace/superconfig/tree/main/examples)** - Real-world usage patterns
-- **[Migration Guide](https://docs.rs/superconfig/latest/superconfig/#migration)** - Step-by-step Figment migration
+- **[GitHub Repository](https://github.com/deepbrainspace/superconfig)** - Source code and issue tracking
 
 ## 🤝 Contributing
 
