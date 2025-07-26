@@ -10,6 +10,9 @@ readme = "../../README.md"
 keywords = ["config", "configuration", "universal", "multi-language", "wasm"]
 categories = ["config", "development-tools", "parsing", "web-programming"]
 
+[package.metadata.docs.rs]
+default-theme = "ayu"
+
 [features]
 default = ["core"]
 
