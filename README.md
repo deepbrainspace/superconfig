@@ -58,7 +58,7 @@ let config = Figment::new()
     .merge_arrays();          // Apply merging to current config
 ```
 
-### FluentExt - Builder Pattern Excellence
+### FluentExt - Fluent API
 ```rust
 // Fluent builder with enhanced providers
 let config = Figment::new()
