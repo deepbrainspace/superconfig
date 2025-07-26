@@ -21,7 +21,7 @@
 //! - **Universal** - Smart format detection with caching and content analysis
 //! - **Nested** - Advanced environment variable parsing with JSON arrays and type detection
 //! - **Empty** - Automatic empty value filtering while preserving meaningful falsy values
-//! - **Hierarchical** - Configuration cascade system across directory hierarchy
+//! - **Wildcard** - Unified pattern-based configuration discovery with globset integration
 //!
 //! ### 🚀 Extension Traits (Supercharge existing Figment code)
 //! - **ExtendExt** - Array merging with `_add`/`_remove` patterns across all sources
@@ -114,7 +114,7 @@
 //! let config = Figment::new()                           // Keep existing Figment code
 //!     .merge_extend(Universal::file("config"))          // Enhanced provider
 //!     .merge_extend(Nested::prefixed("APP_"))           // Enhanced provider  
-//!     .with_hierarchical_config("myapp")                // Extension trait method
+//!     .merge_extend(Hierarchical::new("myapp"))         // Enhanced provider
 //!     .merge_extend(Empty::new(                         // Enhanced provider
 //!         figment::providers::Serialized::defaults(cli_args)
 //!     ));
@@ -167,12 +167,14 @@ pub use figment;
 
 pub mod ext;
 pub mod providers;
+mod fluent;
 
 // Re-export enhanced providers for existing Figment users
-pub use providers::{Empty, Hierarchical, Nested, Universal};
+pub use providers::{Empty, Hierarchical, MergeOrder, Nested, Universal, Wildcard, WildcardBuilder, SearchStrategy};
 
 // Re-export extension traits
-pub use ext::{AccessExt, ExtendExt, FluentExt};
+pub use ext::{AccessExt, ExtendExt};
+// FluentExt removed - methods now native to SuperConfig
 
 // Re-export prelude module for convenient imports
 pub use ext::prelude;
@@ -271,76 +273,4 @@ impl From<SuperConfig> for Figment {
     }
 }
 
-impl SuperConfig {
-    /// Add file-based configuration with automatic format detection and array merging
-    pub fn with_file<P: AsRef<std::path::Path>>(self, path: P) -> Self {
-        use crate::ext::FluentExt;
-        Self {
-            figment: self.figment.with_file(path),
-        }
-    }
-
-    /// Add environment variable configuration with automatic nesting and array merging
-    pub fn with_env<S: AsRef<str>>(self, prefix: S) -> Self {
-        use crate::ext::FluentExt;
-        Self {
-            figment: self.figment.with_env(prefix),
-        }
-    }
-
-    /// Add optional CLI arguments with empty value filtering and array merging
-    pub fn with_cli_opt<T: serde::Serialize>(self, cli: Option<T>) -> Self {
-        use crate::ext::FluentExt;
-        Self {
-            figment: self.figment.with_cli_opt(cli),
-        }
-    }
-
-    /// Add hierarchical configuration files with automatic cascade merging
-    pub fn with_hierarchical_config<S: AsRef<str>>(self, base_name: S) -> Self {
-        use crate::ext::FluentExt;
-        Self {
-            figment: self.figment.with_hierarchical_config(base_name),
-        }
-    }
-
-    /// Add any provider with automatic array merging
-    pub fn with_provider<P: figment::Provider>(self, provider: P) -> Self {
-        use crate::ext::FluentExt;
-        Self {
-            figment: self.figment.with_provider(provider),
-        }
-    }
-
-    /// Add default configuration values with automatic array merging
-    pub fn with_defaults<T: serde::Serialize>(self, defaults: T) -> Self {
-        use crate::ext::FluentExt;
-        Self {
-            figment: self.figment.with_defaults(defaults),
-        }
-    }
-
-    /// Add optional file-based configuration
-    pub fn with_file_opt<P: AsRef<std::path::Path>>(self, path: Option<P>) -> Self {
-        use crate::ext::FluentExt;
-        Self {
-            figment: self.figment.with_file_opt(path),
-        }
-    }
-
-    /// Add environment variable configuration with empty value filtering
-    pub fn with_env_ignore_empty<S: AsRef<str>>(self, prefix: S) -> Self {
-        use crate::ext::FluentExt;
-        Self {
-            figment: self.figment.with_env_ignore_empty(prefix),
-        }
-    }
-
-    /// Add CLI arguments with empty value filtering and array merging
-    pub fn with_cli<T: serde::Serialize>(self, cli: T) -> Self {
-        use crate::ext::FluentExt;
-        Self {
-            figment: self.figment.with_cli(cli),
-        }
-    }
-}
+// Fluent methods are now implemented directly in fluent.rs

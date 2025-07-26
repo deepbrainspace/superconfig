@@ -66,8 +66,8 @@
 //! use superconfig::prelude::*;  // Import all extension traits
 //!
 //! let config = Figment::new()
-//!     .with_file("config")    // FluentExt method
-//!     .with_env("APP_");      // FluentExt method  
+//!     .merge(Universal::file("config"))    // Enhanced provider
+//!     .merge_extend(Nested::prefixed("APP_")); // ExtendExt method  
 //! ```
 //!
 //! ### With SuperConfig (Built-in Methods)
@@ -82,7 +82,7 @@
 //! ### Selective Import (Advanced)
 //! ```rust
 //! use superconfig::ExtendExt;  // Just array merging
-//! use superconfig::{FluentExt, AccessExt};  // Builder + convenience
+//! use superconfig::AccessExt;  // Convenience methods
 //! ```
 //!
 //! ## Performance Considerations
@@ -95,36 +95,40 @@
 
 pub mod access;
 pub mod extend;
-pub mod fluent;
 
 // Individual extension traits
 pub use access::AccessExt;
 pub use extend::ExtendExt;
-pub use fluent::FluentExt;
+// FluentExt removed - methods now native to SuperConfig
 
 /// Prelude module for convenient imports of all SuperConfig functionality
 ///
 /// Import this module with `use superconfig::prelude::*` to get everything:
-/// - Extension traits: `ExtendExt`, `FluentExt`, `AccessExt`
+/// - Extension traits: `ExtendExt`, `AccessExt`
 /// - Enhanced providers: `Universal`, `Nested`, `Empty`, `Hierarchical`
 ///
 /// ## Example
 /// ```rust,no_run
 /// use figment::Figment;
-/// use superconfig::prelude::*;  // Everything you need!
+/// use superconfig::{SuperConfig, prelude::*};  // Everything you need!
 ///
-/// let config = Figment::new()
+/// // For extension traits on existing Figment
+/// let figment = Figment::new()
 ///     .merge(Universal::file("config"))  // Enhanced provider
-///     .with_env("APP_")                  // Extension trait method
-///     .merge_extend(Nested::prefixed("DB_")); // Extension trait method
-/// let json = config.as_json()?;          // Extension trait method
+///     .merge_extend(Nested::prefixed("APP_")); // Extension trait method
+/// let json = figment.as_json()?;         // Extension trait method
+/// 
+/// // Or use SuperConfig for native fluent methods
+/// let config = SuperConfig::new()
+///     .with_file("config")               // Native SuperConfig method
+///     .with_env("APP_");                 // Native SuperConfig method
 /// # Ok::<(), figment::Error>(())
 /// ```
 pub mod prelude {
     // Extension traits - add methods to regular Figment
     pub use super::access::AccessExt;
     pub use super::extend::ExtendExt;
-    pub use super::fluent::FluentExt;
+    // FluentExt removed - methods now native to SuperConfig
 
     // Enhanced providers - drop-in replacements with superpowers
     pub use crate::providers::{Empty, Hierarchical, Nested, Universal};

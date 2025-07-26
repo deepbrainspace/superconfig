@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use serial_test::serial;
 use std::env;
 use std::fs;
-use superconfig::{AccessExt, ExtendExt, FluentExt};
+use superconfig::{AccessExt, ExtendExt};
 use superconfig::{SuperConfig, Universal};
 use tempfile::TempDir;
 
@@ -97,14 +97,14 @@ fn test_extension_traits_individual() -> Result<(), Box<dyn std::error::Error>> 
     let config: TestConfig = figment_with_extend.extract()?;
     assert_eq!(config.host, "example.com");
 
-    // Test FluentExt (which includes ExtendExt automatically)
-    let figment_with_fluent = Figment::new().with_file(&config_path);
+    // Test SuperConfig native methods
+    let superconfig_with_fluent = SuperConfig::new().with_file(&config_path);
 
-    let config2: TestConfig = figment_with_fluent.extract()?;
+    let config2: TestConfig = superconfig_with_fluent.extract()?;
     assert_eq!(config2.host, "example.com");
 
-    // Test AccessExt
-    let json_output = figment_with_fluent.as_json()?;
+    // Test AccessExt on SuperConfig
+    let json_output = superconfig_with_fluent.as_json()?;
     assert!(json_output.contains("example.com"));
 
     Ok(())
@@ -127,12 +127,10 @@ timeout = 60
 "#,
     )?;
 
-    // Test combined trait functionality
-    let figment = Figment::new()
-        .merge_extend(figment::providers::Serialized::defaults(
-            TestConfig::default(),
-        )) // ExtendExt - defaults first
-        .with_file(&config_path); // FluentExt - file overrides
+    // Test combined trait functionality via SuperConfig
+    let figment = SuperConfig::new()
+        .with_defaults(TestConfig::default()) // Native SuperConfig method
+        .with_file(&config_path);              // Native SuperConfig method
 
     let config: TestConfig = figment.extract()?;
     assert_eq!(config.host, "toml.example.com");

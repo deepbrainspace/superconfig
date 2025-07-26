@@ -1,6 +1,6 @@
 //! Enhanced configuration providers with performance optimizations
 //!
-//! SuperConfig provides four enhanced providers that extend Figment with enterprise-grade capabilities:
+//! SuperConfig provides enhanced providers that extend Figment with enterprise-grade capabilities:
 //!
 //! ## Provider Overview
 //!
@@ -59,20 +59,42 @@
 //! let filtered = Empty::new(Serialized::defaults(cli_args));
 //! ```
 //!
-//! ### Hierarchical Provider - Configuration Cascade
-//! Git-like configuration inheritance across system → user → project levels
-//! with automatic merging and array composition support.
+//! ### Wildcard Provider - Unified Pattern-Based Discovery
+//! Revolutionary unified provider using globset patterns for flexible configuration discovery.
+//! Replaces hierarchical and single-directory providers with a single, powerful solution.
 //!
 //! **Key Features:**
-//! - **Search Hierarchy**: `~/.config/app/`, `~/.app/`, `~/`, ancestor dirs, current dir
-//! - **Automatic Merging**: Later configs override earlier ones with array merging
-//! - **Git-like Behavior**: Similar to `.gitconfig` hierarchical resolution
+//! - **Any Glob Pattern**: Single directory, hierarchy, recursive - any pattern supported
+//! - **Multiple Ordering Strategies**: Alphabetical, size, time, or custom rule-based sorting
+//! - **High Performance**: Leverages OS-optimized glob matching and compiled patterns
+//! - **Enterprise Ready**: Handles complex multi-source configuration scenarios
+//! - **100% Figment Compatible**: Works seamlessly with both Figment and SuperConfig APIs
 //!
-//! **Usage:**
+//! **Usage Examples:**
 //! ```rust
-//! use superconfig::Hierarchical;
+//! use superconfig::{Wildcard, MergeOrder};
 //!
-//! let provider = Hierarchical::new("myapp");  // Search config hierarchy
+//! # fn main() -> Result<(), figment::Error> {
+//! // Traditional hierarchy (git-like config discovery)
+//! let provider = Wildcard::hierarchical("config", "myapp")?;
+//!
+//! // Single directory with custom ordering
+//! let provider = Wildcard::new("./config/*.toml")?
+//!     .with_merge_order(MergeOrder::Alphabetical);
+//!
+//! // Complex enterprise pattern
+//! let provider = Wildcard::new("{/etc/myapp,~/.config/myapp,./config}/**/*.{toml,yaml,json}")?
+//!     .with_merge_order(MergeOrder::Custom(vec![
+//!         "base.*".to_string(),
+//!         "*.toml".to_string(),
+//!         "overrides.*".to_string(),
+//!     ]));
+//!
+//! // Recursive plugin discovery
+//! let provider = Wildcard::new("./plugins/**/config.yaml")?
+//!     .with_merge_order(MergeOrder::ModificationTimeDescending);
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! ## Performance Characteristics
@@ -83,12 +105,19 @@
 //! - **Efficient Parsing**: Single-pass processing with type inference
 //! - **Memory Optimized**: Minimal memory footprint for large configurations
 
-pub mod cascade;
+pub mod cascade;  // Keep for now - will be removed after testing
 pub mod env;
 pub mod filter;
 pub mod format;
+pub mod wildcard;
 
-pub use cascade::Hierarchical;
+// New unified exports
+pub use wildcard::{Wildcard, WildcardBuilder, SearchStrategy, MergeOrder};
+
+// Existing exports
 pub use env::Nested;
 pub use filter::Empty;
 pub use format::Universal;
+
+// Legacy export (will be removed)
+pub use cascade::Hierarchical;
