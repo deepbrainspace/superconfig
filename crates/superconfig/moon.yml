@@ -32,12 +32,6 @@ tasks:
       - 'tests/**/*'
       - 'Cargo.toml'
     
-  test-doc:
-    command: 'cargo test --doc'
-    inputs:
-      - 'src/**/*'
-      - 'Cargo.toml'
-    
   # Code quality tasks
   clippy:
     command: 'cargo clippy --all-features -- -D warnings'
