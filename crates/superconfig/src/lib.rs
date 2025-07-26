@@ -106,9 +106,9 @@
 //! #[derive(Serialize)]
 //! struct Config { name: String, features: Vec<String> }
 //!
-//! let cli_args = Config { 
-//!     name: "myapp".to_string(), 
-//!     features: vec!["auth".to_string()] 
+//! let cli_args = Config {
+//!     name: "myapp".to_string(),
+//!     features: vec!["auth".to_string()]
 //! };
 //!
 //! let config = Figment::new()                           // Keep existing Figment code

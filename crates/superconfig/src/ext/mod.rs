@@ -20,7 +20,7 @@
 //! ```toml
 //! # base.toml
 //! features = ["auth", "logging"]
-//! 
+//!
 //! # override.toml
 //! features_add = ["metrics", "cache"]
 //! features_remove = ["logging"]
