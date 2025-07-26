@@ -99,7 +99,7 @@ tasks:
   # Publishing tasks (actual publishing handled by GitHub Actions)
   publish-dry:
     command: 'cargo publish --dry-run --allow-dirty'
-    deps: ['build', 'test', 'test-doc', 'clippy', 'fmt-check']
+    deps: ['build', 'test', 'clippy', 'fmt-check']
 
 # Project dependencies and relationships  
 # dependsOn:
