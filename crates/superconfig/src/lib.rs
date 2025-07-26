@@ -40,7 +40,17 @@
 //! use superconfig::prelude::*;    // For existing Figment users: add superpowers to current setup
 //! ```
 //!
-//! ## ⚡ Performance Characteristics\n//!\n//! SuperConfig implements several optimization strategies:\n//!\n//! - **Lazy Loading**: Files only read when needed, cached by modification time\n//! - **Smart Detection**: Content-based format detection with fallback chains  \n//! - **Conditional Processing**: Array merging only when `_add`/`_remove` patterns detected\n//! - **Efficient Caching**: Parsed environment variables and file contents cached\n//! - **Memory Efficient**: Optimized data structures for large configurations\n//!\n//! ## 🔗 100% Figment Compatibility
+//! ## ⚡ Performance Characteristics
+//!
+//! SuperConfig implements several optimization strategies:
+//!
+//! - **Lazy Loading**: Files only read when needed, cached by modification time
+//! - **Smart Detection**: Content-based format detection with fallback chains  
+//! - **Conditional Processing**: Array merging only when `_add`/`_remove` patterns detected
+//! - **Efficient Caching**: Parsed environment variables and file contents cached
+//! - **Memory Efficient**: Optimized data structures for large configurations
+//!
+//! ## 🔗 100% Figment Compatibility
 //!
 //! **Bonus Feature**: SuperConfig is fully compatible with existing Figment code:
 //! - All Figment methods work seamlessly

@@ -63,10 +63,14 @@ tasks:
     inputs:
       - 'src/**/*'
       - 'Cargo.toml'
+    env:
+      RUSTDOCFLAGS: '--default-theme ayu'
     
   doc-open:
     command: 'cargo doc --no-deps --all-features --open'
     deps: ['doc']
+    env:
+      RUSTDOCFLAGS: '--default-theme ayu'
     options:
       cache: false
       
