@@ -13,7 +13,7 @@ use serial_test::serial;
 use std::env;
 use std::fs;
 use superconfig::{AccessExt, ExtendExt, FluentExt};
-use superconfig::{SuperConfig, Universal};
+use superconfig::{SuperConfig, Universal, with_file, with_cli, with_env};
 use tempfile::TempDir;
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]

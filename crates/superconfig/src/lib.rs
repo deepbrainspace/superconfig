@@ -134,6 +134,7 @@ pub mod providers;
 #[derive(Debug, Clone)]
 pub struct SuperConfig {
     pub figment: Figment,
+    current_flags: crate::flags::Config,
 }
 
 impl SuperConfig {
@@ -141,12 +142,16 @@ impl SuperConfig {
     pub fn new() -> Self {
         Self {
             figment: Figment::new(),
+            current_flags: crate::flags::DEFAULT,
         }
     }
 
     /// Create SuperConfig from an existing Figment
     pub fn from_figment(figment: Figment) -> Self {
-        Self { figment }
+        Self { 
+            figment,
+            current_flags: crate::flags::DEFAULT,
+        }
     }
 }
 

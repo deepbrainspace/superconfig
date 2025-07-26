@@ -51,8 +51,9 @@ pub use fluent::FluentExt;
 /// Import this module with `use superconfig::prelude::*` to get everything:
 /// - Extension traits: `ExtendExt`, `FluentExt`, `AccessExt`
 /// - Enhanced providers: `Universal`, `Nested`, `Empty`, `Hierarchical`
+/// - SuperConfig struct and flags for advanced functionality
 ///
-/// ## Example
+/// ## Basic Figment Enhancement
 /// ```rust,no_run
 /// use figment::Figment;
 /// use superconfig::prelude::*;  // Everything you need!
@@ -64,6 +65,24 @@ pub use fluent::FluentExt;
 /// let json = config.as_json()?;          // Extension trait method
 /// # Ok::<(), figment::Error>(())
 /// ```
+///
+/// ## Full SuperConfig Power
+/// ```rust,no_run
+/// use superconfig::prelude::*;  // Everything you need!
+/// use serde::Serialize;
+///
+/// #[derive(Serialize)]
+/// struct CliArgs { debug: bool }
+///
+/// let cli_args = CliArgs { debug: true };
+/// let config = SuperConfig::new()
+///     .add_flags(flags::FILTER_EMPTY)     // Flag management
+///     .with_file(Some("config.toml"))     // Enhanced file loading
+///     .with_cli(Some(cli_args))           // CLI integration
+///     .with_env("APP_");                  // Environment variables
+/// let json = config.as_json()?;          // Convenience methods
+/// # Ok::<(), figment::Error>(())
+/// ```
 pub mod prelude {
     // Extension traits - add methods to regular Figment
     pub use super::access::AccessExt;
@@ -72,4 +91,10 @@ pub mod prelude {
 
     // Enhanced providers - drop-in replacements with superpowers
     pub use crate::providers::{Empty, Hierarchical, Nested, Universal};
+    
+    // SuperConfig struct for advanced functionality
+    pub use crate::SuperConfig;
+    
+    // Flags module for configuration control
+    pub use crate::flags;
 }
