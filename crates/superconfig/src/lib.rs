@@ -155,7 +155,6 @@ impl SuperConfig {
         Self { figment }
     }
 
-
     /// Extract configuration directly (equivalent to calling .extract() on the inner Figment)
     ///
     /// This is a convenience method that makes the SuperConfig API more fluent by avoiding

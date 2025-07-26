@@ -280,7 +280,6 @@ pub trait FluentExt {
     ///     .with_cli(CliArgs { verbose: true });
     /// ```
     fn with_cli<T: serde::Serialize>(self, cli: T) -> Self;
-
 }
 
 impl FluentExt for Figment {
