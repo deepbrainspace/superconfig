@@ -261,24 +261,10 @@ debug = false
         )
         .unwrap();
 
-        // Ensure files are fully written by opening and syncing them
-        use std::fs::OpenOptions;
-        use std::io::Write;
-
-        {
-            let mut file = OpenOptions::new().append(true).open(&config_path).unwrap();
-            file.flush().unwrap();
-            file.sync_all().unwrap();
-        }
-
-        {
-            let mut file = OpenOptions::new()
-                .append(true)
-                .open(&override_path)
-                .unwrap();
-            file.flush().unwrap();
-            file.sync_all().unwrap();
-        }
+        // Ensure files are fully written and visible to filesystem by reading them back
+        // This verifies the write is complete and visible to subsequent readers
+        let _ = std::fs::read_to_string(&config_path).unwrap();
+        let _ = std::fs::read_to_string(&override_path).unwrap();
 
         // Change to temp directory
         let original_dir = std::env::current_dir().unwrap();
