@@ -45,8 +45,8 @@ jobs:
           echo "Has changes: $HAS_CHANGES"
 
   # Per-crate jobs that run in parallel for affected crates only
-  test:
-    name: Test (${{ matrix.crate }})
+  build:
+    name: Build (${{ matrix.crate }})
     runs-on: ubuntu-latest
     needs: detect-affected
     if: needs.detect-affected.outputs.has-changes == 'true'
@@ -63,7 +63,28 @@ jobs:
       - name: Setup Moon build system for ${{ matrix.crate }}
         uses: ./.github/actions/setup-moon
           
-      - name: Run tests for ${{ matrix.crate }}
+      - name: Build ${{ matrix.crate }} (release)
+        run: moon run ${{ matrix.crate }}:build-release
+
+  test:
+    name: Test (${{ matrix.crate }})
+    runs-on: ubuntu-latest
+    needs: [detect-affected, build]
+    if: needs.detect-affected.outputs.has-changes == 'true'
+    strategy:
+      matrix:
+        crate: ${{ fromJson(needs.detect-affected.outputs.affected-crates) }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Moon build system for ${{ matrix.crate }}
+        uses: ./.github/actions/setup-moon
+          
+      - name: Run tests for ${{ matrix.crate }} (release)
         run: moon run ${{ matrix.crate }}:test
 
   quality:
@@ -90,32 +111,6 @@ jobs:
       - name: Run clippy for ${{ matrix.crate }}
         run: moon run ${{ matrix.crate }}:clippy
 
-  build:
-    name: Build (${{ matrix.crate }}, ${{ matrix.profile }})
-    runs-on: ubuntu-latest
-    needs: [detect-affected, test, quality, security]
-    if: needs.detect-affected.outputs.has-changes == 'true'
-    strategy:
-      matrix:
-        crate: ${{ fromJson(needs.detect-affected.outputs.affected-crates) }}
-        profile: ["dev", "release"]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Moon build system for ${{ matrix.crate }}
-        uses: ./.github/actions/setup-moon
-
-      - name: Build ${{ matrix.crate }} (${{ matrix.profile }})
-        run: |
-          if [ "${{ matrix.profile }}" = "release" ]; then
-            moon run ${{ matrix.crate }}:build -- --release
-          else
-            moon run ${{ matrix.crate }}:build
-          fi
 
   security:
     name: Security Audit (${{ matrix.crate }})

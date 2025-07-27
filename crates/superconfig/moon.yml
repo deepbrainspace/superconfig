@@ -26,7 +26,7 @@ tasks:
       - 'Cargo.toml'
     
   test:
-    command: 'cargo test --all-features'
+    command: 'cargo test --all-features --release'
     inputs:
       - 'src/**/*'
       - 'tests/**/*'
