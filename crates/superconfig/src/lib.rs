@@ -15,6 +15,7 @@
 //! - **🧠 Smart Format Detection**: Content-based parsing with intelligent caching and fallback strategies
 //! - **⚡ Enhanced Environment Variables**: JSON parsing, automatic nesting, and smart type detection
 //! - **🔍 Advanced Debugging**: Built-in introspection, source tracking, validation, and warning collection
+//! - **🗣️ Verbosity System**: CLI-style debugging with multiple verbosity levels for troubleshooting configuration issues
 //! - **🚀 Production Optimizations**: Lazy loading, modification time caching, and optimized data structures
 //!
 //! ## 🎯 SuperConfig All-in-One Solution
@@ -258,7 +259,9 @@
 //! # }
 //! ```
 
+use crate::verbosity::{DebugCollector, DebugMessage};
 use figment::Figment;
+use std::cell::RefCell;
 use std::ops::Deref;
 
 // Re-export figment for compatibility
@@ -268,35 +271,165 @@ pub mod access;
 mod fluent;
 pub mod merge;
 pub mod providers;
+pub mod verbosity;
 
 // Re-export enhanced providers for existing Figment users
 pub use providers::{
     Empty, MergeOrder, Nested, SearchStrategy, Universal, Wildcard, WildcardBuilder,
 };
 
+// Re-export verbosity types for clients
+pub use verbosity::VerbosityLevel;
+
 /// SuperConfig is a universal configuration management platform that combines
 /// advanced features with 100% Figment compatibility.
 ///
 /// Built on Figment's solid foundation, SuperConfig adds production-ready capabilities
 /// including hierarchical configuration cascades, advanced array merging, intelligent
-/// format detection, and performance optimizations - while maintaining seamless
-/// compatibility with existing Figment code.
+/// format detection, verbosity debugging, and performance optimizations - while maintaining
+/// seamless compatibility with existing Figment code.
 ///
 /// ## Core Features
 ///
 /// - **Hierarchical Configuration**: Git-like config inheritance across system → user → project levels
 /// - **Advanced Array Merging**: Compose configurations with `_add`/`_remove` patterns
 /// - **Intelligent Format Detection**: Content-based parsing with caching and fallback strategies
+/// - **Verbosity System**: CLI-style debugging with `-v`, `-vv`, `-vvv` levels for troubleshooting
 /// - **Performance Optimized**: Lazy loading, caching, and optimized data structures
+///
+/// ## Quick Start Example
+///
+/// ```rust,no_run
+/// use superconfig::{SuperConfig, VerbosityLevel};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Deserialize, Serialize, Default)]
+/// struct AppConfig {
+///     database_url: String,
+///     log_level: String,
+///     port: u16,
+/// }
+///
+/// // Basic configuration loading
+/// let config: AppConfig = SuperConfig::new()
+///     .with_defaults(AppConfig::default())
+///     .with_file("config.toml")
+///     .with_env("APP_")
+///     .extract()?;
+///
+/// # Ok::<(), figment::Error>(())
+/// ```
+///
+/// ## Verbosity for Debugging
+///
+/// Enable verbosity to debug configuration loading issues:
+///
+/// ```rust,no_run
+/// use superconfig::{SuperConfig, VerbosityLevel};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Deserialize, Serialize, Default)]
+/// struct Config {
+///     host: String,
+///     port: u16,
+/// }
+///
+/// // Enable debug verbosity (equivalent to -vv in CLI)
+/// let config: Config = SuperConfig::new()
+///     .with_verbosity(VerbosityLevel::Debug)  // Shows detailed loading steps
+///     .with_hierarchical_config("myapp")
+///     .with_env("APP_")
+///     .extract()?;
+///
+/// # Ok::<(), figment::Error>(())
+/// ```
+///
+/// ## CLI Integration Example
+///
+/// Integrate verbosity with CLI argument parsing:
+///
+/// ```rust,no_run
+/// use superconfig::{SuperConfig, VerbosityLevel};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Deserialize, Serialize, Default)]
+/// struct Config {
+///     host: String,
+///     port: u16,
+/// }
+///
+/// // Parse CLI verbosity (normally from clap, structopt, etc.)
+/// fn parse_verbosity() -> u8 {
+///     std::env::args()
+///         .skip(1)
+///         .filter(|arg| arg.starts_with("-v"))
+///         .map(|arg| arg.matches('v').count() as u8)
+///         .max()
+///         .unwrap_or(0)
+/// }
+///
+/// let verbosity = VerbosityLevel::from_cli_args(parse_verbosity());
+///
+/// let config: Config = SuperConfig::new()
+///     .with_verbosity(verbosity)  // Respects -v, -vv, -vvv from command line
+///     .with_defaults(Config::default())
+///     .with_hierarchical_config("myapp")
+///     .with_env("APP_")
+///     .extract()?;
+///
+/// # Ok::<(), figment::Error>(())
+/// ```
+///
+/// ## Advanced Features
+///
+/// ### Array Merging
+/// ```rust,no_run
+/// // config/base.toml
+/// // features = ["auth", "logging"]
+///
+/// // config/production.toml
+/// // features_add = ["metrics", "tracing"]
+/// // features_remove = ["logging"]
+///
+/// // Result: features = ["auth", "metrics", "tracing"]
+/// # use superconfig::SuperConfig;
+/// let config = SuperConfig::new()
+///     .with_file("config/base.toml")
+///     .with_file("config/production.toml");
+/// ```
+///
+/// ### Debug Message Collection
+/// ```rust,no_run
+/// use superconfig::{SuperConfig, VerbosityLevel};
+///
+/// let config = SuperConfig::new()
+///     .with_verbosity(VerbosityLevel::Debug)
+///     .with_file("config.toml");
+///
+/// // Access debug messages programmatically
+/// let debug_messages = config.debug_messages();
+/// for msg in debug_messages {
+///     println!("{}: {}", msg.provider, msg.message);
+/// }
+/// ```
 ///
 /// ## Universal Platform Vision
 ///
 /// SuperConfig is designed to become the universal configuration standard across popular
 /// languages through WebAssembly bindings, REST APIs, and protocol standardization.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct SuperConfig {
     figment: Figment,
     warnings: Vec<String>,
+    verbosity: VerbosityLevel,
+    // Use internal mutability for debug state to avoid requiring &mut self
+    debug_state: RefCell<DebugState>,
+}
+
+#[derive(Debug, Clone)]
+struct DebugState {
+    debug_messages: Vec<DebugMessage>,
+    step_counter: usize,
 }
 
 impl SuperConfig {
@@ -305,6 +438,11 @@ impl SuperConfig {
         Self {
             figment: Figment::new(),
             warnings: Vec::new(),
+            verbosity: VerbosityLevel::default(),
+            debug_state: RefCell::new(DebugState {
+                debug_messages: Vec::new(),
+                step_counter: 0,
+            }),
         }
     }
 
@@ -313,6 +451,11 @@ impl SuperConfig {
         Self {
             figment,
             warnings: Vec::new(),
+            verbosity: VerbosityLevel::default(),
+            debug_state: RefCell::new(DebugState {
+                debug_messages: Vec::new(),
+                step_counter: 0,
+            }),
         }
     }
 
@@ -342,7 +485,47 @@ impl SuperConfig {
     /// # Ok::<(), figment::Error>(())
     /// ```
     pub fn extract<'de, T: serde::Deserialize<'de>>(&self) -> Result<T, figment::Error> {
-        self.figment.extract()
+        self.debug(
+            VerbosityLevel::Info,
+            "extract",
+            "Extracting final configuration",
+        );
+
+        let result = self.figment.extract::<T>();
+
+        match &result {
+            Ok(_) => {
+                self.debug_result(
+                    VerbosityLevel::Info,
+                    "extract",
+                    "Configuration extraction successful",
+                    true,
+                );
+
+                // Show final merged config at trace level
+                if self.verbosity >= VerbosityLevel::Trace {
+                    if let Ok(json_value) = self.figment.extract::<serde_json::Value>() {
+                        if let Ok(pretty_json) = serde_json::to_string_pretty(&json_value) {
+                            self.debug(
+                                VerbosityLevel::Trace,
+                                "extract",
+                                &format!("Final merged configuration:\n{}", pretty_json),
+                            );
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                self.debug_result(
+                    VerbosityLevel::Info,
+                    "extract",
+                    &format!("Configuration extraction failed: {}", e),
+                    false,
+                );
+            }
+        }
+
+        result
     }
 }
 
@@ -370,6 +553,103 @@ impl From<Figment> for SuperConfig {
 impl From<SuperConfig> for Figment {
     fn from(super_figment: SuperConfig) -> Self {
         super_figment.figment
+    }
+}
+
+impl DebugCollector for SuperConfig {
+    fn debug(&self, level: VerbosityLevel, provider: &str, message: &str) {
+        let debug_msg = DebugMessage::new(level, provider, message);
+
+        // Print immediately if verbosity level allows
+        if self.verbosity.should_display(level) {
+            eprintln!("{}", debug_msg.format());
+        }
+
+        // Always store for later access using internal mutability
+        self.debug_state.borrow_mut().debug_messages.push(debug_msg);
+    }
+
+    fn debug_step(&self, level: VerbosityLevel, provider: &str, step: usize, message: &str) {
+        let debug_msg = DebugMessage::new(level, provider, message).with_step(step);
+
+        if self.verbosity.should_display(level) {
+            eprintln!("{}", debug_msg.format());
+        }
+
+        self.debug_state.borrow_mut().debug_messages.push(debug_msg);
+    }
+
+    fn debug_result(&self, level: VerbosityLevel, provider: &str, message: &str, success: bool) {
+        let debug_msg = DebugMessage::new(level, provider, message).with_success(success);
+
+        if self.verbosity.should_display(level) {
+            eprintln!("{}", debug_msg.format());
+        }
+
+        self.debug_state.borrow_mut().debug_messages.push(debug_msg);
+    }
+
+    fn debug_step_result(
+        &self,
+        level: VerbosityLevel,
+        provider: &str,
+        step: usize,
+        message: &str,
+        success: bool,
+    ) {
+        let debug_msg = DebugMessage::new(level, provider, message)
+            .with_step(step)
+            .with_success(success);
+
+        if self.verbosity.should_display(level) {
+            eprintln!("{}", debug_msg.format());
+        }
+
+        self.debug_state.borrow_mut().debug_messages.push(debug_msg);
+    }
+}
+
+impl SuperConfig {
+    /// Get the current verbosity level
+    pub fn verbosity(&self) -> VerbosityLevel {
+        self.verbosity
+    }
+
+    /// Get all collected debug messages
+    pub fn debug_messages(&self) -> Vec<DebugMessage> {
+        self.debug_state.borrow().debug_messages.clone()
+    }
+
+    /// Get debug messages filtered by verbosity level
+    pub fn debug_messages_at_level(&self, level: VerbosityLevel) -> Vec<DebugMessage> {
+        self.debug_state
+            .borrow()
+            .debug_messages
+            .iter()
+            .filter(|msg| msg.level == level)
+            .cloned()
+            .collect()
+    }
+
+    /// Print all debug messages at or below the current verbosity level
+    pub fn print_debug_messages(&self) {
+        for msg in &self.debug_state.borrow().debug_messages {
+            if self.verbosity.should_display(msg.level) {
+                eprintln!("{}", msg.format());
+            }
+        }
+    }
+
+    /// Clear all collected debug messages
+    pub fn clear_debug_messages(&self) {
+        self.debug_state.borrow_mut().debug_messages.clear();
+    }
+
+    /// Get the next step number for ordered operations
+    fn next_step(&self) -> usize {
+        let mut state = self.debug_state.borrow_mut();
+        state.step_counter += 1;
+        state.step_counter
     }
 }
 

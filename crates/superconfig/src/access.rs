@@ -25,7 +25,7 @@ impl crate::SuperConfig {
     /// # Ok::<(), figment::Error>(())
     /// ```
     pub fn as_json(&self) -> Result<String, Error> {
-        let value = self.extract::<serde_json::Value>()?;
+        let value = self.figment.extract::<serde_json::Value>()?;
         serde_json::to_string_pretty(&value).map_err(|e| {
             Error::from(figment::error::Kind::InvalidType(
                 Actual::Other(e.to_string()),
@@ -52,7 +52,7 @@ impl crate::SuperConfig {
     /// # Ok::<(), figment::Error>(())
     /// ```
     pub fn as_yaml(&self) -> Result<String, Error> {
-        let value = self.extract::<serde_json::Value>()?;
+        let value = self.figment.extract::<serde_json::Value>()?;
         serde_yml::to_string(&value).map_err(|e| {
             Error::from(figment::error::Kind::InvalidType(
                 Actual::Other(e.to_string()),
@@ -79,7 +79,7 @@ impl crate::SuperConfig {
     /// # Ok::<(), figment::Error>(())
     /// ```
     pub fn as_toml(&self) -> Result<String, Error> {
-        let value = self.extract::<toml::Value>()?;
+        let value = self.figment.extract::<toml::Value>()?;
         toml::to_string_pretty(&value).map_err(|e| {
             Error::from(figment::error::Kind::InvalidType(
                 Actual::Other(e.to_string()),
@@ -198,7 +198,7 @@ impl crate::SuperConfig {
     /// # Ok::<(), figment::Error>(())
     /// ```
     pub fn keys(&self) -> Result<Vec<String>, Error> {
-        let value = self.extract::<serde_json::Value>()?;
+        let value = self.figment.extract::<serde_json::Value>()?;
         match value {
             serde_json::Value::Object(map) => Ok(map.keys().cloned().collect()),
             _ => Ok(vec![]),
@@ -226,7 +226,7 @@ impl crate::SuperConfig {
     /// # Ok::<(), figment::Error>(())
     /// ```
     pub fn debug_config(&self) -> Result<String, Error> {
-        let json_value = self.extract::<serde_json::Value>()?;
+        let json_value = self.figment.extract::<serde_json::Value>()?;
         let pretty_json = serde_json::to_string_pretty(&json_value).map_err(|e| {
             Error::from(figment::error::Kind::InvalidType(
                 Actual::Other(e.to_string()),
