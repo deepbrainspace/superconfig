@@ -1,14 +1,14 @@
 # SuperConfig
 
-**Next-Generation Configuration Management Platform** - Advanced configuration management with hierarchical cascading, intelligent array composition, smart format detection, and enterprise-grade optimizations. Designed for modern applications that demand flexibility, performance, and sophisticated configuration patterns.
+Advanced configuration management with hierarchical cascading, intelligent array merging, smart format detection, and performance optimizations.
 
 [![Crates.io](https://img.shields.io/crates/v/superconfig)](https://crates.io/crates/superconfig)
 [![Documentation](https://docs.rs/superconfig/badge.svg)](https://docs.rs/superconfig)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> **SuperConfig Philosophy**: Configuration management should be powerful enough for enterprise applications, flexible enough for complex scenarios, and simple enough for everyday use. Built on [Figment's](https://github.com/SergioBenitez/Figment) solid foundation, SuperConfig adds the advanced features modern applications need while maintaining 100% compatibility for existing Figment users.
+Built on [Figment's](https://github.com/SergioBenitez/Figment) foundation, SuperConfig adds advanced features while maintaining 100% compatibility.
 
-## 🚀 Enterprise Features
+## 🚀 Core Features
 
 ### Core Capabilities
 - **🏗️ Hierarchical Configuration**: Git-like config inheritance across system → user → project levels
@@ -18,10 +18,8 @@
 - **🔧 Production Optimizations**: Lazy loading, modification time caching, and optimized data structures
 - **🔍 Configuration Debugging**: Built-in introspection, source tracking, and validation tools
 
-### Universal Platform Vision
-- **100% Figment Compatibility**: Drop-in replacement for existing Figment code
-- **Multi-Language Ready**: Designed for WebAssembly bindings and API interfaces
-- **Enterprise-Grade**: Performance optimized for real-world applications
+- **Production-Ready**: Performance optimized for real-world applications
+- **Figment Compatible**: Seamless upgrade path for existing Figment users
 
 ## 🔌 Enhanced Providers
 
@@ -47,42 +45,25 @@
 - **Automatic Merging**: Later configs override earlier ones with array merging support
 - **Git-like Behavior**: Similar to `.gitconfig` hierarchical resolution
 
-## 🔧 Extension Traits - Supercharge Existing Figment Code
+## 🚀 Built-In Features
 
-### ExtendExt - Advanced Array Merging
+### Array Merging & Export
 ```rust
-// Automatic array merging with _add/_remove patterns
-let config = Figment::new()
-    .merge_extend(provider1)  // Arrays automatically merged
-    .merge_extend(provider2)  // Supports _add/_remove patterns
-    .merge_arrays();          // Apply merging to current config
-```
+// Built into SuperConfig - no extension traits needed
+let config = SuperConfig::new()
+    .with_file("config")                    // Smart format detection
+    .with_env("APP_")                       // Enhanced environment variables
+    .with_hierarchical_config("myapp");     // Git-style discovery
 
-### FluentExt - Fluent API
-```rust
-// Fluent builder with enhanced providers
-let config = Figment::new()
-    .with_file("config")                    // Universal provider
-    .with_env("APP_")                       // Nested provider
-    .with_hierarchical_config("myapp")      // Hierarchical provider
-    .with_cli_opt(cli_args);                // Empty provider
-```
-
-### AccessExt - Configuration Introspection
-```rust
-// Rich access and debugging capabilities
+// Rich export and debugging capabilities
 let json = config.as_json()?;              // Export as JSON
 let yaml = config.as_yaml()?;              // Export as YAML 
 let host = config.get_string("db.host")?;   // Extract values
 let exists = config.has_key("redis")?;      // Check existence
 let debug = config.debug_config()?;        // Full debug output
-let sources = config.debug_sources();      // Source metadata
 ```
 
-## 🚀 Quick Start - SuperConfig Experience
-
-### Primary Approach: SuperConfig Platform
-**The recommended way**: Experience SuperConfig's full power with clean, intuitive APIs
+## 🚀 Quick Start
 
 ```rust
 use superconfig::SuperConfig;  // Only import you need
@@ -119,39 +100,10 @@ let config: AppConfig = SuperConfig::new()
 # Ok::<(), figment::Error>(())
 ```
 
-### Alternative: Figment Compatibility Mode
-**For existing Figment users**: Add SuperConfig's advanced features to your current Figment setup without changing existing code
-
-```rust
-use figment::Figment;
-use superconfig::prelude::*;  // Import all SuperConfig functionality
-use serde::Serialize;
-
-#[derive(Serialize)]
-struct Config { name: String, features: Vec<String> }
-
-let cli_args = Config { 
-    name: "myapp".to_string(), 
-    features: vec!["auth".to_string()] 
-};
-
-let config = Figment::new()                           // Keep existing Figment code
-    .merge_extend(Universal::file("config"))          // Enhanced provider
-    .merge_extend(Nested::prefixed("APP_"))           // Enhanced provider  
-    .with_hierarchical_config("myapp")                // Extension trait method
-    .merge_extend(Empty::new(                         // Enhanced provider
-        figment::providers::Serialized::defaults(cli_args)
-    ));
-
-// All extension traits available:
-let json_output = config.as_json()?;                 // AccessExt
-let has_redis = config.has_key("redis.enabled")?;    // AccessExt
-# Ok::<(), figment::Error>(())
-```
 
 ## 💡 Real-World Examples
 
-### Enterprise Configuration Setup
+### Production Configuration Setup
 ```rust
 use superconfig::SuperConfig;
 use serde::{Deserialize, Serialize};
@@ -291,74 +243,37 @@ for source in sources {
 # Ok::<(), figment::Error>(())
 ```
 
-### Performance-Optimized Production Setup
+### Performance Features
 ```rust
-// SuperConfig automatically optimizes:
-// - Lazy loading with modification time caching
-// - Content-based format detection with intelligent fallbacks  
-// - Array merging only when _add/_remove patterns detected
-// - Nested environment variable parsing with caching
-
 let config = SuperConfig::new()
-    .with_hierarchical_config("prod-app")       // Cached hierarchy traversal
-    .with_file("config")                        // Smart format detection + caching
-    .with_env_ignore_empty("APP_")              // Filtered env parsing
-    .extract()?;                                // Optimized extraction
+    .with_hierarchical_config("prod-app")
+    .with_file("config")
+    .with_env_ignore_empty("APP_")
+    .extract()?;
 
 # Ok::<(), figment::Error>(())
 ```
 
 ## 🎯 When to Use SuperConfig
 
-### ✅ Perfect For
-- **Enterprise Applications**: Complex configuration requirements across multiple environments
-- **Advanced Configuration Patterns**: Array composition, hierarchical cascading, intelligent merging
-- **Performance-Critical Systems**: Need optimized configuration loading and caching
-- **Multi-Source Configuration**: Files, environment variables, CLI args, APIs, databases
-- **Development Teams**: Want powerful debugging and introspection capabilities
-- **Production Deployments**: Require robust error handling and validation
+### ✅ Use Cases
+- Complex applications with multiple environments
+- Advanced configuration patterns and array merging
+- Performance-critical systems
+- Multi-source configuration loading
+- Development teams needing debugging capabilities
+- Production deployments requiring robust error handling
 
-### 🔄 Figment Users: Seamless Enhancement
+### 🔄 Figment Migration
 
-**Bonus Feature**: Existing Figment users can enhance their setup without code changes:
+Existing Figment users can easily migrate to SuperConfig's enhanced capabilities.
 
-```rust
-// Your existing Figment code works unchanged
-use figment::Figment;
-use figment::providers::{Json, Env};
+## ⚡ Performance
 
-let config = Figment::new()
-    .merge(Json::file("config.json"))
-    .merge(Env::prefixed("APP_"));
-
-// Add SuperConfig's advanced features with one import
-use figment::Figment;
-use superconfig::prelude::*;  // Add this line for superpowers
-
-let config = Figment::new()
-    .merge(Universal::file("config"))      // Smart format detection
-    .merge(Nested::prefixed("APP_"))       // JSON parsing + nesting
-    .merge_extend(provider)                // Array composition
-    .as_json()?;                          // Format export
-```
-
-## ⚡ Performance Characteristics
-
-### Optimizations
-- **Lazy Loading**: Files only read when needed, cached by modification time
-- **Smart Detection**: Content-based format detection with fallback chains
-- **Conditional Processing**: Array merging only when `_add`/`_remove` patterns detected
-- **Efficient Caching**: Parsed environment variables and file contents cached
-- **Memory Efficient**: Optimized data structures for large configurations
-
-### Performance Benefits
-```text
-Optimization Strategies:
-├── File format detection: Smart caching by modification time
-├── Environment parsing: Single-pass parsing with type inference
-├── Array merging: Only processed when _add/_remove patterns detected
-└── Hierarchical search: Lazy evaluation - stops at first match per level
-```
+- **Lazy Loading**: Files cached by modification time
+- **Smart Detection**: Content-based format detection
+- **Conditional Processing**: Array merging only when needed
+- **Efficient Caching**: Parsed data cached for reuse
 
 ## 🛠️ Advanced Features
 
@@ -434,22 +349,11 @@ let config = SuperConfig::new()
     .with_env("APP_");
 ```
 
-## 🎯 Usage Patterns Compared
-
-| Feature | SuperConfig Platform | Figment Compatibility |
-|---------|---------------------|----------------------|
-| **Target Users** | All projects seeking advanced config management | Existing Figment users |
-| **API Style** | Modern, fluent, purpose-built | Enhanced familiar patterns |
-| **Import** | `use superconfig::SuperConfig;` | `use superconfig::prelude::*;` |
-| **Learning Curve** | Clean, intuitive API | Zero - uses existing knowledge |
-| **Code Style** | Purpose-built for advanced scenarios | Gradual enhancement |
-| **Best For** | New projects, maximum flexibility | Existing codebases, gradual adoption |
-| **Performance** | Identical (same optimized internals) | Identical (same optimized internals) |
 
 ## 📚 Documentation & Resources
 
 - **[API Documentation](https://docs.rs/superconfig)** - Complete API reference with examples
-- **[Figment Documentation](https://docs.rs/figment)** - Core Figment concepts (100% compatible)
+- **[Figment Documentation](https://docs.rs/figment)** - Core concepts (SuperConfig is compatible)
 - **[GitHub Repository](https://github.com/deepbrainspace/superconfig)** - Source code and issue tracking
 
 ## 🤝 Contributing
@@ -466,5 +370,4 @@ Licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 
-**SuperConfig** - Configuration management that scales with your application. 
-*From startup to enterprise, from development to production.*
+**SuperConfig** - Configuration management that scales with your application.

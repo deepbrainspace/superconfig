@@ -1,12 +1,12 @@
 //! # SuperConfig
 //!
-//! **The Most Advanced Open-Source Configuration Management System** - Built on Figment's proven foundation while retaining 100% compatibility, SuperConfig provides enterprise-grade features including hierarchical cascading, intelligent array merging, pattern-based discovery, resilient loading with warnings, and advanced environment variable processing.
+//! **Advanced Configuration Management System** - Built on Figment's proven foundation while retaining 100% compatibility, SuperConfig provides advanced features including hierarchical cascading, intelligent array merging, pattern-based discovery, resilient loading with warnings, and advanced environment variable processing.
 //!
 //! SuperConfig is designed for modern applications that demand sophisticated configuration patterns, high performance, and bulletproof reliability.
 //!
 //! ## 🚀 Advanced Configuration Features
 //!
-//! SuperConfig goes far beyond basic configuration loading with enterprise-grade capabilities:
+//! SuperConfig goes far beyond basic configuration loading with advanced capabilities:
 //!
 //! - **🔄 Resilient Loading**: Continues loading even when some configs fail, collecting warnings instead of crashing
 //! - **🌳 Hierarchical Discovery**: Git-style config inheritance across system → user → project → local levels  
@@ -116,7 +116,7 @@
 //! # }
 //! ```
 //!
-//! ### Enterprise Configuration with Array Merging
+//! ### Production Configuration with Array Merging
 //! ```rust,no_run
 //! // config/base.toml
 //! // features = ["auth", "logging"]
@@ -275,14 +275,14 @@ pub use providers::{
 };
 
 /// SuperConfig is a universal configuration management platform that combines
-/// enterprise-grade features with 100% Figment compatibility.
+/// advanced features with 100% Figment compatibility.
 ///
 /// Built on Figment's solid foundation, SuperConfig adds production-ready capabilities
 /// including hierarchical configuration cascades, advanced array merging, intelligent
 /// format detection, and performance optimizations - while maintaining seamless
 /// compatibility with existing Figment code.
 ///
-/// ## Enterprise Features
+/// ## Core Features
 ///
 /// - **Hierarchical Configuration**: Git-like config inheritance across system → user → project levels
 /// - **Advanced Array Merging**: Compose configurations with `_add`/`_remove` patterns
