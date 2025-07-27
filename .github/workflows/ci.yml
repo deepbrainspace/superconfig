@@ -62,15 +62,17 @@ jobs:
 
       - name: Setup Moon build system for ${{ matrix.crate }}
         uses: ./.github/actions/setup-moon
-
-      - name: Cache build artifacts for ${{ matrix.crate }}
-        uses: actions/cache@v4
         with:
-          path: crates/${{ matrix.crate }}/target/
-          key: cargo-target-${{ matrix.crate }}-${{ runner.os }}-${{ hashFiles('.prototools') }}-${{ hashFiles('crates/${{ matrix.crate }}/Cargo.lock', 'crates/${{ matrix.crate }}/Cargo.toml') }}
+          crate-name: ${{ matrix.crate }}
           
       - name: Build ${{ matrix.crate }} (release)
         run: moon run ${{ matrix.crate }}:build-release
+
+      - name: Save build artifacts for ${{ matrix.crate }}
+        uses: actions/cache/save@v4
+        with:
+          path: crates/${{ matrix.crate }}/target/
+          key: cargo-target-${{ matrix.crate }}-${{ runner.os }}-${{ hashFiles('.prototools') }}-${{ hashFiles('crates/${{ matrix.crate }}/Cargo.lock', 'crates/${{ matrix.crate }}/Cargo.toml') }}
 
   test:
     name: Test (${{ matrix.crate }})
@@ -89,12 +91,8 @@ jobs:
 
       - name: Setup Moon build system for ${{ matrix.crate }}
         uses: ./.github/actions/setup-moon
-
-      - name: Restore build artifacts for ${{ matrix.crate }}
-        uses: actions/cache/restore@v4
         with:
-          path: crates/${{ matrix.crate }}/target/
-          key: cargo-target-${{ matrix.crate }}-${{ runner.os }}-${{ hashFiles('.prototools') }}-${{ hashFiles('crates/${{ matrix.crate }}/Cargo.lock', 'crates/${{ matrix.crate }}/Cargo.toml') }}
+          crate-name: ${{ matrix.crate }}
           fail-on-cache-miss: true
           
       - name: Run tests for ${{ matrix.crate }} (release)
@@ -166,12 +164,8 @@ jobs:
 
       - name: Setup Moon build system for ${{ matrix.crate }}
         uses: ./.github/actions/setup-moon
-
-      - name: Restore build artifacts for ${{ matrix.crate }}
-        uses: actions/cache/restore@v4
         with:
-          path: crates/${{ matrix.crate }}/target/
-          key: cargo-target-${{ matrix.crate }}-${{ runner.os }}-${{ hashFiles('.prototools') }}-${{ hashFiles('crates/${{ matrix.crate }}/Cargo.lock', 'crates/${{ matrix.crate }}/Cargo.toml') }}
+          crate-name: ${{ matrix.crate }}
           fail-on-cache-miss: true
 
       - name: Generate coverage report for ${{ matrix.crate }}
