@@ -114,4 +114,43 @@ impl SuperConfig {
             self
         }
     }
+
+    /// Add an optional configuration file with smart format detection
+    ///
+    /// Uses the Universal provider for automatic format detection and caching.
+    /// Only adds the file if the path is Some, otherwise returns self unchanged.
+    ///
+    /// # Examples
+    /// ```rust,no_run
+    /// use superconfig::SuperConfig;
+    /// use std::path::PathBuf;
+    ///
+    /// let optional_config: Option<PathBuf> = Some("config.toml".into());
+    /// let config = SuperConfig::new()
+    ///     .with_file_opt(optional_config)    // Only loads if Some
+    ///     .with_env("APP_");
+    /// ```
+    pub fn with_file_opt<P: AsRef<std::path::Path>>(self, path: Option<P>) -> Self {
+        if let Some(file_path) = path {
+            self.with_file(file_path)
+        } else {
+            self
+        }
+    }
+
+    /// Add environment variables with a prefix and empty value filtering
+    ///
+    /// Combines the Nested provider for JSON parsing and automatic nesting
+    /// with the Empty provider to filter out empty values.
+    ///
+    /// # Examples
+    /// ```rust,no_run
+    /// use superconfig::SuperConfig;
+    ///
+    /// let config = SuperConfig::new()
+    ///     .with_env_ignore_empty("APP_");  // Filters empty env vars
+    /// ```
+    pub fn with_env_ignore_empty<S: AsRef<str>>(self, prefix: S) -> Self {
+        self.merge(crate::providers::Empty::new(crate::providers::Nested::prefixed(prefix)))
+    }
 }

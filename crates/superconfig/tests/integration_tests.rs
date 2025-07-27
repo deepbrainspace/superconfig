@@ -678,6 +678,76 @@ allowed_origins_add = ["E"]
 }
 
 #[test]
+fn test_with_file_opt() -> Result<(), Box<dyn std::error::Error>> {
+    let temp_dir = TempDir::new()?;
+    let config_path = temp_dir.path().join("config.json");
+
+    fs::write(
+        &config_path,
+        r#"{"host": "optional.example.com", "port": 4000}"#,
+    )?;
+
+    // Test with Some(path)
+    let config_some = SuperConfig::new()
+        .with_defaults(TestConfig::default())
+        .with_file_opt(Some(&config_path));
+
+    let result_some: TestConfig = config_some.extract()?;
+    assert_eq!(result_some.host, "optional.example.com");
+    assert_eq!(result_some.port, 4000);
+
+    // Test with None
+    let config_none = SuperConfig::new()
+        .with_defaults(TestConfig::default())
+        .with_file_opt(None::<&std::path::Path>);
+
+    let result_none: TestConfig = config_none.extract()?;
+    assert_eq!(result_none.host, "localhost"); // From defaults
+    assert_eq!(result_none.port, 8080); // From defaults
+
+    Ok(())
+}
+
+#[test]
+#[serial] // Prevent concurrent env var modification
+fn test_with_env_ignore_empty() -> Result<(), Box<dyn std::error::Error>> {
+    // Set up test environment variables - some empty, some with values
+    unsafe {
+        std::env::set_var("TESTIGNORE_HOST", "env.example.com");
+        std::env::set_var("TESTIGNORE_PORT", "5000");
+        std::env::set_var("TESTIGNORE_EMPTY_STRING", ""); // Should be ignored
+        std::env::set_var("TESTIGNORE_FEATURES", r#"["feature1"]"#);
+        std::env::set_var("TESTIGNORE_DATABASE_URL", "postgres://test");
+    }
+
+    let config = SuperConfig::new()
+        .with_defaults(TestConfig::default())
+        .with_env_ignore_empty("TESTIGNORE_");
+
+    let result: TestConfig = config.extract()?;
+
+    // Values with content should be loaded
+    assert_eq!(result.host, "env.example.com");
+    assert_eq!(result.port, 5000);
+    assert_eq!(result.features, vec!["feature1"]);
+    assert_eq!(result.database.url, "postgres://test");
+
+    // Empty values should be ignored, defaults should remain
+    // (We can't easily test this without checking what wasn't overridden)
+
+    // Clean up
+    unsafe {
+        std::env::remove_var("TESTIGNORE_HOST");
+        std::env::remove_var("TESTIGNORE_PORT");
+        std::env::remove_var("TESTIGNORE_EMPTY_STRING");
+        std::env::remove_var("TESTIGNORE_FEATURES");
+        std::env::remove_var("TESTIGNORE_DATABASE_URL");
+    }
+
+    Ok(())
+}
+
+#[test]
 fn test_conversion_methods() -> Result<(), Box<dyn std::error::Error>> {
     let temp_dir = TempDir::new()?;
     let config_path = temp_dir.path().join("config.json");
