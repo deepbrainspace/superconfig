@@ -105,10 +105,10 @@ impl std::fmt::Debug for SearchStrategy {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SearchStrategy::Directories(dirs) => {
-                write!(f, "SearchStrategy::Directories({:?})", dirs)
+                write!(f, "SearchStrategy::Directories({dirs:?})")
             }
             SearchStrategy::Recursive { roots, max_depth } => {
-                write!(f, "SearchStrategy::Recursive {{ roots: {:?}, max_depth: {:?} }}", roots, max_depth)
+                write!(f, "SearchStrategy::Recursive {{ roots: {roots:?}, max_depth: {max_depth:?} }}")
             }
             SearchStrategy::Current => write!(f, "SearchStrategy::Current"),
             SearchStrategy::Custom(_) => write!(f, "SearchStrategy::Custom(<closure>)"),

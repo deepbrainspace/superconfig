@@ -537,7 +537,7 @@ mod tests {
         let files = provider.discover_files();
 
         // Should find at least the toml file
-        assert!(files.len() >= 1, "Should find at least one file matching pattern. Found: {:?}", files);
+        assert!(!files.is_empty(), "Should find at least one file matching pattern. Found: {files:?}");
         assert!(files.iter().any(|p| p.file_name().unwrap().to_str().unwrap().ends_with(".toml")));
         
         // Verify the txt file is not included

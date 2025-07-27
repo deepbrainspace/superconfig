@@ -116,8 +116,8 @@ fn parse_brace_expansion(pattern: &str) -> Option<(Vec<PathBuf>, String)> {
         .collect();
 
     // Remove leading slash if present
-    let file_pattern = if rest.starts_with('/') {
-        rest[1..].to_string()
+    let file_pattern = if let Some(stripped) = rest.strip_prefix('/') {
+        stripped.to_string()
     } else {
         rest.to_string()
     };
@@ -212,7 +212,7 @@ pub fn build_globset(patterns: &[impl AsRef<str>]) -> Result<globset::GlobSet, f
         builder.add(glob);
     }
     
-    builder.build().map_err(|e| figment::Error::from(format!("Failed to build globset: {}", e)))
+    builder.build().map_err(|e| figment::Error::from(format!("Failed to build globset: {e}")))
 }
 
 /// Parse multiple patterns and combine their search strategies

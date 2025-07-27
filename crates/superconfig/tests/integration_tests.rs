@@ -72,7 +72,7 @@ fn test_superconfig_deref_compatibility() {
     let super_config = SuperConfig::new().with_defaults(TestConfig::default());
 
     // Test that SuperConfig can be used as a Figment via Deref
-    let _figment_ref: &Figment = &*super_config;
+    let _figment_ref: &Figment = &super_config;
 
     // Test method calls that should work via Deref
     let profiles: Vec<_> = super_config.profiles().collect();
@@ -345,7 +345,7 @@ fn test_empty_value_filtering() -> Result<(), Box<dyn std::error::Error>> {
     let result: FilterConfig = config.extract()?;
 
     // enabled should be overridden to false (meaningful falsy value preserved)
-    assert_eq!(result.enabled, false);
+    assert!(!result.enabled);
 
     // name should keep base config value (empty string filtered out)
     assert_eq!(result.name, "production");
@@ -435,7 +435,7 @@ allowed_origins_add = ["https://project.com"]
 
     let wildcard_provider = Wildcard::hierarchical("config", "testapp");
     let discovered_files = wildcard_provider.discover_files();
-    println!("Discovered files in merge order: {:?}", discovered_files);
+    println!("Discovered files in merge order: {discovered_files:?}");
     println!("Merge order strategy: {:?}", wildcard_provider.merge_order());
     
     let config = SuperConfig::new()
@@ -451,7 +451,7 @@ allowed_origins_add = ["https://project.com"]
     let result: TestConfig = config.extract()?;
 
     // Debug: Print the actual result
-    println!("Final result: {:?}", result);
+    println!("Final result: {result:?}");
 
     // Test that hierarchical merging works correctly (system -> user -> project priority)
     assert_eq!(result.host, "project.example.com"); // Project config overrides system
@@ -541,7 +541,7 @@ allowed_origins_add = ["https://project-final.com"]
     // 4. After project add: ["https://common.com", "https://user-added.com", "https://project-final.com"]
 
     let origins = &result.database.allowed_origins;
-    println!("Final allowed_origins: {:?}", origins);
+    println!("Final allowed_origins: {origins:?}");
     
     // Verify the sequential processing worked correctly
     assert!(origins.contains(&"https://common.com".to_string()), "Should preserve common.com");
@@ -628,7 +628,7 @@ allowed_origins_add = ["E"]
     // 3. Project: Remove D, add E → ["A", "C", "E"]
 
     let origins = &result.database.allowed_origins;
-    println!("Complex sequence final allowed_origins: {:?}", origins);
+    println!("Complex sequence final allowed_origins: {origins:?}");
     
     // With correct sequential processing:
     assert!(origins.contains(&"A".to_string()), "Should preserve A");

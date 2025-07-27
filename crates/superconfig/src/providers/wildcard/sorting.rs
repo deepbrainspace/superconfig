@@ -366,10 +366,10 @@ fn pattern_matches(filename: &str, pattern: &str) -> bool {
             let prefix = parts[0];
             let suffix = parts[1];
             filename.starts_with(prefix) && filename.ends_with(suffix)
-        } else if pattern.starts_with('*') {
-            filename.ends_with(&pattern[1..])
-        } else if pattern.ends_with('*') {
-            filename.starts_with(&pattern[..pattern.len() - 1])
+        } else if let Some(stripped) = pattern.strip_prefix('*') {
+            filename.ends_with(stripped)
+        } else if let Some(stripped) = pattern.strip_suffix('*') {
+            filename.starts_with(stripped)
         } else {
             filename == pattern
         }

@@ -87,7 +87,7 @@ impl WildcardBuilder {
     /// ```
     pub fn pattern(mut self, pattern: &str) -> Result<Self, Error> {
         // Validate the pattern by attempting to compile it
-        globset::Glob::new(pattern).map_err(|e| Error::from(format!("Invalid pattern '{}': {}", pattern, e)))?;
+        globset::Glob::new(pattern).map_err(|e| Error::from(format!("Invalid pattern '{pattern}': {e}")))?;
         self.patterns.push(pattern.to_string());
         Ok(self)
     }
@@ -129,7 +129,7 @@ impl WildcardBuilder {
 
         // Validate all patterns first
         for pattern in &pattern_strings {
-            globset::Glob::new(pattern).map_err(|e| Error::from(format!("Invalid pattern '{}': {}", pattern, e)))?;
+            globset::Glob::new(pattern).map_err(|e| Error::from(format!("Invalid pattern '{pattern}': {e}")))?;
         }
 
         // If all patterns are valid, add them
@@ -467,7 +467,7 @@ mod tests {
     fn test_builder_multiple_patterns() {
         let patterns = ["*.toml", "*.yaml"];
         let provider = WildcardBuilder::new()
-            .patterns(&patterns)
+            .patterns(patterns)
             .unwrap()
             .build()
             .unwrap();
@@ -533,7 +533,7 @@ mod tests {
         let provider = WildcardBuilder::new()
             .pattern("*.toml")
             .unwrap()
-            .custom_priority(&patterns)
+            .custom_priority(patterns)
             .build()
             .unwrap();
 

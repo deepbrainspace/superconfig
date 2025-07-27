@@ -53,7 +53,7 @@ impl crate::SuperConfig {
     pub fn merge_validated<P: Provider + ValidatedProvider>(mut self, provider: P) -> Self {
         // Check for validation errors and collect as warnings
         if let Some(error) = provider.validation_error() {
-            self.warnings.push(format!("Provider validation error: {}", error));
+            self.warnings.push(format!("Provider validation error: {error}"));
         }
 
         // Merge the provider regardless of validation errors, then apply array merging
@@ -152,7 +152,7 @@ impl crate::SuperConfig {
     /// ```
     pub fn print_warnings(&self) {
         for warning in &self.warnings {
-            eprintln!("SuperConfig warning: {}", warning);
+            eprintln!("SuperConfig warning: {warning}");
         }
     }
 }
@@ -239,7 +239,7 @@ impl ArrayMergeHelper {
                     let add_key = format!("{base_field}_add");
                     let remove_key = format!("{base_field}_remove");
 
-                    eprintln!("DEBUG: Processing base field '{}' with add_key='{}', remove_key='{}'", base_field, add_key, remove_key);
+                    eprintln!("DEBUG: Processing base field '{base_field}' with add_key='{add_key}', remove_key='{remove_key}'");
 
                     // Get base array (or create empty if not exists)
                     let mut result_array = obj
@@ -248,29 +248,29 @@ impl ArrayMergeHelper {
                         .cloned()
                         .unwrap_or_else(Vec::new);
 
-                    eprintln!("DEBUG: Initial base array for '{}': {:?}", base_field, result_array);
+                    eprintln!("DEBUG: Initial base array for '{base_field}': {result_array:?}");
 
                     // Apply _add operations
                     if let Some(add_value) = obj.get(&add_key).and_then(|v| v.as_array()) {
-                        eprintln!("DEBUG: Adding values to '{}': {:?}", base_field, add_value);
+                        eprintln!("DEBUG: Adding values to '{base_field}': {add_value:?}");
                         result_array.extend(add_value.clone());
                         fields_to_remove.push(add_key);
                     } else {
-                        eprintln!("DEBUG: No _add values found for '{}'", base_field);
+                        eprintln!("DEBUG: No _add values found for '{base_field}'");
                     }
 
                     // Apply _remove operations
                     if let Some(remove_value) = obj.get(&remove_key).and_then(|v| v.as_array()) {
-                        eprintln!("DEBUG: Removing values from '{}': {:?}", base_field, remove_value);
+                        eprintln!("DEBUG: Removing values from '{base_field}': {remove_value:?}");
                         let before_count = result_array.len();
                         result_array.retain(|item| !remove_value.contains(item));
-                        eprintln!("DEBUG: Removed {} items from '{}'", before_count - result_array.len(), base_field);
+                        eprintln!("DEBUG: Removed {} items from '{base_field}'", before_count - result_array.len());
                         fields_to_remove.push(remove_key);
                     } else {
-                        eprintln!("DEBUG: No _remove values found for '{}'", base_field);
+                        eprintln!("DEBUG: No _remove values found for '{base_field}'");
                     }
 
-                    eprintln!("DEBUG: Final array for '{}': {:?}", base_field, result_array);
+                    eprintln!("DEBUG: Final array for '{base_field}': {result_array:?}");
 
                     // Queue array for update
                     arrays_to_update.push((base_field.clone(), serde_json::Value::Array(result_array)));

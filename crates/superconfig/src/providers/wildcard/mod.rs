@@ -268,7 +268,7 @@ debug = false
 
         // Restore directory - handle error gracefully
         if let Err(e) = std::env::set_current_dir(&original_dir) {
-            eprintln!("Warning: Could not restore original directory {:?}: {}", original_dir, e);
+            eprintln!("Warning: Could not restore original directory {original_dir:?}: {e}");
         }
 
         // Should have merged the configurations
@@ -308,10 +308,10 @@ debug = false
 
         // Restore directory - handle error gracefully
         if let Err(e) = std::env::set_current_dir(&original_dir) {
-            eprintln!("Warning: Could not restore original directory {:?}: {}", original_dir, e);
+            eprintln!("Warning: Could not restore original directory {original_dir:?}: {e}");
             // Try to set to a safe fallback directory
             if let Err(e2) = std::env::set_current_dir("/tmp") {
-                eprintln!("Warning: Could not set fallback directory: {}", e2);
+                eprintln!("Warning: Could not set fallback directory: {e2}");
             }
         }
 
