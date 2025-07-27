@@ -101,7 +101,7 @@ impl SuperConfig {
     /// const DEFAULT_CONFIG: &str = r#"
     /// host = "localhost"
     /// port = 8080
-    /// 
+    ///
     /// [database]
     /// url = "postgres://localhost"
     /// timeout = 30
@@ -185,6 +185,8 @@ impl SuperConfig {
     ///     .with_env_ignore_empty("APP_");  // Filters empty env vars
     /// ```
     pub fn with_env_ignore_empty<S: AsRef<str>>(self, prefix: S) -> Self {
-        self.merge(crate::providers::Empty::new(crate::providers::Nested::prefixed(prefix)))
+        self.merge(crate::providers::Empty::new(
+            crate::providers::Nested::prefixed(prefix),
+        ))
     }
 }

@@ -721,8 +721,7 @@ url = "postgres://default"
 timeout = 45
 "#;
 
-    let config_toml = SuperConfig::new()
-        .with_defaults_string(TOML_DEFAULTS);
+    let config_toml = SuperConfig::new().with_defaults_string(TOML_DEFAULTS);
 
     let result_toml: TestConfig = config_toml.extract()?;
     assert_eq!(result_toml.host, "default.example.com");
@@ -742,8 +741,7 @@ timeout = 45
     }
 }"#;
 
-    let config_json = SuperConfig::new()
-        .with_defaults_string(JSON_DEFAULTS);
+    let config_json = SuperConfig::new().with_defaults_string(JSON_DEFAULTS);
 
     let result_json: TestConfig = config_json.extract()?;
     assert_eq!(result_json.host, "json.example.com");
@@ -763,8 +761,7 @@ database:
   timeout: 15
 "#;
 
-    let config_yaml = SuperConfig::new()
-        .with_defaults_string(YAML_DEFAULTS);
+    let config_yaml = SuperConfig::new().with_defaults_string(YAML_DEFAULTS);
 
     let result_yaml: TestConfig = config_yaml.extract()?;
     assert_eq!(result_yaml.host, "yaml.example.com");
@@ -796,15 +793,15 @@ port = 9000
     )?;
 
     let config = SuperConfig::new()
-        .with_defaults_string(DEFAULT_CONFIG)  // Lowest priority
-        .with_file(&override_file);             // Should override
+        .with_defaults_string(DEFAULT_CONFIG) // Lowest priority
+        .with_file(&override_file); // Should override
 
     let result: TestConfig = config.extract()?;
-    
+
     // Values from override file should win
     assert_eq!(result.host, "override.example.com");
     assert_eq!(result.port, 9000);
-    
+
     // Values not in override file should come from defaults
     assert_eq!(result.features, vec!["default"]);
 
