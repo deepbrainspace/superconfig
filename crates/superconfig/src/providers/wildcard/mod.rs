@@ -264,15 +264,18 @@ debug = false
         // Ensure files are fully written by opening and syncing them
         use std::fs::OpenOptions;
         use std::io::Write;
-        
+
         {
             let mut file = OpenOptions::new().append(true).open(&config_path).unwrap();
             file.flush().unwrap();
             file.sync_all().unwrap();
         }
-        
+
         {
-            let mut file = OpenOptions::new().append(true).open(&override_path).unwrap();
+            let mut file = OpenOptions::new()
+                .append(true)
+                .open(&override_path)
+                .unwrap();
             file.flush().unwrap();
             file.sync_all().unwrap();
         }
