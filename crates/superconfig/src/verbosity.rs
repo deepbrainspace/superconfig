@@ -199,9 +199,10 @@ use std::time::Instant;
 ///
 /// Controls the amount of debug information displayed during configuration loading.
 /// Higher levels include all information from lower levels.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub enum VerbosityLevel {
     /// No debug output (default behavior)
+    #[default]
     Silent = 0,
 
     /// Basic configuration loading progress (-v)
@@ -258,11 +259,6 @@ impl VerbosityLevel {
     }
 }
 
-impl Default for VerbosityLevel {
-    fn default() -> Self {
-        VerbosityLevel::Silent
-    }
-}
 
 impl std::fmt::Display for VerbosityLevel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -327,7 +323,7 @@ impl DebugMessage {
         };
 
         let step_prefix = if let Some(step) = self.step {
-            format!("[{}/] ", step)
+            format!("[{step}/] ")
         } else {
             String::new()
         };

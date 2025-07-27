@@ -26,7 +26,7 @@ impl SuperConfig {
         self.debug(
             VerbosityLevel::Info,
             "verbosity",
-            &format!("Set verbosity level to: {}", level),
+            &format!("Set verbosity level to: {level}"),
         );
         self
     }
@@ -100,7 +100,7 @@ impl SuperConfig {
             VerbosityLevel::Info,
             "file",
             step,
-            &format!("Loading configuration file: {}", path_str),
+            &format!("Loading configuration file: {path_str}"),
         );
 
         // Check if file exists for debug output
@@ -109,7 +109,7 @@ impl SuperConfig {
                 VerbosityLevel::Debug,
                 "file",
                 step,
-                &format!("File found: {}", path_str),
+                &format!("File found: {path_str}"),
                 true,
             );
         } else {
@@ -117,7 +117,7 @@ impl SuperConfig {
                 VerbosityLevel::Debug,
                 "file",
                 step,
-                &format!("File not found: {}", path_str),
+                &format!("File not found: {path_str}"),
                 false,
             );
         }
@@ -133,7 +133,7 @@ impl SuperConfig {
                 self.debug(
                     VerbosityLevel::Trace,
                     "file",
-                    &format!("File content preview: {}", preview),
+                    &format!("File content preview: {preview}"),
                 );
             }
         }
@@ -162,7 +162,7 @@ impl SuperConfig {
             VerbosityLevel::Info,
             "env",
             step,
-            &format!("Loading environment variables with prefix: {}", prefix_str),
+            &format!("Loading environment variables with prefix: {prefix_str}"),
         );
 
         // Collect matching environment variables for debug output
@@ -175,7 +175,7 @@ impl SuperConfig {
                 VerbosityLevel::Debug,
                 "env",
                 step,
-                &format!("No environment variables found with prefix: {}", prefix_str),
+                &format!("No environment variables found with prefix: {prefix_str}"),
                 false,
             );
         } else {
@@ -183,11 +183,7 @@ impl SuperConfig {
                 VerbosityLevel::Debug,
                 "env",
                 step,
-                &format!(
-                    "Found {} environment variables with prefix: {}",
-                    env_vars.len(),
-                    prefix_str
-                ),
+                &format!("Found {} environment variables with prefix: {prefix_str}", env_vars.len()),
                 true,
             );
 
@@ -207,7 +203,7 @@ impl SuperConfig {
                     self.debug(
                         VerbosityLevel::Trace,
                         "env",
-                        &format!("  {}={}", key, display_value),
+                        &format!("  {key}={display_value}"),
                     );
                 }
             }
@@ -236,14 +232,14 @@ impl SuperConfig {
             VerbosityLevel::Info,
             "hierarchical",
             step,
-            &format!("Loading hierarchical config for: {}", base_name_str),
+            &format!("Loading hierarchical config for: {base_name_str}"),
         );
 
         // Show the discovery paths at debug level
         if self.verbosity >= VerbosityLevel::Debug {
             let potential_paths = vec![
-                format!("/etc/{}/config.toml", base_name_str),
-                format!("/etc/{}.toml", base_name_str),
+                format!("/etc/{base_name_str}/config.toml"),
+                format!("/etc/{base_name_str}.toml"),
                 dirs::config_dir()
                     .map(|p| {
                         p.join(base_name_str)
@@ -252,8 +248,8 @@ impl SuperConfig {
                             .to_string()
                     })
                     .unwrap_or_else(|| "~/.config/<app>/config.toml".to_string()),
-                format!("./{}.toml", base_name_str),
-                format!("./config/{}.toml", base_name_str),
+                format!("./{base_name_str}.toml"),
+                format!("./config/{base_name_str}.toml"),
             ];
 
             self.debug(
@@ -266,7 +262,7 @@ impl SuperConfig {
                 self.debug_result(
                     VerbosityLevel::Debug,
                     "hierarchical",
-                    &format!("  - {}", path),
+                    &format!("  - {path}"),
                     exists,
                 );
             }
@@ -348,7 +344,7 @@ impl SuperConfig {
             self.debug(
                 VerbosityLevel::Debug,
                 "defaults",
-                &format!("Embedded config: {} lines, {} characters", lines, chars),
+                &format!("Embedded config: {lines} lines, {chars} characters"),
             );
         }
 
@@ -361,7 +357,7 @@ impl SuperConfig {
             self.debug(
                 VerbosityLevel::Trace,
                 "defaults",
-                &format!("Default config content:\n{}", preview),
+                &format!("Default config content:\n{preview}"),
             );
         }
 
@@ -407,7 +403,7 @@ impl SuperConfig {
                         self.debug(
                             VerbosityLevel::Trace,
                             "cli",
-                            &format!("CLI overrides:\n{}", pretty_json),
+                            &format!("CLI overrides:\n{pretty_json}"),
                         );
                     }
                 }
@@ -471,10 +467,7 @@ impl SuperConfig {
             VerbosityLevel::Info,
             "env",
             step,
-            &format!(
-                "Loading environment variables with prefix: {} (ignore empty)",
-                prefix_str
-            ),
+            &format!("Loading environment variables with prefix: {prefix_str} (ignore empty)"),
         );
 
         // Collect matching environment variables for debug output
@@ -487,7 +480,7 @@ impl SuperConfig {
                 VerbosityLevel::Debug,
                 "env",
                 step,
-                &format!("No environment variables found with prefix: {}", prefix_str),
+                &format!("No environment variables found with prefix: {prefix_str}"),
                 false,
             );
         } else {
@@ -495,11 +488,7 @@ impl SuperConfig {
                 VerbosityLevel::Debug,
                 "env",
                 step,
-                &format!(
-                    "Found {} environment variables with prefix: {}",
-                    env_vars.len(),
-                    prefix_str
-                ),
+                &format!("Found {} environment variables with prefix: {prefix_str}", env_vars.len()),
                 true,
             );
 
@@ -519,7 +508,7 @@ impl SuperConfig {
                     self.debug(
                         VerbosityLevel::Trace,
                         "env",
-                        &format!("  {}={}", key, display_value),
+                        &format!("  {key}={display_value}"),
                     );
                 }
             }

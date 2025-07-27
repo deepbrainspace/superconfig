@@ -509,7 +509,7 @@ impl SuperConfig {
                             self.debug(
                                 VerbosityLevel::Trace,
                                 "extract",
-                                &format!("Final merged configuration:\n{}", pretty_json),
+                                &format!("Final merged configuration:\n{pretty_json}"),
                             );
                         }
                     }
@@ -519,7 +519,7 @@ impl SuperConfig {
                 self.debug_result(
                     VerbosityLevel::Info,
                     "extract",
-                    &format!("Configuration extraction failed: {}", e),
+                    &format!("Configuration extraction failed: {e}"),
                     false,
                 );
             }
