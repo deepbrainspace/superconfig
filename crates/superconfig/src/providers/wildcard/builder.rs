@@ -223,7 +223,12 @@ impl WildcardBuilder {
             return Err(figment::Error::from("At least one pattern is required"));
         }
 
-        let mut wildcard = Wildcard::from_patterns(&self.patterns)?;
+        let mut wildcard = Wildcard::from_patterns(&self.patterns);
+
+        // Check if the wildcard has validation errors and return them if so
+        if let Some(error) = wildcard.has_errors() {
+            return Err(error);
+        }
 
         if let Some(strategy) = self.search_strategy {
             wildcard = wildcard.with_search_strategy(strategy);

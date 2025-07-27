@@ -5,22 +5,14 @@ use crate::providers::wildcard::{
     parsing::{parse_multiple_patterns, build_globset},
     sorting::MergeOrder,
 };
+use crate::merge::ValidatedProvider;
 use figment::{
     value::{Map, Value},
     Error, Metadata, Profile, Provider,
-    providers::Format,
 };
 use globset::GlobSet;
 use std::path::PathBuf;
 
-// Handle empty patterns with a meaningful error message
-fn handle_empty_patterns_error(patterns: &[impl AsRef<str>]) -> Result<(), Error> {
-    if patterns.is_empty() {
-        Err(Error::from("At least one pattern is required"))
-    } else {
-        Ok(())
-    }
-}
 
 /// A unified wildcard configuration provider using globset patterns
 ///
@@ -42,17 +34,16 @@ fn handle_empty_patterns_error(patterns: &[impl AsRef<str>]) -> Result<(), Error
 /// use superconfig::Wildcard;
 ///
 /// // Simple file patterns
-/// let provider = Wildcard::from_pattern("*.toml")?;
+/// let provider = Wildcard::from_pattern("*.toml");
 ///
 /// // Path-based patterns  
-/// let provider = Wildcard::from_pattern("./config/*.yaml")?;
+/// let provider = Wildcard::from_pattern("./config/*.yaml");
 ///
 /// // Recursive patterns
-/// let provider = Wildcard::from_pattern("**/*.json")?;
+/// let provider = Wildcard::from_pattern("**/*.json");
 ///
 /// // Multi-directory patterns
-/// let provider = Wildcard::from_pattern("{./config,~/.config}/*.toml")?;
-/// # Ok::<(), figment::Error>(())
+/// let provider = Wildcard::from_pattern("{./config,~/.config}/*.toml");
 /// ```
 ///
 /// # Advanced Configuration
@@ -61,7 +52,7 @@ fn handle_empty_patterns_error(patterns: &[impl AsRef<str>]) -> Result<(), Error
 /// use superconfig::{Wildcard, MergeOrder, SearchStrategy};
 /// use std::path::PathBuf;
 ///
-/// let provider = Wildcard::from_patterns(&["*.toml", "*.yaml"])?
+/// let provider = Wildcard::from_patterns(&["*.toml", "*.yaml"])
 ///     .with_merge_order(MergeOrder::Custom(vec![
 ///         "base.*".to_string(),        // Base configs first
 ///         "env-*.toml".to_string(),     // Environment configs
@@ -71,7 +62,6 @@ fn handle_empty_patterns_error(patterns: &[impl AsRef<str>]) -> Result<(), Error
 ///         roots: vec![PathBuf::from("./config")],
 ///         max_depth: Some(2),
 ///     });
-/// # Ok::<(), figment::Error>(())
 /// ```
 #[derive(Debug, Clone)]
 pub struct Wildcard {
@@ -83,72 +73,76 @@ pub struct Wildcard {
     merge_order: MergeOrder,
     /// Original patterns for metadata
     patterns: Vec<String>,
+    /// Cached validation error (if any)
+    validation_error: Option<String>,
 }
 
 impl Wildcard {
     /// Create a new Wildcard provider from a single pattern (simple constructor)
     ///
     /// This is the simplest and most convenient way to create a wildcard provider.
-    /// Equivalent to `from_pattern()` but with a shorter name for common usage.
+    /// Follows Figment's standard pattern of deferring validation to data loading time,
+    /// enabling fluent chaining with other providers.
     ///
     /// # Arguments
     /// * `pattern` - Glob pattern string (e.g., "*.toml", "./config/*.yaml")
     ///
+    /// # Validation
+    /// Pattern validation is deferred until `.data()` is called. Use `.validate()`
+    /// or `.has_errors()` immediately after construction for early validation.
+    ///
     /// # Examples
     /// ```rust
     /// use superconfig::Wildcard;
+    /// use figment::Figment;
     ///
-    /// let provider = Wildcard::new("*.toml")?;
-    /// let provider = Wildcard::new("./config/*.yaml")?;
-    /// let provider = Wildcard::new("**/*.json")?;
-    /// # Ok::<(), figment::Error>(())
+    /// // Standard Figment chaining (validation deferred)
+    /// let figment = Figment::new()
+    ///     .merge(Wildcard::new("*.toml"))
+    ///     .merge(Wildcard::new("./config/*.yaml"));
+    ///
+    /// // Early validation when desired
+    /// let provider = Wildcard::new("*.json");
+    /// if let Some(error) = provider.has_errors() {
+    ///     eprintln!("Warning: {}", error);
+    /// }
     /// ```
-    pub fn new(pattern: &str) -> Result<Self, Error> {
-        Self::from_pattern(pattern)
+    pub fn new(pattern: &str) -> Self {
+        Self::from_pattern_unchecked(pattern)
     }
 
     /// Create a new Wildcard provider from a single pattern
     ///
-    /// This is the simplest way to create a wildcard provider. The pattern
-    /// is automatically parsed to determine the appropriate search strategy.
+    /// Similar to `.new()` but with a more explicit name. Follows Figment's
+    /// standard pattern of deferring validation to data loading time.
     ///
     /// # Arguments
     /// * `pattern` - Glob pattern string (e.g., "*.toml", "./config/*.yaml")
-    ///
-    /// # Returns
-    /// A configured Wildcard provider ready for use
-    ///
-    /// # Errors
-    /// Returns `GlobError` if the pattern is invalid
     ///
     /// # Examples
     /// ```rust
     /// use superconfig::Wildcard;
     ///
-    /// // Current directory search
-    /// let provider = Wildcard::from_pattern("*.toml")?;
-    ///
-    /// // Specific directory
-    /// let provider = Wildcard::from_pattern("./config/*.yaml")?;
-    ///
-    /// // Recursive search
-    /// let provider = Wildcard::from_pattern("**/*.json")?;
-    /// # Ok::<(), figment::Error>(())
+    /// let provider = Wildcard::from_pattern("*.toml");
+    /// let provider = Wildcard::from_pattern("./config/*.yaml");
+    /// let provider = Wildcard::from_pattern("**/*.json");
     /// ```
-    pub fn from_pattern(pattern: &str) -> Result<Self, Error> {
-        Self::from_patterns(&[pattern])
+    pub fn from_pattern(pattern: &str) -> Self {
+        Self::from_pattern_unchecked(pattern)
+    }
+
+    /// Internal method: create provider without validation
+    fn from_pattern_unchecked(pattern: &str) -> Self {
+        Self::from_patterns_unchecked(&[pattern])
     }
 
     /// Create a new Wildcard provider from multiple patterns
     ///
     /// Multiple patterns are combined intelligently based on their types.
-    /// The search strategy is determined by the most general pattern type.
+    /// Follows Figment's standard pattern of deferring validation to data loading time.
     ///
     /// # Arguments
-    /// * `patterns` - Vector of glob pattern strings
-    ///
-    /// # Returns
-    /// A configured Wildcard provider that searches for all patterns
+    /// * `patterns` - Slice of glob pattern strings
     ///
     /// # Strategy Resolution
     /// - All same type → Combined strategy
@@ -160,24 +154,49 @@ impl Wildcard {
     /// use superconfig::Wildcard;
     ///
     /// // Multiple file types
-    /// let provider = Wildcard::from_patterns(&["*.toml", "*.yaml", "*.json"])?;
+    /// let provider = Wildcard::from_patterns(&["*.toml", "*.yaml", "*.json"]);
     ///
     /// // Mixed strategies (uses recursive)
-    /// let provider = Wildcard::from_patterns(&["./config/*.toml", "**/*.yaml"])?;
-    /// # Ok::<(), figment::Error>(())
+    /// let provider = Wildcard::from_patterns(&["./config/*.toml", "**/*.yaml"]);
     /// ```
-    pub fn from_patterns(patterns: &[impl AsRef<str>]) -> Result<Self, Error> {
-        handle_empty_patterns_error(patterns)?;
+    pub fn from_patterns(patterns: &[impl AsRef<str>]) -> Self {
+        Self::from_patterns_unchecked(patterns)
+    }
+
+    /// Internal method: create provider from patterns, validate and store result
+    fn from_patterns_unchecked(patterns: &[impl AsRef<str>]) -> Self {
+        let pattern_strings: Vec<String> = patterns.iter().map(|p| p.as_ref().to_string()).collect();
+        
+        // Try to validate and build - store error if validation fails
+        match Self::validate_and_build(&pattern_strings) {
+            Ok((search_strategy, globset)) => Self {
+                globset,
+                search_strategy,
+                merge_order: MergeOrder::default(),
+                patterns: pattern_strings,
+                validation_error: None,
+            },
+            Err(error) => Self {
+                // Use safe defaults when validation fails, store error for warning
+                globset: globset::GlobSetBuilder::new().build().unwrap(),
+                search_strategy: SearchStrategy::Current,
+                merge_order: MergeOrder::default(),
+                patterns: pattern_strings,
+                validation_error: Some(error.to_string()),
+            }
+        }
+    }
+
+    /// Internal helper to validate patterns and build components
+    fn validate_and_build(patterns: &[String]) -> Result<(SearchStrategy, GlobSet), Error> {
+        if patterns.is_empty() {
+            return Err(Error::from("At least one pattern is required"));
+        }
 
         let (search_strategy, file_patterns) = parse_multiple_patterns(patterns)?;
         let globset = build_globset(&file_patterns)?;
-
-        Ok(Self {
-            globset,
-            search_strategy,
-            merge_order: MergeOrder::default(),
-            patterns: patterns.iter().map(|p| p.as_ref().to_string()).collect(),
-        })
+        
+        Ok((search_strategy, globset))
     }
 
     /// Set the merge order for discovered files
@@ -193,9 +212,8 @@ impl Wildcard {
     /// ```rust
     /// use superconfig::{Wildcard, MergeOrder};
     ///
-    /// let provider = Wildcard::from_pattern("*.toml")?
+    /// let provider = Wildcard::from_pattern("*.toml")
     ///     .with_merge_order(MergeOrder::ModificationTimeAscending);
-    /// # Ok::<(), figment::Error>(())
     /// ```
     pub fn with_merge_order(mut self, order: MergeOrder) -> Self {
         self.merge_order = order;
@@ -215,12 +233,11 @@ impl Wildcard {
     /// use superconfig::{Wildcard, SearchStrategy};
     /// use std::path::PathBuf;
     ///
-    /// let provider = Wildcard::from_pattern("*.toml")?
+    /// let provider = Wildcard::from_pattern("*.toml")
     ///     .with_search_strategy(SearchStrategy::Recursive {
     ///         roots: vec![PathBuf::from("./config")],
     ///         max_depth: Some(2),
     ///     });
-    /// # Ok::<(), figment::Error>(())
     /// ```
     pub fn with_search_strategy(mut self, strategy: SearchStrategy) -> Self {
         self.search_strategy = strategy;
@@ -242,6 +259,44 @@ impl Wildcard {
         &self.patterns
     }
 
+    /// Check if the provider has any validation errors
+    ///
+    /// Returns `Some(error)` if the provider was created with invalid patterns,
+    /// `None` if all patterns are valid. This allows SuperConfig to warn about
+    /// problematic providers while continuing to load other providers.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use superconfig::Wildcard;
+    ///
+    /// let provider = Wildcard::new("*.toml");
+    /// assert!(provider.has_errors().is_none());
+    ///
+    /// let invalid_provider = Wildcard::new("invalid[pattern");
+    /// assert!(invalid_provider.has_errors().is_some());
+    /// ```
+    pub fn has_errors(&self) -> Option<Error> {
+        self.validation_error.as_ref().map(|s| Error::from(s.clone()))
+    }
+
+    /// Check if the provider is valid (no validation errors)
+    ///
+    /// This is the inverse of `has_errors()` for convenience.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use superconfig::Wildcard;
+    ///
+    /// let provider = Wildcard::new("*.toml");
+    /// assert!(provider.is_valid());
+    ///
+    /// let invalid_provider = Wildcard::new("invalid[pattern");
+    /// assert!(!invalid_provider.is_valid());
+    /// ```
+    pub fn is_valid(&self) -> bool {
+        self.validation_error.is_none()
+    }
+
     /// Discover and sort files according to the current configuration
     ///
     /// This method performs the core file discovery and sorting logic.
@@ -255,6 +310,7 @@ impl Wildcard {
         files = self.merge_order.sort_files(files);
         files
     }
+
 }
 
 impl Provider for Wildcard {
@@ -269,40 +325,23 @@ impl Provider for Wildcard {
             return Ok(Map::new());
         }
 
-        let mut result_map = Map::new();
-        let mut default_profile_data = Map::new();
+        // Use SuperConfig's existing merge logic for proper sequential array processing
+        let mut super_config = crate::SuperConfig::new();
 
-        // Process files in merge order (lowest to highest priority)
+        // Chain merge each file in order - SuperConfig.merge() handles array operations correctly
         for file_path in files {
-            // Determine the file format and load it
-            let provider: Box<dyn Provider> = match file_path.extension().and_then(|ext| ext.to_str()) {
-                Some("toml") => Box::new(figment::providers::Toml::file(&file_path)),
-                Some("yaml") | Some("yml") => Box::new(figment::providers::Yaml::file(&file_path)),
-                Some("json") => Box::new(figment::providers::Json::file(&file_path)),
-                _ => continue, // Skip unsupported file types
-            };
-
-            // Merge the provider's data into our result
-            match provider.data() {
-                Ok(provider_data) => {
-                    for (profile, data) in provider_data {
-                        // For now, only handle Default profile - merge all data into it
-                        if profile == Profile::Default {
-                            for (key, value) in data {
-                                default_profile_data.insert(key, value);
-                            }
-                        }
-                    }
-                }
-                Err(_) => {
-                    // Skip files that can't be parsed
-                    continue;
-                }
-            }
+            let provider = crate::providers::Universal::file(&file_path);
+            super_config = super_config.merge(provider);
         }
 
-        result_map.insert(Profile::Default, default_profile_data);
-        Ok(result_map)
+        // Extract the final merged data
+        super_config.figment.data()
+    }
+}
+
+impl ValidatedProvider for Wildcard {
+    fn validation_error(&self) -> Option<Error> {
+        self.has_errors()
     }
 }
 
@@ -320,20 +359,24 @@ impl Wildcard {
     ///
     /// # Generated Pattern
     /// Creates patterns that search:
-    /// - `~/.config/{app_name}/*.{toml,yaml,yml,json}`
-    /// - `~/.{app_name}/*.{toml,yaml,yml,json}`
-    /// - `./{config_name}/*.{toml,yaml,yml,json}`
-    /// - `**/{config_name}.{toml,yaml,yml,json}`
+    /// - `~/.config/{app_name}/*.{toml,yaml,yml,json}` (system level)
+    /// - `~/.{app_name}/*.{toml,yaml,yml,json}` (user level)
+    /// - `./{app_name}.{toml,yaml,yml,json}` (project level)
+    /// - `**/{app_name}.{toml,yaml,yml,json}` (recursive project search)
     ///
     /// # Examples
     /// ```rust
     /// use superconfig::Wildcard;
     ///
     /// // Search for "myapp" configurations
-    /// let provider = Wildcard::hierarchical("config", "myapp")?;
-    /// # Ok::<(), figment::Error>(())
+    /// let provider = Wildcard::hierarchical("config", "myapp");
+    /// 
+    /// // Check for validation errors if needed
+    /// if let Some(error) = provider.has_errors() {
+    ///     eprintln!("Warning: {}", error);
+    /// }
     /// ```
-    pub fn hierarchical(config_name: &str, app_name: &str) -> Result<Self, Error> {
+    pub fn hierarchical(_config_name: &str, app_name: &str) -> Self {
         let patterns = vec![
             format!("~/.config/{}/*.toml", app_name),
             format!("~/.config/{}/*.yaml", app_name),
@@ -343,17 +386,17 @@ impl Wildcard {
             format!("~/.{}/*.yaml", app_name),
             format!("~/.{}/*.yml", app_name),
             format!("~/.{}/*.json", app_name),
-            format!("./{}/*.toml", config_name),
-            format!("./{}/*.yaml", config_name),
-            format!("./{}/*.yml", config_name),
-            format!("./{}/*.json", config_name),
-            format!("**/{}.toml", config_name),
-            format!("**/{}.yaml", config_name),
-            format!("**/{}.yml", config_name),
-            format!("**/{}.json", config_name),
+            format!("./{}.toml", app_name),
+            format!("./{}.yaml", app_name),
+            format!("./{}.yml", app_name),
+            format!("./{}.json", app_name),
+            format!("**/{}.toml", app_name),
+            format!("**/{}.yaml", app_name),
+            format!("**/{}.yml", app_name),
+            format!("**/{}.json", app_name),
         ];
 
-        Self::from_patterns(&patterns)
+        Self::from_patterns(&patterns).with_merge_order(MergeOrder::Hierarchical)
     }
 
     /// Modern configuration directory discovery
@@ -374,10 +417,14 @@ impl Wildcard {
     /// ```rust
     /// use superconfig::Wildcard;
     ///
-    /// let provider = Wildcard::xdg("myapp")?;
-    /// # Ok::<(), figment::Error>(())
+    /// let provider = Wildcard::xdg("myapp");
+    /// 
+    /// // Check for validation errors if needed
+    /// if let Some(error) = provider.has_errors() {
+    ///     eprintln!("Warning: {}", error);
+    /// }
     /// ```
-    pub fn xdg(app_name: &str) -> Result<Self, Error> {
+    pub fn xdg(app_name: &str) -> Self {
         let patterns = vec![
             format!("~/.config/{}/*.toml", app_name),
             format!("~/.config/{}/*.yaml", app_name),
@@ -414,10 +461,14 @@ impl Wildcard {
     /// ```rust
     /// use superconfig::Wildcard;
     ///
-    /// let provider = Wildcard::development("config")?;
-    /// # Ok::<(), figment::Error>(())
+    /// let provider = Wildcard::development("config");
+    /// 
+    /// // Check for validation errors if needed
+    /// if let Some(error) = provider.has_errors() {
+    ///     eprintln!("Warning: {}", error);
+    /// }
     /// ```
-    pub fn development(base_name: &str) -> Result<Self, Error> {
+    pub fn development(base_name: &str) -> Self {
         let patterns = vec![
             format!("{}/*.toml", base_name),
             format!("{}/*.yaml", base_name),
@@ -436,7 +487,7 @@ impl Wildcard {
             format!("{}.*", base_name),
         ]);
 
-        Self::from_patterns(&patterns).map(|w| w.with_merge_order(custom_order))
+        Self::from_patterns(&patterns).with_merge_order(custom_order)
     }
 }
 
@@ -448,21 +499,20 @@ mod tests {
 
     #[test]
     fn test_from_pattern() {
-        let provider = Wildcard::from_pattern("*.toml").unwrap();
+        let provider = Wildcard::from_pattern("*.toml");
         assert_eq!(provider.patterns(), &["*.toml"]);
     }
 
     #[test]
     fn test_from_patterns() {
         let patterns = vec!["*.toml".to_string(), "*.yaml".to_string()];
-        let provider = Wildcard::from_patterns(&patterns).unwrap();
+        let provider = Wildcard::from_patterns(&patterns);
         assert_eq!(provider.patterns(), &patterns);
     }
 
     #[test]
     fn test_with_merge_order() {
         let provider = Wildcard::from_pattern("*.toml")
-            .unwrap()
             .with_merge_order(MergeOrder::Reverse);
         
         match provider.merge_order() {
@@ -481,36 +531,33 @@ mod tests {
         fs::write(dir_path.join("app.yaml"), "test:\n  value: 2").unwrap();
         fs::write(dir_path.join("readme.txt"), "This is a readme").unwrap();
 
-        // Change to temp directory for testing
-        let original_dir = std::env::current_dir().unwrap();
-        std::env::set_current_dir(dir_path).unwrap();
-
-        let provider = Wildcard::from_pattern("*.{toml,yaml}").unwrap();
+        // Use a provider that searches in a specific directory instead of relying on current directory
+        let pattern = format!("{}/*.toml", dir_path.display());
+        let provider = Wildcard::from_pattern(&pattern);
         let files = provider.discover_files();
 
-        // Restore original directory
-        std::env::set_current_dir(original_dir).unwrap();
-
-        // Should find the config files but not the txt file
-        assert!(files.len() >= 1); // At least one file should be found
-        assert!(files.iter().any(|p| p.file_name().unwrap().to_str().unwrap().ends_with(".toml") || 
-                                     p.file_name().unwrap().to_str().unwrap().ends_with(".yaml")));
+        // Should find at least the toml file
+        assert!(files.len() >= 1, "Should find at least one file matching pattern. Found: {:?}", files);
+        assert!(files.iter().any(|p| p.file_name().unwrap().to_str().unwrap().ends_with(".toml")));
+        
+        // Verify the txt file is not included
+        assert!(!files.iter().any(|p| p.file_name().unwrap().to_str().unwrap().ends_with(".txt")));
     }
 
     #[test]
     fn test_hierarchical_convenience() {
-        let provider = Wildcard::hierarchical("config", "myapp").unwrap();
+        let provider = Wildcard::hierarchical("config", "myapp");
         let patterns = provider.patterns();
         
         // Should contain patterns for various directories
         assert!(patterns.iter().any(|p| p.contains("~/.config/myapp")));
-        assert!(patterns.iter().any(|p| p.contains("./config")));
-        assert!(patterns.iter().any(|p| p.contains("**/config.")));
+        assert!(patterns.iter().any(|p| p.contains("./myapp")));
+        assert!(patterns.iter().any(|p| p.contains("**/myapp.")));
     }
 
     #[test]
     fn test_xdg_convenience() {
-        let provider = Wildcard::xdg("myapp").unwrap();
+        let provider = Wildcard::xdg("myapp");
         let patterns = provider.patterns();
         
         // Should contain XDG-compliant patterns
@@ -521,7 +568,7 @@ mod tests {
 
     #[test]
     fn test_development_convenience() {
-        let provider = Wildcard::development("config").unwrap();
+        let provider = Wildcard::development("config");
         let patterns = provider.patterns();
         
         // Should contain development-specific patterns

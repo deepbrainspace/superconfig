@@ -1,6 +1,6 @@
-//! Enhanced configuration providers with performance optimizations
+//! Advanced Configuration Providers for SuperConfig
 //!
-//! SuperConfig provides enhanced providers that extend Figment with enterprise-grade capabilities:
+//! SuperConfig includes powerful, enterprise-grade configuration providers that go far beyond basic file loading:
 //!
 //! ## Provider Overview
 //!
@@ -13,11 +13,12 @@
 //! - **Performance Optimized**: Content-based detection with modification time caching
 //! - **Robust Fallbacks**: Graceful handling of missing or corrupted files
 //!
-//! **Usage:**
+//! **Usage with SuperConfig:**
 //! ```rust
-//! use superconfig::Universal;
+//! use superconfig::SuperConfig;
 //!
-//! let provider = Universal::file("config");  // Auto-detects format
+//! let config = SuperConfig::new()
+//!     .with_file("config");  // Auto-detects format internally
 //! ```
 //!
 //! ### Nested Provider - Advanced Environment Variables
@@ -30,11 +31,12 @@
 //! - **Smart Type Detection**: Strings, numbers, booleans, arrays, objects
 //! - **Performance Caching**: Optimized parsing with intelligent caching
 //!
-//! **Usage:**
+//! **Usage with SuperConfig:**
 //! ```rust
-//! use superconfig::Nested;
+//! use superconfig::SuperConfig;
 //!
-//! let provider = Nested::prefixed("APP_");  // Enhanced env parsing
+//! let config = SuperConfig::new()
+//!     .with_env("APP_");  // Enhanced env parsing built-in
 //! ```
 //!
 //! ### Empty Provider - Clean Configuration
@@ -46,17 +48,16 @@
 //! - **Preserves Intent**: Keeps `false`, `0`, and other intentional values
 //! - **CLI Integration**: Perfect for filtering meaningless CLI arguments
 //!
-//! **Usage:**
+//! **Usage with SuperConfig:**
 //! ```rust
-//! use superconfig::Empty;
-//! use figment::providers::Serialized;
+//! use superconfig::SuperConfig;
 //! use serde::Serialize;
 //!
 //! #[derive(Serialize)]
 //! struct CliArgs { debug: bool }
 //!
-//! let cli_args = CliArgs { debug: true };
-//! let filtered = Empty::new(Serialized::defaults(cli_args));
+//! let config = SuperConfig::new()
+//!     .with_cli_opt(Some(CliArgs { debug: true }));  // Automatic empty filtering
 //! ```
 //!
 //! ### Wildcard Provider - Unified Pattern-Based Discovery
@@ -70,31 +71,29 @@
 //! - **Enterprise Ready**: Handles complex multi-source configuration scenarios
 //! - **100% Figment Compatible**: Works seamlessly with both Figment and SuperConfig APIs
 //!
-//! **Usage Examples:**
+//! **Usage with SuperConfig:**
 //! ```rust
-//! use superconfig::{Wildcard, MergeOrder};
+//! use superconfig::{SuperConfig, Wildcard};
 //!
-//! # fn main() -> Result<(), figment::Error> {
-//! // Traditional hierarchy (git-like config discovery)
-//! let provider = Wildcard::hierarchical("config", "myapp")?;
+//! // Git-style hierarchical discovery (most common)
+//! let config = SuperConfig::new()
+//!     .with_hierarchical_config("myapp");  // Built-in hierarchical loading
 //!
-//! // Single directory with custom ordering
-//! let provider = Wildcard::new("./config/*.toml")?
-//!     .with_merge_order(MergeOrder::Alphabetical);
+//! // Advanced pattern-based discovery
+//! let config = SuperConfig::new()
+//!     .merge(Wildcard::new("./config/*.toml"))                    // Directory patterns
+//!     .merge(Wildcard::new("/etc/myapp/**/*.yaml"))               // Recursive patterns  
+//!     .merge(Wildcard::new("./plugins/**/config.json"));          // Plugin discovery
 //!
-//! // Complex enterprise pattern
-//! let provider = Wildcard::new("{/etc/myapp,~/.config/myapp,./config}/**/*.{toml,yaml,json}")?
-//!     .with_merge_order(MergeOrder::Custom(vec![
-//!         "base.*".to_string(),
-//!         "*.toml".to_string(),
-//!         "overrides.*".to_string(),
-//!     ]));
-//!
-//! // Recursive plugin discovery
-//! let provider = Wildcard::new("./plugins/**/config.yaml")?
-//!     .with_merge_order(MergeOrder::ModificationTimeDescending);
-//! # Ok(())
-//! # }
+//! // Multi-source configuration  
+//! # use serde::Serialize;
+//! # #[derive(Serialize)]
+//! # struct CliArgs { debug: bool }
+//! # let cli_args = Some(CliArgs { debug: true });
+//! let config = SuperConfig::new()
+//!     .merge(Wildcard::hierarchical("config", "myapp"))           // Git-style discovery
+//!     .with_env("MYAPP_")                                         // Environment variables
+//!     .with_cli_opt(cli_args);                                    // CLI arguments
 //! ```
 //!
 //! ## Performance Characteristics
@@ -105,7 +104,6 @@
 //! - **Efficient Parsing**: Single-pass processing with type inference
 //! - **Memory Optimized**: Minimal memory footprint for large configurations
 
-pub mod cascade;  // Keep for now - will be removed after testing
 pub mod env;
 pub mod filter;
 pub mod format;
@@ -119,5 +117,3 @@ pub use env::Nested;
 pub use filter::Empty;
 pub use format::Universal;
 
-// Legacy export (will be removed)
-pub use cascade::Hierarchical;

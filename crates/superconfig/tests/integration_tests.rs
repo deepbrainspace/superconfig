@@ -12,8 +12,7 @@ use serde::{Deserialize, Serialize};
 use serial_test::serial;
 use std::env;
 use std::fs;
-use superconfig::{AccessExt, ExtendExt};
-use superconfig::{SuperConfig, Universal};
+use superconfig::{SuperConfig, Wildcard};
 use tempfile::TempDir;
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -81,7 +80,7 @@ fn test_superconfig_deref_compatibility() {
 }
 
 #[test]
-fn test_extension_traits_individual() -> Result<(), Box<dyn std::error::Error>> {
+fn test_superconfig_native_methods() -> Result<(), Box<dyn std::error::Error>> {
     // Create temp files for testing
     let temp_dir = TempDir::new()?;
     let config_path = temp_dir.path().join("config.json");
@@ -91,27 +90,34 @@ fn test_extension_traits_individual() -> Result<(), Box<dyn std::error::Error>> 
         r#"{"host": "example.com", "features": ["auth"]}"#,
     )?;
 
-    // Test ExtendExt
-    let figment_with_extend = Figment::new().merge_extend(Universal::file(&config_path));
-
-    let config: TestConfig = figment_with_extend.extract()?;
-    assert_eq!(config.host, "example.com");
-
     // Test SuperConfig native methods
-    let superconfig_with_fluent = SuperConfig::new().with_file(&config_path);
+    let config = SuperConfig::new().with_file(&config_path);
 
-    let config2: TestConfig = superconfig_with_fluent.extract()?;
-    assert_eq!(config2.host, "example.com");
+    let extracted: TestConfig = config.extract()?;
+    assert_eq!(extracted.host, "example.com");
 
-    // Test AccessExt on SuperConfig
-    let json_output = superconfig_with_fluent.as_json()?;
+    // Test built-in access methods
+    let json_output = config.as_json()?;
     assert!(json_output.contains("example.com"));
+
+    let yaml_output = config.as_yaml()?;
+    assert!(yaml_output.contains("example.com"));
+
+    // Test convenience methods
+    let host = config.get_string("host")?;
+    assert_eq!(host, "example.com");
+
+    let features = config.get_array::<String>("features")?;
+    assert_eq!(features, vec!["auth"]);
+
+    assert!(config.has_key("host")?);
+    assert!(!config.has_key("nonexistent")?);
 
     Ok(())
 }
 
 #[test]
-fn test_extension_traits_all_ext() -> Result<(), Box<dyn std::error::Error>> {
+fn test_superconfig_with_defaults_and_file() -> Result<(), Box<dyn std::error::Error>> {
     let temp_dir = TempDir::new()?;
     let config_path = temp_dir.path().join("config.toml");
 
@@ -127,24 +133,24 @@ timeout = 60
 "#,
     )?;
 
-    // Test combined trait functionality via SuperConfig
-    let figment = SuperConfig::new()
-        .with_defaults(TestConfig::default()) // Native SuperConfig method
-        .with_file(&config_path);              // Native SuperConfig method
+    // Test SuperConfig with defaults and file loading
+    let config = SuperConfig::new()
+        .with_defaults(TestConfig::default())
+        .with_file(&config_path);
 
-    let config: TestConfig = figment.extract()?;
-    assert_eq!(config.host, "toml.example.com");
-    assert_eq!(config.port, 9090);
-    assert_eq!(config.database.url, "mysql://localhost");
+    let extracted: TestConfig = config.extract()?;
+    assert_eq!(extracted.host, "toml.example.com");
+    assert_eq!(extracted.port, 9090);
+    assert_eq!(extracted.database.url, "mysql://localhost");
 
-    // Test AccessExt methods
-    let host = figment.get_string("host")?;
+    // Test access methods
+    let host = config.get_string("host")?;
     assert_eq!(host, "toml.example.com");
 
-    let has_database = figment.has_key("database")?;
+    let has_database = config.has_key("database")?;
     assert!(has_database);
 
-    let keys = figment.keys()?;
+    let keys = config.keys()?;
     assert!(keys.contains(&"host".to_string()));
     assert!(keys.contains(&"database".to_string()));
 
@@ -427,15 +433,25 @@ allowed_origins_add = ["https://project.com"]
     println!("Current dir: {:?}", env::current_dir()?);
     println!("HOME set to: {:?}", env::var("HOME"));
 
+    let wildcard_provider = Wildcard::hierarchical("config", "testapp");
+    let discovered_files = wildcard_provider.discover_files();
+    println!("Discovered files in merge order: {:?}", discovered_files);
+    println!("Merge order strategy: {:?}", wildcard_provider.merge_order());
+    
     let config = SuperConfig::new()
         .with_defaults(TestConfig::default()) // Add defaults first
         .with_hierarchical_config("testapp");
+    
+    println!("Config warnings: {:?}", config.warnings());
 
     // Note: Hierarchical configuration currently has profile handling issues
     // The provider correctly loads files but data structure needs architectural fixes
     // For now, test basic functionality without complex array merging
 
     let result: TestConfig = config.extract()?;
+
+    // Debug: Print the actual result
+    println!("Final result: {:?}", result);
 
     // Test that hierarchical merging works correctly (system -> user -> project priority)
     assert_eq!(result.host, "project.example.com"); // Project config overrides system
@@ -450,6 +466,181 @@ allowed_origins_add = ["https://project.com"]
 
     // Restore environment
     // SAFETY: Restoring the original HOME environment variable
+    unsafe {
+        if original_home.is_empty() {
+            std::env::remove_var("HOME");
+        } else {
+            std::env::set_var("HOME", original_home);
+        }
+    }
+    env::set_current_dir(original_dir)?;
+
+    Ok(())
+}
+
+#[test]
+#[serial] // Prevent concurrent env var modification
+fn test_sequential_array_merging_order() -> Result<(), Box<dyn std::error::Error>> {
+    let temp_dir = TempDir::new()?;
+
+    // Create system-level config
+    let system_dir = temp_dir.path().join(".config").join("testapp");
+    fs::create_dir_all(&system_dir)?;
+    let system_config = system_dir.join("testapp.toml");
+    fs::write(
+        &system_config,
+        r#"
+[database]
+allowed_origins = ["https://system.com", "https://common.com"]
+"#,
+    )?;
+
+    // Create user-level config that adds first, then a subsequent file removes
+    let user_dir = temp_dir.path().join(".testapp");
+    fs::create_dir_all(&user_dir)?;
+    let user_config = user_dir.join("testapp.toml");
+    fs::write(
+        &user_config,
+        r#"
+[database] 
+allowed_origins_add = ["https://user-added.com"]
+"#,
+    )?;
+
+    // Create project-level config that removes what was added, then adds something new
+    let project_config = temp_dir.path().join("testapp.toml");
+    fs::write(
+        &project_config,
+        r#"
+[database]
+allowed_origins_remove = ["https://system.com"]
+allowed_origins_add = ["https://project-final.com"]
+"#,
+    )?;
+
+    // Update HOME to point to our temp directory for testing
+    let original_home = env::var("HOME").unwrap_or_default();
+    unsafe {
+        std::env::set_var("HOME", temp_dir.path());
+    }
+
+    // Change to temp directory to simulate project directory
+    let original_dir = env::current_dir()?;
+    env::set_current_dir(temp_dir.path())?;
+
+    let config = SuperConfig::new()
+        .with_defaults(TestConfig::default())
+        .with_hierarchical_config("testapp");
+
+    let result: TestConfig = config.extract()?;
+
+    // Expected sequence:
+    // 1. Start: ["https://system.com", "https://common.com"] 
+    // 2. After user: ["https://system.com", "https://common.com", "https://user-added.com"]
+    // 3. After project remove: ["https://common.com", "https://user-added.com"] 
+    // 4. After project add: ["https://common.com", "https://user-added.com", "https://project-final.com"]
+
+    let origins = &result.database.allowed_origins;
+    println!("Final allowed_origins: {:?}", origins);
+    
+    // Verify the sequential processing worked correctly
+    assert!(origins.contains(&"https://common.com".to_string()), "Should preserve common.com");
+    assert!(origins.contains(&"https://user-added.com".to_string()), "Should preserve user addition");
+    assert!(origins.contains(&"https://project-final.com".to_string()), "Should include project addition");
+    assert!(!origins.contains(&"https://system.com".to_string()), "Should have removed system.com");
+    
+    // Verify expected final state
+    assert_eq!(origins.len(), 3, "Should have exactly 3 origins");
+
+    // Restore environment
+    unsafe {
+        if original_home.is_empty() {
+            std::env::remove_var("HOME");
+        } else {
+            std::env::set_var("HOME", original_home);
+        }
+    }
+    env::set_current_dir(original_dir)?;
+
+    Ok(())
+}
+
+#[test]
+#[serial] // Prevent concurrent env var modification  
+fn test_complex_sequential_array_operations() -> Result<(), Box<dyn std::error::Error>> {
+    let temp_dir = TempDir::new()?;
+
+    // Create system-level config
+    let system_dir = temp_dir.path().join(".config").join("testapp");
+    fs::create_dir_all(&system_dir)?;
+    let system_config = system_dir.join("testapp.toml");
+    fs::write(
+        &system_config,
+        r#"
+[database]
+allowed_origins = ["A", "B", "C"]
+"#,
+    )?;
+
+    // User config: remove B, add D
+    let user_dir = temp_dir.path().join(".testapp");
+    fs::create_dir_all(&user_dir)?;
+    let user_config = user_dir.join("testapp.toml");
+    fs::write(
+        &user_config,
+        r#"
+[database] 
+allowed_origins_remove = ["B"]
+allowed_origins_add = ["D"]
+"#,
+    )?;
+
+    // Project config: remove D (what user just added), add E  
+    let project_config = temp_dir.path().join("testapp.toml");
+    fs::write(
+        &project_config,
+        r#"
+[database]
+allowed_origins_remove = ["D"]
+allowed_origins_add = ["E"]
+"#,
+    )?;
+
+    // Update HOME to point to our temp directory for testing
+    let original_home = env::var("HOME").unwrap_or_default();
+    unsafe {
+        std::env::set_var("HOME", temp_dir.path());
+    }
+
+    // Change to temp directory to simulate project directory
+    let original_dir = env::current_dir()?;
+    env::set_current_dir(temp_dir.path())?;
+
+    let config = SuperConfig::new()
+        .with_defaults(TestConfig::default())
+        .with_hierarchical_config("testapp");
+
+    let result: TestConfig = config.extract()?;
+
+    // Expected sequence:
+    // 1. System: ["A", "B", "C"] 
+    // 2. User: Remove B, add D → ["A", "C", "D"]
+    // 3. Project: Remove D, add E → ["A", "C", "E"]
+
+    let origins = &result.database.allowed_origins;
+    println!("Complex sequence final allowed_origins: {:?}", origins);
+    
+    // With correct sequential processing:
+    assert!(origins.contains(&"A".to_string()), "Should preserve A");
+    assert!(origins.contains(&"C".to_string()), "Should preserve C");
+    assert!(origins.contains(&"E".to_string()), "Should include E (project addition)");
+    assert!(!origins.contains(&"B".to_string()), "Should have removed B (user removal)");
+    assert!(!origins.contains(&"D".to_string()), "Should have removed D (project removal after user addition)");
+    
+    // Should have exactly A, C, E
+    assert_eq!(origins.len(), 3, "Should have exactly 3 origins");
+
+    // Restore environment
     unsafe {
         if original_home.is_empty() {
             std::env::remove_var("HOME");
@@ -496,7 +687,7 @@ fn test_conversion_methods() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test debug output
     let debug_str = figment.debug_config()?;
-    assert!(debug_str.contains("Figment Configuration Debug"));
+    assert!(debug_str.contains("SuperConfig Debug"));
     assert!(debug_str.contains("conversion.example.com"));
 
     let sources = figment.debug_sources();

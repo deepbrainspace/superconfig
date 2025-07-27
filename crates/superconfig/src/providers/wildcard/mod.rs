@@ -19,12 +19,11 @@
 //!
 //! // Simple pattern-based loading
 //! let figment = Figment::new()
-//!     .merge(Wildcard::from_pattern("*.toml")?);
+//!     .merge(Wildcard::from_pattern("*.toml"));
 //!
 //! // Git-style hierarchical configuration
 //! let figment = Figment::new()
-//!     .merge(Wildcard::hierarchical("config", "myapp")?);
-//! # Ok::<(), Box<dyn std::error::Error>>(())
+//!     .merge(Wildcard::hierarchical("config", "myapp"));
 //! ```
 //!
 //! # Pattern Examples
@@ -34,11 +33,10 @@
 //! use superconfig::Wildcard;
 //!
 //! // All TOML files in current directory
-//! let provider = Wildcard::from_pattern("*.toml")?;
+//! let provider = Wildcard::from_pattern("*.toml");
 //!
 //! // Specific file pattern
-//! let provider = Wildcard::from_pattern("config.*")?;
-//! # Ok::<(), figment::Error>(())
+//! let provider = Wildcard::from_pattern("config.*");
 //! ```
 //!
 //! ## Path-Based Patterns
@@ -46,11 +44,10 @@
 //! use superconfig::Wildcard;
 //!
 //! // Specific directory
-//! let provider = Wildcard::from_pattern("./config/*.yaml")?;
+//! let provider = Wildcard::from_pattern("./config/*.yaml");
 //!
 //! // User configuration directory
-//! let provider = Wildcard::from_pattern("~/.config/myapp/*.toml")?;
-//! # Ok::<(), figment::Error>(())
+//! let provider = Wildcard::from_pattern("~/.config/myapp/*.toml");
 //! ```
 //!
 //! ## Recursive Patterns
@@ -58,11 +55,10 @@
 //! use superconfig::Wildcard;
 //!
 //! // Recursive search from current directory
-//! let provider = Wildcard::from_pattern("**/*.json")?;
+//! let provider = Wildcard::from_pattern("**/*.json");
 //!
 //! // Recursive search from specific directory
-//! let provider = Wildcard::from_pattern("./config/**/*.yaml")?;
-//! # Ok::<(), figment::Error>(())
+//! let provider = Wildcard::from_pattern("./config/**/*.yaml");
 //! ```
 //!
 //! ## Multi-Directory Patterns (Brace Expansion)
@@ -70,11 +66,10 @@
 //! use superconfig::Wildcard;
 //!
 //! // Search multiple directories
-//! let provider = Wildcard::from_pattern("{./config,~/.config}/*.toml")?;
+//! let provider = Wildcard::from_pattern("{./config,~/.config}/*.toml");
 //!
 //! // Complex multi-directory patterns
-//! let provider = Wildcard::from_pattern("{/etc,~/.config,./config}/myapp/*.yaml")?;
-//! # Ok::<(), figment::Error>(())
+//! let provider = Wildcard::from_pattern("{/etc,~/.config,./config}/myapp/*.yaml");
 //! ```
 //!
 //! # Advanced Configuration
@@ -84,25 +79,23 @@
 //! use superconfig::{Wildcard, SearchStrategy};
 //! use std::path::PathBuf;
 //!
-//! let provider = Wildcard::from_pattern("*.toml")?
+//! let provider = Wildcard::from_pattern("*.toml")
 //!     .with_search_strategy(SearchStrategy::Recursive {
 //!         roots: vec![PathBuf::from("./config")],
 //!         max_depth: Some(3),
 //!     });
-//! # Ok::<(), figment::Error>(())
 //! ```
 //!
 //! ## Custom Merge Ordering
 //! ```rust
 //! use superconfig::{Wildcard, MergeOrder};
 //!
-//! let provider = Wildcard::from_patterns(&["*.toml", "*.yaml"])?
+//! let provider = Wildcard::from_patterns(&["*.toml", "*.yaml"])
 //!     .with_merge_order(MergeOrder::Custom(vec![
 //!         "base.*".to_string(),        // Base configs first (lowest priority)
 //!         "env-*.toml".to_string(),     // Environment configs
 //!         "local.*".to_string(),        // Local overrides last (highest priority)
 //!     ]));
-//! # Ok::<(), figment::Error>(())
 //! ```
 //!
 //! ## Builder Pattern for Complex Scenarios
@@ -126,13 +119,12 @@
 //! use superconfig::Wildcard;
 //!
 //! // Searches common config locations hierarchically
-//! let provider = Wildcard::hierarchical("config", "myapp")?;
+//! let provider = Wildcard::hierarchical("config", "myapp");
 //! // Equivalent to searching:
 //! // - ~/.config/myapp/*.{toml,yaml,yml,json}
 //! // - ~/.myapp/*.{toml,yaml,yml,json}  
 //! // - ./config/*.{toml,yaml,yml,json}
 //! // - **/config.{toml,yaml,yml,json}
-//! # Ok::<(), figment::Error>(())
 //! ```
 //!
 //! ## XDG Base Directory Support
@@ -140,12 +132,11 @@
 //! use superconfig::Wildcard;
 //!
 //! // Follows XDG Base Directory specification
-//! let provider = Wildcard::xdg("myapp")?;
+//! let provider = Wildcard::xdg("myapp");
 //! // Searches:
 //! // - ~/.config/myapp/*
 //! // - ~/.local/share/myapp/*
 //! // - /etc/myapp/*
-//! # Ok::<(), figment::Error>(())
 //! ```
 //!
 //! ## Development Environment Optimized
@@ -153,12 +144,11 @@
 //! use superconfig::Wildcard;
 //!
 //! // Optimized for development with proper priority ordering
-//! let provider = Wildcard::development("config")?;
+//! let provider = Wildcard::development("config");
 //! // Priority order:
 //! // 1. config/base.* (lowest priority)
 //! // 2. config/env-*.*
 //! // 3. config/local.* (highest priority)
-//! # Ok::<(), figment::Error>(())
 //! ```
 //!
 //! # Integration Examples
@@ -182,7 +172,7 @@
 //! }
 //!
 //! let figment = Figment::new()
-//!     .merge(Wildcard::hierarchical("config", "myapp")?)
+//!     .merge(Wildcard::hierarchical("config", "myapp"))
 //!     .merge(Env::prefixed("MYAPP_"));
 //!
 //! let config: Config = figment.extract()?;
@@ -194,7 +184,7 @@
 //! use superconfig::Wildcard;
 //! use figment::Provider;
 //!
-//! let provider = Wildcard::from_pattern("*.toml")?;
+//! let provider = Wildcard::from_pattern("*.toml");
 //! let data = provider.data()?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
@@ -272,13 +262,14 @@ debug = false
 
         // Test the provider
         let provider = Wildcard::from_pattern("*.toml")
-            .unwrap()
             .with_merge_order(MergeOrder::Alphabetical);
 
         let data = provider.data().unwrap();
 
-        // Restore directory
-        std::env::set_current_dir(original_dir).unwrap();
+        // Restore directory - handle error gracefully
+        if let Err(e) = std::env::set_current_dir(&original_dir) {
+            eprintln!("Warning: Could not restore original directory {:?}: {}", original_dir, e);
+        }
 
         // Should have merged the configurations
         assert!(!data.is_empty());
@@ -311,7 +302,7 @@ debug = false
 
         // Test with Figment
         let figment = Figment::new()
-            .merge(Wildcard::from_pattern("*.toml").unwrap());
+            .merge(Wildcard::from_pattern("*.toml"));
 
         let result = figment.extract::<figment::value::Value>();
 
@@ -348,15 +339,15 @@ debug = false
     #[test]
     fn test_convenience_constructors() {
         // Test hierarchical constructor
-        let hierarchical = Wildcard::hierarchical("config", "myapp").unwrap();
+        let hierarchical = Wildcard::hierarchical("config", "myapp");
         assert!(hierarchical.patterns().len() > 10); // Should have many patterns
 
         // Test XDG constructor
-        let xdg = Wildcard::xdg("myapp").unwrap();
+        let xdg = Wildcard::xdg("myapp");
         assert!(xdg.patterns().iter().any(|p| p.contains("~/.config")));
 
         // Test development constructor
-        let dev = Wildcard::development("config").unwrap();
+        let dev = Wildcard::development("config");
         assert!(matches!(dev.merge_order(), MergeOrder::Custom(_)));
     }
 }

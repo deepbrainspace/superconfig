@@ -4,7 +4,6 @@
 //! available as extension traits. Now they're native SuperConfig methods.
 
 use crate::SuperConfig;
-use crate::ext::ExtendExt;
 use figment::providers::Serialized;
 
 impl SuperConfig {
@@ -22,9 +21,7 @@ impl SuperConfig {
     ///     .with_file("app.json");     // Explicit JSON file
     /// ```
     pub fn with_file<P: AsRef<std::path::Path>>(self, path: P) -> Self {
-        Self::from_figment(
-            self.figment.merge_extend(crate::providers::Universal::file(path))
-        )
+        self.merge(crate::providers::Universal::file(path))
     }
 
     /// Add environment variables with a prefix
@@ -41,14 +38,12 @@ impl SuperConfig {
     ///     .with_env("MYAPP_");        // Multiple prefixes supported
     /// ```
     pub fn with_env<S: AsRef<str>>(self, prefix: S) -> Self {
-        Self::from_figment(
-            self.figment.merge_extend(crate::providers::Nested::prefixed(prefix))
-        )
+        self.merge(crate::providers::Nested::prefixed(prefix))
     }
 
     /// Add hierarchical configuration cascade
     ///
-    /// Uses the Hierarchical provider for Git-like config inheritance:
+    /// Uses the Wildcard provider for Git-like config inheritance:
     /// system → user → project levels with automatic discovery.
     ///
     /// # Examples
@@ -59,9 +54,7 @@ impl SuperConfig {
     ///     .with_hierarchical_config("myapp");  // Loads system, user, project configs
     /// ```
     pub fn with_hierarchical_config<S: AsRef<str>>(self, base_name: S) -> Self {
-        Self::from_figment(
-            self.figment.merge_extend(crate::providers::Hierarchical::new(base_name))
-        )
+        self.merge(crate::providers::Wildcard::hierarchical("config", base_name.as_ref()))
     }
 
     /// Add default configuration values
@@ -85,9 +78,7 @@ impl SuperConfig {
     ///     .with_file("config.toml");
     /// ```
     pub fn with_defaults<T: serde::Serialize>(self, defaults: T) -> Self {
-        Self::from_figment(
-            self.figment.merge_extend(Serialized::defaults(defaults))
-        )
+        self.merge(Serialized::defaults(defaults))
     }
 
     /// Add CLI option values with empty value filtering
@@ -113,11 +104,9 @@ impl SuperConfig {
     /// ```
     pub fn with_cli_opt<T: serde::Serialize>(self, cli_opt: Option<T>) -> Self {
         if let Some(cli_values) = cli_opt {
-            Self::from_figment(
-                self.figment.merge_extend(crate::providers::Empty::new(
-                    Serialized::defaults(cli_values)
-                ))
-            )
+            self.merge(crate::providers::Empty::new(
+                Serialized::defaults(cli_values)
+            ))
         } else {
             self
         }

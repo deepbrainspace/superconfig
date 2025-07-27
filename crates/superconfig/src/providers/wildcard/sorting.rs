@@ -25,17 +25,16 @@ use std::{
 /// use superconfig::{Wildcard, MergeOrder};
 ///
 /// // Alphabetical order (most common)
-/// let provider = Wildcard::from_pattern("*.toml")?
+/// let provider = Wildcard::from_pattern("*.toml")
 ///     .with_merge_order(MergeOrder::Alphabetical);
 ///
 /// // Custom priority order
-/// let provider = Wildcard::from_patterns(&["*.toml", "*.yaml"])?
+/// let provider = Wildcard::from_patterns(&["*.toml", "*.yaml"])
 ///     .with_merge_order(MergeOrder::Custom(vec![
 ///         "base.*".to_string(),        // Base configs first
 ///         "*.toml".to_string(),        // TOML files next
 ///         "*.yaml".to_string(),        // YAML files last
 ///     ]));
-/// # Ok::<(), figment::Error>(())
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MergeOrder {
@@ -152,6 +151,28 @@ pub enum MergeOrder {
     /// 4. `local.toml` (matches `local.*`)
     /// 5. `other.json` (no match, alphabetical)
     Custom(Vec<String>),
+
+    /// Hierarchical configuration order (system → user → project)
+    ///
+    /// Optimized ordering for hierarchical configuration patterns where:
+    /// - System configs (in ~/.config/) have lowest priority
+    /// - User configs (in ~/.) have medium priority  
+    /// - Project configs (in ./ or **/) have highest priority
+    ///
+    /// This ensures that project-level configurations override user and system
+    /// configurations, following Unix/Git-style configuration precedence.
+    Hierarchical,
+
+    /// Use files in the order they were discovered (no additional sorting)
+    ///
+    /// This preserves the natural discovery order from the search strategy.
+    /// Useful when the patterns themselves define the intended priority order.
+    ///
+    /// # Use Cases
+    /// - When pattern order in Wildcard::from_patterns() defines priority
+    /// - When search strategy already returns files in the correct order
+    /// - Simple configurations where explicit ordering isn't needed
+    AsDiscovered,
 }
 
 impl Default for MergeOrder {
@@ -254,6 +275,30 @@ impl MergeOrder {
                 });
                 files
             }
+
+            MergeOrder::Hierarchical => {
+                files.sort_by(|a, b| {
+                    let priority_a = hierarchical_priority(a);
+                    let priority_b = hierarchical_priority(b);
+
+                    match priority_a.cmp(&priority_b) {
+                        std::cmp::Ordering::Equal => {
+                            // If same priority, sort alphabetically
+                            a.file_name()
+                                .and_then(|n| n.to_str())
+                                .unwrap_or("")
+                                .cmp(b.file_name().and_then(|n| n.to_str()).unwrap_or(""))
+                        }
+                        other => other,
+                    }
+                });
+                files
+            }
+
+            MergeOrder::AsDiscovered => {
+                // Return files in discovery order without additional sorting
+                files
+            }
         }
     }
 }
@@ -268,6 +313,27 @@ fn modification_time(path: &Path) -> Option<SystemTime> {
     fs::metadata(path)
         .ok()
         .and_then(|meta| meta.modified().ok())
+}
+
+/// Calculate priority for hierarchical configuration ordering
+///
+/// Returns priority where lower numbers = higher priority in final merge order:
+/// - 0: System configs (in ~/.config/)
+/// - 1: User configs (in ~/.)  
+/// - 2: Project configs (in ./ or **/)
+/// - 3: Other/unknown locations
+fn hierarchical_priority(path: &Path) -> usize {
+    let path_str = path.to_string_lossy();
+    
+    if path_str.contains("/.config/") {
+        0  // System level - lowest priority (processed first)
+    } else if path_str.starts_with("./") && path_str.contains("/.") && !path_str.contains("/.config/") {
+        1  // User level - medium priority (processed second) 
+    } else if path_str.starts_with("./") || path_str.contains("**/") {
+        2  // Project level - highest priority (processed last)
+    } else {
+        3  // Unknown - lowest priority
+    }
 }
 
 /// Calculate pattern priority for custom ordering
