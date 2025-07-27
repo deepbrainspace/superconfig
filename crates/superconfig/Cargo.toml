@@ -2,15 +2,19 @@
 name = "superconfig"
 version = "0.1.0"
 edition = "2024"
-description = "SuperConfig - Universal configuration management platform for all languages"
+description = "Advanced configuration management built on Figment with hierarchical loading, array merging, and smart format detection"
 license = "MIT"
-authors = ["Nayeem Syed <nayeem@deepbrainspace.com>"]
+authors = ["Nayeem Syed <hello@superconfig.dev>"]
 repository = "https://github.com/deepbrainspace/superconfig"
+homepage = "https://superconfig.dev"
+documentation = "https://docs.rs/superconfig"
 readme = "../../README.md"
-keywords = ["config", "configuration", "universal", "multi-language", "wasm"]
-categories = ["config", "development-tools", "parsing", "web-programming"]
+keywords = ["config", "configuration", "figment", "settings", "env"]
+categories = ["config", "development-tools"]
 
 [package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 default-theme = "ayu"
 
 [features]
