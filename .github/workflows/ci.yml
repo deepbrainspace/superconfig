@@ -99,7 +99,7 @@ jobs:
         run: moon run ${{ matrix.crate }}:test
 
   quality:
-    name: Code Quality (${{ matrix.crate }})
+    name: QA (${{ matrix.crate }})
     runs-on: ubuntu-latest
     needs: detect-affected
     if: needs.detect-affected.outputs.has-changes == 'true'
@@ -124,7 +124,7 @@ jobs:
 
 
   security:
-    name: Security Audit (${{ matrix.crate }})
+    name: Security (${{ matrix.crate }})
     runs-on: ubuntu-latest
     needs: detect-affected
     if: needs.detect-affected.outputs.has-changes == 'true'
@@ -145,7 +145,7 @@ jobs:
         run: moon run ${{ matrix.crate }}:security-audit
 
   compliance:
-    name: Compliance Check (${{ matrix.crate }})
+    name: Compliance (${{ matrix.crate }})
     runs-on: ubuntu-latest
     needs: detect-affected
     if: needs.detect-affected.outputs.has-changes == 'true'
