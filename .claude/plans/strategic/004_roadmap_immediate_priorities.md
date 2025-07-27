@@ -7,16 +7,10 @@
 
 ## 🎯 Priority Matrix (Next 30 Days)
 
-### Priority 1: Claim Your Territory (Week 1)
-1. **Publish to crates.io** (TODAY!)
-   - Before someone takes the name
-   - Even as 0.1.0 "preview"
-   - Stakes your claim
-   
-2. **Keep repo in deepbrainspace org**
-   - Shows you're serious (org vs personal)
-   - Better for future team additions
-   - More professional for enterprise
+### ✅ Priority 1: Territory Claimed! 
+1. **Published to crates.io** ✅
+2. **Domain superconfig.dev acquired** ✅  
+3. **Repo in deepbrainspace org** ✅
 
 ### Priority 2: Website Launch (Week 1-2)
 **Technology Decision: Dioxus/WASM**
@@ -46,7 +40,20 @@ superconfig.dev/
 └── CTA: GitHub stars + npm install
 ```
 
-### Priority 3: Node.js WASM Binding (Week 2-3)
+### Priority 3: CLI Tool with SuperCLI (Week 2)
+**Why CLI is Critical**:
+- Immediate demo vehicle
+- Shows all features without code
+- Marketing screenshots/videos
+- User debugging tool
+
+**Plan**:
+- Migrate SuperCLI into monorepo
+- Build feature-rich CLI
+- Beautiful colored output
+- `superconfig init/get/set/debug/validate`
+
+### Priority 4: Node.js WASM Binding (Week 3)
 **Why Node first**: 
 - Largest ecosystem (npm)
 - Easiest adoption path
@@ -55,7 +62,7 @@ superconfig.dev/
 
 **Success Metric**: Working `npm install @superconfig/node` with basic example
 
-### Priority 4: Launch Content (Week 3-4)
+### Priority 5: Launch Content (Week 3-4)
 1. **Technical Blog Post**: "Why I Built SuperConfig in Rust"
 2. **Show HN**: Prepared with demo + benchmarks
 3. **Dev.to Article**: "Config Management is Broken. Here's How We Fix It"
@@ -65,7 +72,7 @@ superconfig.dev/
 
 ### 30 Days: Foundation
 - [x] Core library complete
-- [ ] Crates.io published
+- [x] Crates.io published
 - [ ] Website live on superconfig.dev
 - [ ] Node.js bindings working
 - [ ] First 100 GitHub stars
@@ -75,7 +82,7 @@ superconfig.dev/
 - [ ] Python bindings shipped
 - [ ] 1,000 GitHub stars
 - [ ] 100+ npm weekly downloads
-- [ ] Basic CLI tool
+- [ ] CLI tool shipped (moved to Week 2)
 - [ ] Encryption feature (GPG/PGP)
 - [ ] First production users
 
@@ -185,7 +192,8 @@ But make it unique:
 ## 🚀 This Week's Checklist
 
 **Monday-Tuesday**:
-- [ ] Publish to crates.io (even if 0.1.0)
+- [x] Publish to crates.io ✅
+- [x] Acquire superconfig.dev ✅
 - [ ] Create website directory structure
 - [ ] Start Dioxus website setup
 
@@ -203,7 +211,8 @@ But make it unique:
 
 **Momentum is everything**. Ship something visible every week:
 - Week 1: Website live
-- Week 2: Node.js "Hello World"
+- Week 2: CLI tool with colored output
+- Week 3: Node.js "Hello World"
 - Week 3: Launch posts
 - Week 4: Encryption demo
 
