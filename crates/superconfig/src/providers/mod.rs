@@ -110,10 +110,9 @@ pub mod format;
 pub mod wildcard;
 
 // New unified exports
-pub use wildcard::{Wildcard, WildcardBuilder, SearchStrategy, MergeOrder};
+pub use wildcard::{MergeOrder, SearchStrategy, Wildcard, WildcardBuilder};
 
 // Existing exports
 pub use env::Nested;
 pub use filter::Empty;
 pub use format::Universal;
-

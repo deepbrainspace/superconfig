@@ -1,10 +1,6 @@
 //! Builder pattern for advanced Wildcard provider configuration
 
-use crate::providers::wildcard::{
-    core::Wildcard,
-    discovery::SearchStrategy,
-    sorting::MergeOrder,
-};
+use crate::providers::wildcard::{core::Wildcard, discovery::SearchStrategy, sorting::MergeOrder};
 use figment::Error;
 use std::path::PathBuf;
 
@@ -87,7 +83,8 @@ impl WildcardBuilder {
     /// ```
     pub fn pattern(mut self, pattern: &str) -> Result<Self, Error> {
         // Validate the pattern by attempting to compile it
-        globset::Glob::new(pattern).map_err(|e| Error::from(format!("Invalid pattern '{pattern}': {e}")))?;
+        globset::Glob::new(pattern)
+            .map_err(|e| Error::from(format!("Invalid pattern '{pattern}': {e}")))?;
         self.patterns.push(pattern.to_string());
         Ok(self)
     }
@@ -129,7 +126,8 @@ impl WildcardBuilder {
 
         // Validate all patterns first
         for pattern in &pattern_strings {
-            globset::Glob::new(pattern).map_err(|e| Error::from(format!("Invalid pattern '{pattern}': {e}")))?;
+            globset::Glob::new(pattern)
+                .map_err(|e| Error::from(format!("Invalid pattern '{pattern}': {e}")))?;
         }
 
         // If all patterns are valid, add them
@@ -487,7 +485,7 @@ mod tests {
             .unwrap();
 
         match provider.search_strategy() {
-            SearchStrategy::Current => {},
+            SearchStrategy::Current => {}
             _ => panic!("Expected Current search strategy"),
         }
     }
@@ -502,7 +500,7 @@ mod tests {
             .unwrap();
 
         match provider.merge_order() {
-            MergeOrder::Reverse => {},
+            MergeOrder::Reverse => {}
             _ => panic!("Expected Reverse merge order"),
         }
     }
@@ -518,11 +516,14 @@ mod tests {
             .unwrap();
 
         match provider.search_strategy() {
-            SearchStrategy::Recursive { roots: r, max_depth } => {
+            SearchStrategy::Recursive {
+                roots: r,
+                max_depth,
+            } => {
                 assert_eq!(r.len(), 1);
                 assert_eq!(r[0], PathBuf::from("./config"));
                 assert_eq!(*max_depth, Some(3));
-            },
+            }
             _ => panic!("Expected Recursive search strategy"),
         }
     }
@@ -542,29 +543,33 @@ mod tests {
                 assert_eq!(priorities.len(), 2);
                 assert_eq!(priorities[0], "base.*");
                 assert_eq!(priorities[1], "local.*");
-            },
+            }
             _ => panic!("Expected Custom merge order"),
         }
     }
 
     #[test]
     fn test_builder_invalid_pattern() {
-        let result = WildcardBuilder::new()
-            .pattern("[invalid")
-            .unwrap_err();
+        let result = WildcardBuilder::new().pattern("[invalid").unwrap_err();
 
         // Should get a glob error for invalid pattern
         // The actual error message will contain "invalid" or "bracket" or similar
         let error_str = result.to_string();
-        assert!(error_str.contains("invalid") || error_str.contains("bracket") || error_str.contains("Pattern"));
+        assert!(
+            error_str.contains("invalid")
+                || error_str.contains("bracket")
+                || error_str.contains("Pattern")
+        );
     }
 
     #[test]
     fn test_builder_no_patterns() {
-        let result = WildcardBuilder::new()
-            .build()
-            .unwrap_err();
+        let result = WildcardBuilder::new().build().unwrap_err();
 
-        assert!(result.to_string().contains("At least one pattern is required"));
+        assert!(
+            result
+                .to_string()
+                .contains("At least one pattern is required")
+        );
     }
 }

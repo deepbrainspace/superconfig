@@ -166,7 +166,7 @@
 //!     #[serde(default)]
 //!     port: u16,
 //! }
-//! 
+//!
 //! fn default_database_url() -> String {
 //!     "postgres://localhost".to_string()
 //! }
@@ -204,15 +204,15 @@
 //! - Unparseable configuration files are silently skipped
 //! - Permission errors during file traversal are logged but don't fail the operation
 
-pub mod core;
 pub mod builder;
+pub mod core;
 pub mod discovery;
 pub mod parsing;
 pub mod sorting;
 
 // Re-export the main types for convenience
-pub use core::Wildcard;
 pub use builder::WildcardBuilder;
+pub use core::Wildcard;
 pub use discovery::SearchStrategy;
 pub use sorting::MergeOrder;
 
@@ -243,7 +243,8 @@ port = 5432
 name = "test"
 debug = true
 "#,
-        ).unwrap();
+        )
+        .unwrap();
 
         fs::write(
             dir_path.join("override.toml"),
@@ -254,15 +255,15 @@ port = 5433
 [app]
 debug = false
 "#,
-        ).unwrap();
+        )
+        .unwrap();
 
         // Change to temp directory
         let original_dir = std::env::current_dir().unwrap();
         std::env::set_current_dir(dir_path).unwrap();
 
         // Test the provider
-        let provider = Wildcard::from_pattern("*.toml")
-            .with_merge_order(MergeOrder::Alphabetical);
+        let provider = Wildcard::from_pattern("*.toml").with_merge_order(MergeOrder::Alphabetical);
 
         let data = provider.data().unwrap();
 
@@ -287,22 +288,23 @@ debug = false
 port = 8080
 debug = true
 "#,
-        ).unwrap();
+        )
+        .unwrap();
 
         fs::write(
             dir_path.join("local.toml"),
             r#"
 debug = false
 "#,
-        ).unwrap();
+        )
+        .unwrap();
 
         // Change directory
         let original_dir = std::env::current_dir().unwrap();
         std::env::set_current_dir(dir_path).unwrap();
 
         // Test with Figment
-        let figment = Figment::new()
-            .merge(Wildcard::from_pattern("*.toml"));
+        let figment = Figment::new().merge(Wildcard::from_pattern("*.toml"));
 
         let result = figment.extract::<figment::value::Value>();
 
@@ -332,7 +334,10 @@ debug = false
 
         // Should be able to call provider methods
         assert_eq!(provider.patterns().len(), 2);
-        assert!(matches!(provider.search_strategy(), SearchStrategy::Current));
+        assert!(matches!(
+            provider.search_strategy(),
+            SearchStrategy::Current
+        ));
         assert!(matches!(provider.merge_order(), MergeOrder::Alphabetical));
     }
 

@@ -6,7 +6,7 @@
 //! - Array merging with _add/_remove patterns
 //! - Resilient configuration loading that continues despite provider errors
 
-use figment::{Figment, Provider, providers::Format, Error};
+use figment::{Error, Figment, Provider, providers::Format};
 use serde_json;
 use std::collections::HashSet;
 
@@ -53,14 +53,14 @@ impl crate::SuperConfig {
     pub fn merge_validated<P: Provider + ValidatedProvider>(mut self, provider: P) -> Self {
         // Check for validation errors and collect as warnings
         if let Some(error) = provider.validation_error() {
-            self.warnings.push(format!("Provider validation error: {error}"));
+            self.warnings
+                .push(format!("Provider validation error: {error}"));
         }
 
         // Merge the provider regardless of validation errors, then apply array merging
         self.figment = self.figment.merge(provider);
         self.apply_array_merging()
     }
-
 
     /// Merge an optional provider with warning collection
     ///
@@ -202,12 +202,18 @@ impl ArrayMergeHelper {
             Err(_) => return figment, // Return original if extraction fails
         };
 
-        eprintln!("DEBUG: Before array merging: {}", serde_json::to_string_pretty(&json_config).unwrap_or_default());
+        eprintln!(
+            "DEBUG: Before array merging: {}",
+            serde_json::to_string_pretty(&json_config).unwrap_or_default()
+        );
 
         // Apply array merging transformations
         let merged_config = Self::merge_object_arrays(json_config);
 
-        eprintln!("DEBUG: After array merging: {}", serde_json::to_string_pretty(&merged_config).unwrap_or_default());
+        eprintln!(
+            "DEBUG: After array merging: {}",
+            serde_json::to_string_pretty(&merged_config).unwrap_or_default()
+        );
 
         // Create new figment with merged configuration
         Figment::new().merge(figment::providers::Json::string(&merged_config.to_string()))
@@ -239,7 +245,9 @@ impl ArrayMergeHelper {
                     let add_key = format!("{base_field}_add");
                     let remove_key = format!("{base_field}_remove");
 
-                    eprintln!("DEBUG: Processing base field '{base_field}' with add_key='{add_key}', remove_key='{remove_key}'");
+                    eprintln!(
+                        "DEBUG: Processing base field '{base_field}' with add_key='{add_key}', remove_key='{remove_key}'"
+                    );
 
                     // Get base array (or create empty if not exists)
                     let mut result_array = obj
@@ -264,7 +272,10 @@ impl ArrayMergeHelper {
                         eprintln!("DEBUG: Removing values from '{base_field}': {remove_value:?}");
                         let before_count = result_array.len();
                         result_array.retain(|item| !remove_value.contains(item));
-                        eprintln!("DEBUG: Removed {} items from '{base_field}'", before_count - result_array.len());
+                        eprintln!(
+                            "DEBUG: Removed {} items from '{base_field}'",
+                            before_count - result_array.len()
+                        );
                         fields_to_remove.push(remove_key);
                     } else {
                         eprintln!("DEBUG: No _remove values found for '{base_field}'");
@@ -273,7 +284,8 @@ impl ArrayMergeHelper {
                     eprintln!("DEBUG: Final array for '{base_field}': {result_array:?}");
 
                     // Queue array for update
-                    arrays_to_update.push((base_field.clone(), serde_json::Value::Array(result_array)));
+                    arrays_to_update
+                        .push((base_field.clone(), serde_json::Value::Array(result_array)));
                 }
 
                 // Apply updates and cleanup

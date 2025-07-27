@@ -1,18 +1,17 @@
 //! Core Wildcard provider implementation for pattern-based configuration discovery
 
+use crate::merge::ValidatedProvider;
 use crate::providers::wildcard::{
     discovery::SearchStrategy,
-    parsing::{parse_multiple_patterns, build_globset},
+    parsing::{build_globset, parse_multiple_patterns},
     sorting::MergeOrder,
 };
-use crate::merge::ValidatedProvider;
 use figment::{
-    value::{Map, Value},
     Error, Metadata, Profile, Provider,
+    value::{Map, Value},
 };
 use globset::GlobSet;
 use std::path::PathBuf;
-
 
 /// A unified wildcard configuration provider using globset patterns
 ///
@@ -165,8 +164,9 @@ impl Wildcard {
 
     /// Internal method: create provider from patterns, validate and store result
     fn from_patterns_unchecked(patterns: &[impl AsRef<str>]) -> Self {
-        let pattern_strings: Vec<String> = patterns.iter().map(|p| p.as_ref().to_string()).collect();
-        
+        let pattern_strings: Vec<String> =
+            patterns.iter().map(|p| p.as_ref().to_string()).collect();
+
         // Try to validate and build - store error if validation fails
         match Self::validate_and_build(&pattern_strings) {
             Ok((search_strategy, globset)) => Self {
@@ -183,7 +183,7 @@ impl Wildcard {
                 merge_order: MergeOrder::default(),
                 patterns: pattern_strings,
                 validation_error: Some(error.to_string()),
-            }
+            },
         }
     }
 
@@ -195,7 +195,7 @@ impl Wildcard {
 
         let (search_strategy, file_patterns) = parse_multiple_patterns(patterns)?;
         let globset = build_globset(&file_patterns)?;
-        
+
         Ok((search_strategy, globset))
     }
 
@@ -276,7 +276,9 @@ impl Wildcard {
     /// assert!(invalid_provider.has_errors().is_some());
     /// ```
     pub fn has_errors(&self) -> Option<Error> {
-        self.validation_error.as_ref().map(|s| Error::from(s.clone()))
+        self.validation_error
+            .as_ref()
+            .map(|s| Error::from(s.clone()))
     }
 
     /// Check if the provider is valid (no validation errors)
@@ -310,7 +312,6 @@ impl Wildcard {
         files = self.merge_order.sort_files(files);
         files
     }
-
 }
 
 impl Provider for Wildcard {
@@ -320,7 +321,7 @@ impl Provider for Wildcard {
 
     fn data(&self) -> Result<Map<Profile, Map<String, Value>>, Error> {
         let files = self.discover_files();
-        
+
         if files.is_empty() {
             return Ok(Map::new());
         }
@@ -370,7 +371,7 @@ impl Wildcard {
     ///
     /// // Search for "myapp" configurations
     /// let provider = Wildcard::hierarchical("config", "myapp");
-    /// 
+    ///
     /// // Check for validation errors if needed
     /// if let Some(error) = provider.has_errors() {
     ///     eprintln!("Warning: {}", error);
@@ -418,7 +419,7 @@ impl Wildcard {
     /// use superconfig::Wildcard;
     ///
     /// let provider = Wildcard::xdg("myapp");
-    /// 
+    ///
     /// // Check for validation errors if needed
     /// if let Some(error) = provider.has_errors() {
     ///     eprintln!("Warning: {}", error);
@@ -462,7 +463,7 @@ impl Wildcard {
     /// use superconfig::Wildcard;
     ///
     /// let provider = Wildcard::development("config");
-    /// 
+    ///
     /// // Check for validation errors if needed
     /// if let Some(error) = provider.has_errors() {
     ///     eprintln!("Warning: {}", error);
@@ -494,8 +495,8 @@ impl Wildcard {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::TempDir;
     use std::fs;
+    use tempfile::TempDir;
 
     #[test]
     fn test_from_pattern() {
@@ -512,11 +513,10 @@ mod tests {
 
     #[test]
     fn test_with_merge_order() {
-        let provider = Wildcard::from_pattern("*.toml")
-            .with_merge_order(MergeOrder::Reverse);
-        
+        let provider = Wildcard::from_pattern("*.toml").with_merge_order(MergeOrder::Reverse);
+
         match provider.merge_order() {
-            MergeOrder::Reverse => {},
+            MergeOrder::Reverse => {}
             _ => panic!("Expected Reverse merge order"),
         }
     }
@@ -537,18 +537,29 @@ mod tests {
         let files = provider.discover_files();
 
         // Should find at least the toml file
-        assert!(!files.is_empty(), "Should find at least one file matching pattern. Found: {files:?}");
-        assert!(files.iter().any(|p| p.file_name().unwrap().to_str().unwrap().ends_with(".toml")));
-        
+        assert!(
+            !files.is_empty(),
+            "Should find at least one file matching pattern. Found: {files:?}"
+        );
+        assert!(
+            files
+                .iter()
+                .any(|p| p.file_name().unwrap().to_str().unwrap().ends_with(".toml"))
+        );
+
         // Verify the txt file is not included
-        assert!(!files.iter().any(|p| p.file_name().unwrap().to_str().unwrap().ends_with(".txt")));
+        assert!(
+            !files
+                .iter()
+                .any(|p| p.file_name().unwrap().to_str().unwrap().ends_with(".txt"))
+        );
     }
 
     #[test]
     fn test_hierarchical_convenience() {
         let provider = Wildcard::hierarchical("config", "myapp");
         let patterns = provider.patterns();
-        
+
         // Should contain patterns for various directories
         assert!(patterns.iter().any(|p| p.contains("~/.config/myapp")));
         assert!(patterns.iter().any(|p| p.contains("./myapp")));
@@ -559,7 +570,7 @@ mod tests {
     fn test_xdg_convenience() {
         let provider = Wildcard::xdg("myapp");
         let patterns = provider.patterns();
-        
+
         // Should contain XDG-compliant patterns
         assert!(patterns.iter().any(|p| p.contains("~/.config/myapp")));
         assert!(patterns.iter().any(|p| p.contains("~/.local/share/myapp")));
@@ -570,14 +581,14 @@ mod tests {
     fn test_development_convenience() {
         let provider = Wildcard::development("config");
         let patterns = provider.patterns();
-        
+
         // Should contain development-specific patterns
         assert!(patterns.iter().any(|p| p.contains("config/")));
         assert!(patterns.iter().any(|p| p == "config.toml"));
-        
+
         // Should have custom merge order
         match provider.merge_order() {
-            MergeOrder::Custom(_) => {},
+            MergeOrder::Custom(_) => {}
             _ => panic!("Expected Custom merge order for development provider"),
         }
     }

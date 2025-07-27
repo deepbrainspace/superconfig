@@ -3,8 +3,8 @@
 //! This module provides convenient methods for accessing configuration values,
 //! exporting to different formats, and debugging configuration state.
 
-use figment::error::Actual;
 use figment::Error;
+use figment::error::Actual;
 
 impl crate::SuperConfig {
     /// Export configuration as pretty-formatted JSON string
@@ -235,7 +235,7 @@ impl crate::SuperConfig {
         })?;
 
         Ok(format!(
-            "=== SuperConfig Debug ===\n\nWarnings: {:?}\n\nFinal Configuration:\n{pretty_json}\n\nProvider Chain:\n{:#?}", 
+            "=== SuperConfig Debug ===\n\nWarnings: {:?}\n\nFinal Configuration:\n{pretty_json}\n\nProvider Chain:\n{:#?}",
             self.warnings, self.figment
         ))
     }

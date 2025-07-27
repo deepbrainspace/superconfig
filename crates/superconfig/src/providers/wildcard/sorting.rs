@@ -324,15 +324,18 @@ fn modification_time(path: &Path) -> Option<SystemTime> {
 /// - 3: Other/unknown locations
 fn hierarchical_priority(path: &Path) -> usize {
     let path_str = path.to_string_lossy();
-    
+
     if path_str.contains("/.config/") {
-        0  // System level - lowest priority (processed first)
-    } else if path_str.starts_with("./") && path_str.contains("/.") && !path_str.contains("/.config/") {
-        1  // User level - medium priority (processed second) 
+        0 // System level - lowest priority (processed first)
+    } else if path_str.starts_with("./")
+        && path_str.contains("/.")
+        && !path_str.contains("/.config/")
+    {
+        1 // User level - medium priority (processed second) 
     } else if path_str.starts_with("./") || path_str.contains("**/") {
-        2  // Project level - highest priority (processed last)
+        2 // Project level - highest priority (processed last)
     } else {
-        3  // Unknown - lowest priority
+        3 // Unknown - lowest priority
     }
 }
 
@@ -340,10 +343,7 @@ fn hierarchical_priority(path: &Path) -> usize {
 ///
 /// Returns the index of the first matching pattern, or usize::MAX for no match
 fn pattern_priority(path: &Path, patterns: &[String]) -> usize {
-    let filename = path
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("");
+    let filename = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
     for (index, pattern) in patterns.iter().enumerate() {
         if pattern_matches(filename, pattern) {
@@ -387,12 +387,12 @@ mod tests {
     fn test_alphabetical_sorting() {
         let files = vec![
             PathBuf::from("config-z.toml"),
-            PathBuf::from("config-a.toml"), 
+            PathBuf::from("config-a.toml"),
             PathBuf::from("config-m.toml"),
         ];
 
         let sorted = MergeOrder::Alphabetical.sort_files(files);
-        
+
         assert_eq!(sorted[0].file_name().unwrap(), "config-a.toml");
         assert_eq!(sorted[1].file_name().unwrap(), "config-m.toml");
         assert_eq!(sorted[2].file_name().unwrap(), "config-z.toml");
@@ -407,7 +407,7 @@ mod tests {
         ];
 
         let sorted = MergeOrder::Reverse.sort_files(files);
-        
+
         assert_eq!(sorted[0].file_name().unwrap(), "config-z.toml");
         assert_eq!(sorted[1].file_name().unwrap(), "config-m.toml");
         assert_eq!(sorted[2].file_name().unwrap(), "config-a.toml");
@@ -438,10 +438,10 @@ mod tests {
         ];
 
         let sorted = MergeOrder::Custom(patterns).sort_files(files);
-        
-        assert_eq!(sorted[0].file_name().unwrap(), "base.yaml");       // First pattern
-        assert_eq!(sorted[1].file_name().unwrap(), "env-prod.toml");   // Second pattern  
-        assert_eq!(sorted[2].file_name().unwrap(), "local.toml");      // Third pattern
-        assert_eq!(sorted[3].file_name().unwrap(), "other.json");      // No match, alphabetical
+
+        assert_eq!(sorted[0].file_name().unwrap(), "base.yaml"); // First pattern
+        assert_eq!(sorted[1].file_name().unwrap(), "env-prod.toml"); // Second pattern  
+        assert_eq!(sorted[2].file_name().unwrap(), "local.toml"); // Third pattern
+        assert_eq!(sorted[3].file_name().unwrap(), "other.json"); // No match, alphabetical
     }
 }

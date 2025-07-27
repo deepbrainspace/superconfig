@@ -108,7 +108,10 @@ impl std::fmt::Debug for SearchStrategy {
                 write!(f, "SearchStrategy::Directories({dirs:?})")
             }
             SearchStrategy::Recursive { roots, max_depth } => {
-                write!(f, "SearchStrategy::Recursive {{ roots: {roots:?}, max_depth: {max_depth:?} }}")
+                write!(
+                    f,
+                    "SearchStrategy::Recursive {{ roots: {roots:?}, max_depth: {max_depth:?} }}"
+                )
             }
             SearchStrategy::Current => write!(f, "SearchStrategy::Current"),
             SearchStrategy::Custom(_) => write!(f, "SearchStrategy::Custom(<closure>)"),
@@ -126,7 +129,9 @@ impl Clone for SearchStrategy {
             },
             SearchStrategy::Current => SearchStrategy::Current,
             SearchStrategy::Custom(_) => {
-                panic!("Cannot clone SearchStrategy::Custom - use other variants for cloneable strategies")
+                panic!(
+                    "Cannot clone SearchStrategy::Custom - use other variants for cloneable strategies"
+                )
             }
         }
     }
@@ -163,9 +168,7 @@ impl SearchStrategy {
             SearchStrategy::Recursive { roots, max_depth } => {
                 discover_recursive(roots, glob_set, *max_depth)
             }
-            SearchStrategy::Current => {
-                discover_in_directories(&[PathBuf::from(".")], glob_set)
-            }
+            SearchStrategy::Current => discover_in_directories(&[PathBuf::from(".")], glob_set),
             SearchStrategy::Custom(discovery_fn) => {
                 let all_files = discovery_fn();
                 filter_files_by_globset(&all_files, glob_set)
@@ -256,7 +259,11 @@ mod tests {
         let files = discover_in_directories(&[dir_path.to_path_buf()], &glob_set);
 
         assert_eq!(files.len(), 2); // Only .toml and .yaml files
-        assert!(files.iter().any(|p| p.file_name().unwrap() == "config.toml"));
+        assert!(
+            files
+                .iter()
+                .any(|p| p.file_name().unwrap() == "config.toml")
+        );
         assert!(files.iter().any(|p| p.file_name().unwrap() == "app.yaml"));
     }
 
@@ -289,16 +296,15 @@ mod tests {
         fs::create_dir_all(&deep_dir).unwrap();
 
         // Create test files at different depths
-        fs::write(root_path.join("root.toml"), "test").unwrap();        // Depth 0
-        fs::write(sub_dir.join("sub.toml"), "test").unwrap();           // Depth 1
-        fs::write(deep_dir.join("deep.toml"), "test").unwrap();         // Depth 2
+        fs::write(root_path.join("root.toml"), "test").unwrap(); // Depth 0
+        fs::write(sub_dir.join("sub.toml"), "test").unwrap(); // Depth 1
+        fs::write(deep_dir.join("deep.toml"), "test").unwrap(); // Depth 2
 
         let glob_set = create_test_globset();
-        
+
         // Max depth 2 should find root and sub, but not deep
         let files = discover_recursive(&[root_path.to_path_buf()], &glob_set, Some(2));
-        
-        
+
         assert_eq!(files.len(), 2);
         assert!(files.iter().any(|p| p.file_name().unwrap() == "root.toml"));
         assert!(files.iter().any(|p| p.file_name().unwrap() == "sub.toml"));
@@ -314,13 +320,13 @@ mod tests {
         ];
 
         let strategy = SearchStrategy::Custom(Box::new(move || custom_files.clone()));
-        
+
         // Note: This test uses non-existent files, so we can't actually test file discovery
         // In a real scenario, the custom function would return actual file paths
         // This test mainly verifies the API structure
         let glob_set = create_test_globset();
         let _files = strategy.discover_files(&glob_set);
-        
+
         // The custom function returns the files, but since they don't exist,
         // filter_files_by_globset will return an empty vector
         // This is expected behavior for the API
@@ -330,11 +336,11 @@ mod tests {
     fn test_current_directory_strategy() {
         let strategy = SearchStrategy::Current;
         let glob_set = create_test_globset();
-        
+
         // This will search the current directory
         // We don't assert on specific results since we don't control the test environment
         let _files = strategy.discover_files(&glob_set);
-        
+
         // Just verify it doesn't panic and returns a vector
         // The actual test would depend on files in the current directory
     }

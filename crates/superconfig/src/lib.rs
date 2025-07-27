@@ -39,19 +39,19 @@
 //! - Gradual migration path for existing projects
 //!
 //! ## 🎯 Quick Start
-//! 
+//!
 //! SuperConfig provides a clean, powerful API for all your configuration needs:
-//! 
+//!
 //! ```rust,no_run
 //! use superconfig::SuperConfig;
-//! 
+//!
 //! // Simple configuration loading
 //! let config = SuperConfig::new()
 //!     .with_file("config.toml")           // Smart format detection
 //!     .with_env("APP_")                   // Enhanced environment variables
 //!     .with_hierarchical_config("myapp"); // Git-style discovery
 //! ```
-//! 
+//!
 //! ## 🌟 Real-World Examples
 //!
 //! ### Web Application Configuration
@@ -265,13 +265,14 @@ use std::ops::Deref;
 pub use figment;
 
 pub mod access;
+mod fluent;
 pub mod merge;
 pub mod providers;
-mod fluent;
 
 // Re-export enhanced providers for existing Figment users
-pub use providers::{Empty, MergeOrder, Nested, Universal, Wildcard, WildcardBuilder, SearchStrategy};
-
+pub use providers::{
+    Empty, MergeOrder, Nested, SearchStrategy, Universal, Wildcard, WildcardBuilder,
+};
 
 /// SuperConfig is a universal configuration management platform that combines
 /// enterprise-grade features with 100% Figment compatibility.
@@ -309,7 +310,7 @@ impl SuperConfig {
 
     /// Create SuperConfig from an existing Figment
     pub fn from_figment(figment: Figment) -> Self {
-        Self { 
+        Self {
             figment,
             warnings: Vec::new(),
         }

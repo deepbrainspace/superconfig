@@ -35,7 +35,7 @@ use super::discovery::SearchStrategy;
 ///
 /// // Simple pattern
 /// let (strategy, patterns) = parse_pattern("*.toml")?;
-/// 
+///
 /// // Path-based pattern
 /// let (strategy, patterns) = parse_pattern("./config/*.yaml")?;
 ///
@@ -60,10 +60,7 @@ pub fn parse_pattern(pattern: &str) -> Result<(SearchStrategy, Vec<String>), fig
 
     // Handle brace expansion patterns first
     if let Some((directories, file_pattern)) = parse_brace_expansion(pattern) {
-        return Ok((
-            SearchStrategy::Directories(directories),
-            vec![file_pattern],
-        ));
+        return Ok((SearchStrategy::Directories(directories), vec![file_pattern]));
     }
 
     // Handle recursive patterns
@@ -81,10 +78,7 @@ pub fn parse_pattern(pattern: &str) -> Result<(SearchStrategy, Vec<String>), fig
     // Handle path-based patterns
     if pattern.contains('/') {
         let (dir, file_pattern) = parse_path_pattern(pattern);
-        return Ok((
-            SearchStrategy::Directories(vec![dir]),
-            vec![file_pattern],
-        ));
+        return Ok((SearchStrategy::Directories(vec![dir]), vec![file_pattern]));
     }
 
     // Simple file pattern - search current directory
@@ -107,7 +101,7 @@ fn parse_brace_expansion(pattern: &str) -> Option<(Vec<PathBuf>, String)> {
 
     let close_brace = pattern.find('}')?;
     let dirs_part = &pattern[1..close_brace]; // Remove { and }
-    let rest = &pattern[close_brace + 1..];   // Everything after }
+    let rest = &pattern[close_brace + 1..]; // Everything after }
 
     // Split directories by comma
     let directories: Vec<PathBuf> = dirs_part
@@ -206,13 +200,17 @@ fn parse_path_pattern(pattern: &str) -> (PathBuf, String) {
 /// ```
 pub fn build_globset(patterns: &[impl AsRef<str>]) -> Result<globset::GlobSet, figment::Error> {
     let mut builder = GlobSetBuilder::new();
-    
+
     for pattern in patterns {
-        let glob = Glob::new(pattern.as_ref()).map_err(|e| figment::Error::from(format!("Invalid pattern '{}': {}", pattern.as_ref(), e)))?;
+        let glob = Glob::new(pattern.as_ref()).map_err(|e| {
+            figment::Error::from(format!("Invalid pattern '{}': {}", pattern.as_ref(), e))
+        })?;
         builder.add(glob);
     }
-    
-    builder.build().map_err(|e| figment::Error::from(format!("Failed to build globset: {e}")))
+
+    builder
+        .build()
+        .map_err(|e| figment::Error::from(format!("Failed to build globset: {e}")))
 }
 
 /// Parse multiple patterns and combine their search strategies
@@ -236,7 +234,9 @@ pub fn build_globset(patterns: &[impl AsRef<str>]) -> Result<globset::GlobSet, f
 /// let (strategy, combined_patterns) = parse_multiple_patterns(&mixed_patterns)?;
 /// # Ok::<(), figment::Error>(())
 /// ```
-pub fn parse_multiple_patterns(patterns: &[impl AsRef<str>]) -> Result<(SearchStrategy, Vec<String>), figment::Error> {
+pub fn parse_multiple_patterns(
+    patterns: &[impl AsRef<str>],
+) -> Result<(SearchStrategy, Vec<String>), figment::Error> {
     if patterns.is_empty() {
         return Err(figment::Error::from("At least one pattern is required"));
     }
@@ -326,19 +326,19 @@ mod tests {
     #[test]
     fn test_parse_simple_pattern() {
         let (strategy, patterns) = parse_pattern("*.toml").unwrap();
-        
+
         match strategy {
             SearchStrategy::Current => {}
             _ => panic!("Expected Current strategy"),
         }
-        
+
         assert_eq!(patterns, vec!["*.toml"]);
     }
 
     #[test]
     fn test_parse_path_pattern() {
         let (strategy, patterns) = parse_pattern("./config/*.yaml").unwrap();
-        
+
         match strategy {
             SearchStrategy::Directories(dirs) => {
                 assert_eq!(dirs.len(), 1);
@@ -346,14 +346,14 @@ mod tests {
             }
             _ => panic!("Expected Directories strategy"),
         }
-        
+
         assert_eq!(patterns, vec!["*.yaml"]);
     }
 
     #[test]
     fn test_parse_recursive_pattern() {
         let (strategy, patterns) = parse_pattern("**/*.json").unwrap();
-        
+
         match strategy {
             SearchStrategy::Recursive { roots, max_depth } => {
                 assert_eq!(roots.len(), 1);
@@ -362,14 +362,14 @@ mod tests {
             }
             _ => panic!("Expected Recursive strategy"),
         }
-        
+
         assert_eq!(patterns, vec!["*.json"]);
     }
 
     #[test]
     fn test_parse_brace_expansion() {
         let (strategy, patterns) = parse_pattern("{./config,~/.config}/*.toml").unwrap();
-        
+
         match strategy {
             SearchStrategy::Directories(dirs) => {
                 assert_eq!(dirs.len(), 2);
@@ -378,7 +378,7 @@ mod tests {
             }
             _ => panic!("Expected Directories strategy"),
         }
-        
+
         assert_eq!(patterns, vec!["*.toml"]);
     }
 
@@ -386,12 +386,12 @@ mod tests {
     fn test_parse_multiple_patterns_same_type() {
         let patterns = vec!["*.toml".to_string(), "*.yaml".to_string()];
         let (strategy, combined_patterns) = parse_multiple_patterns(&patterns).unwrap();
-        
+
         match strategy {
             SearchStrategy::Current => {}
             _ => panic!("Expected Current strategy for simple patterns"),
         }
-        
+
         assert_eq!(combined_patterns.len(), 2);
         assert!(combined_patterns.contains(&"*.toml".to_string()));
         assert!(combined_patterns.contains(&"*.yaml".to_string()));
@@ -401,7 +401,7 @@ mod tests {
     fn test_parse_multiple_patterns_mixed_types() {
         let patterns = vec!["./config/*.toml".to_string(), "**/*.yaml".to_string()];
         let (strategy, _) = parse_multiple_patterns(&patterns).unwrap();
-        
+
         match strategy {
             SearchStrategy::Recursive { .. } => {}
             _ => panic!("Expected Recursive strategy for mixed patterns"),
@@ -412,7 +412,7 @@ mod tests {
     fn test_build_globset() {
         let patterns = vec!["*.toml".to_string(), "*.yaml".to_string()];
         let globset = build_globset(&patterns).unwrap();
-        
+
         // Test that the globset was built successfully
         assert!(globset.is_match("config.toml"));
         assert!(globset.is_match("app.yaml"));
@@ -437,7 +437,7 @@ mod tests {
     fn test_parse_brace_expansion_helper() {
         let result = parse_brace_expansion("{dir1,dir2}/config.toml");
         assert!(result.is_some());
-        
+
         let (dirs, pattern) = result.unwrap();
         assert_eq!(dirs.len(), 2);
         assert!(dirs.contains(&PathBuf::from("dir1")));

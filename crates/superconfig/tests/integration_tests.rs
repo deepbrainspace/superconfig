@@ -436,12 +436,15 @@ allowed_origins_add = ["https://project.com"]
     let wildcard_provider = Wildcard::hierarchical("config", "testapp");
     let discovered_files = wildcard_provider.discover_files();
     println!("Discovered files in merge order: {discovered_files:?}");
-    println!("Merge order strategy: {:?}", wildcard_provider.merge_order());
-    
+    println!(
+        "Merge order strategy: {:?}",
+        wildcard_provider.merge_order()
+    );
+
     let config = SuperConfig::new()
         .with_defaults(TestConfig::default()) // Add defaults first
         .with_hierarchical_config("testapp");
-    
+
     println!("Config warnings: {:?}", config.warnings());
 
     // Note: Hierarchical configuration currently has profile handling issues
@@ -535,20 +538,32 @@ allowed_origins_add = ["https://project-final.com"]
     let result: TestConfig = config.extract()?;
 
     // Expected sequence:
-    // 1. Start: ["https://system.com", "https://common.com"] 
+    // 1. Start: ["https://system.com", "https://common.com"]
     // 2. After user: ["https://system.com", "https://common.com", "https://user-added.com"]
-    // 3. After project remove: ["https://common.com", "https://user-added.com"] 
+    // 3. After project remove: ["https://common.com", "https://user-added.com"]
     // 4. After project add: ["https://common.com", "https://user-added.com", "https://project-final.com"]
 
     let origins = &result.database.allowed_origins;
     println!("Final allowed_origins: {origins:?}");
-    
+
     // Verify the sequential processing worked correctly
-    assert!(origins.contains(&"https://common.com".to_string()), "Should preserve common.com");
-    assert!(origins.contains(&"https://user-added.com".to_string()), "Should preserve user addition");
-    assert!(origins.contains(&"https://project-final.com".to_string()), "Should include project addition");
-    assert!(!origins.contains(&"https://system.com".to_string()), "Should have removed system.com");
-    
+    assert!(
+        origins.contains(&"https://common.com".to_string()),
+        "Should preserve common.com"
+    );
+    assert!(
+        origins.contains(&"https://user-added.com".to_string()),
+        "Should preserve user addition"
+    );
+    assert!(
+        origins.contains(&"https://project-final.com".to_string()),
+        "Should include project addition"
+    );
+    assert!(
+        !origins.contains(&"https://system.com".to_string()),
+        "Should have removed system.com"
+    );
+
     // Verify expected final state
     assert_eq!(origins.len(), 3, "Should have exactly 3 origins");
 
@@ -595,7 +610,7 @@ allowed_origins_add = ["D"]
 "#,
     )?;
 
-    // Project config: remove D (what user just added), add E  
+    // Project config: remove D (what user just added), add E
     let project_config = temp_dir.path().join("testapp.toml");
     fs::write(
         &project_config,
@@ -623,20 +638,29 @@ allowed_origins_add = ["E"]
     let result: TestConfig = config.extract()?;
 
     // Expected sequence:
-    // 1. System: ["A", "B", "C"] 
+    // 1. System: ["A", "B", "C"]
     // 2. User: Remove B, add D → ["A", "C", "D"]
     // 3. Project: Remove D, add E → ["A", "C", "E"]
 
     let origins = &result.database.allowed_origins;
     println!("Complex sequence final allowed_origins: {origins:?}");
-    
+
     // With correct sequential processing:
     assert!(origins.contains(&"A".to_string()), "Should preserve A");
     assert!(origins.contains(&"C".to_string()), "Should preserve C");
-    assert!(origins.contains(&"E".to_string()), "Should include E (project addition)");
-    assert!(!origins.contains(&"B".to_string()), "Should have removed B (user removal)");
-    assert!(!origins.contains(&"D".to_string()), "Should have removed D (project removal after user addition)");
-    
+    assert!(
+        origins.contains(&"E".to_string()),
+        "Should include E (project addition)"
+    );
+    assert!(
+        !origins.contains(&"B".to_string()),
+        "Should have removed B (user removal)"
+    );
+    assert!(
+        !origins.contains(&"D".to_string()),
+        "Should have removed D (project removal after user addition)"
+    );
+
     // Should have exactly A, C, E
     assert_eq!(origins.len(), 3, "Should have exactly 3 origins");
 

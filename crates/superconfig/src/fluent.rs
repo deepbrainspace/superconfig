@@ -54,7 +54,10 @@ impl SuperConfig {
     ///     .with_hierarchical_config("myapp");  // Loads system, user, project configs
     /// ```
     pub fn with_hierarchical_config<S: AsRef<str>>(self, base_name: S) -> Self {
-        self.merge(crate::providers::Wildcard::hierarchical("config", base_name.as_ref()))
+        self.merge(crate::providers::Wildcard::hierarchical(
+            "config",
+            base_name.as_ref(),
+        ))
     }
 
     /// Add default configuration values
@@ -104,9 +107,9 @@ impl SuperConfig {
     /// ```
     pub fn with_cli_opt<T: serde::Serialize>(self, cli_opt: Option<T>) -> Self {
         if let Some(cli_values) = cli_opt {
-            self.merge(crate::providers::Empty::new(
-                Serialized::defaults(cli_values)
-            ))
+            self.merge(crate::providers::Empty::new(Serialized::defaults(
+                cli_values,
+            )))
         } else {
             self
         }
