@@ -10,6 +10,10 @@ inputs:
     description: 'Proto version to install'
     required: false
     default: '0.51.4'
+  crate-name:
+    description: 'Name of the crate for targeted caching'
+    required: false
+    default: ''
 
 outputs:
   cache-hit:
@@ -70,11 +74,6 @@ runs:
           ~/.cargo/git/db/
         key: cargo-${{ runner.os }}-${{ hashFiles('.prototools') }}-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Cache Rust target directory
-      uses: actions/cache@v4
-      with:
-        path: target/
-        key: cargo-target-${{ runner.os }}-${{ hashFiles('.prototools') }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
 
     - name: Cache Moon workspace outputs
       uses: actions/cache@v4  
