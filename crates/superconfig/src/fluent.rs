@@ -60,7 +60,7 @@ impl SuperConfig {
         ))
     }
 
-    /// Add default configuration values
+    /// Add default configuration values from a serializable struct
     ///
     /// Uses Figment's Serialized provider to set defaults that can be overridden
     /// by other configuration sources.
@@ -82,6 +82,40 @@ impl SuperConfig {
     /// ```
     pub fn with_defaults<T: serde::Serialize>(self, defaults: T) -> Self {
         self.merge(Serialized::defaults(defaults))
+    }
+
+    /// Add default configuration from a raw string (TOML, JSON, or YAML)
+    ///
+    /// Uses the Universal provider to parse the string content with automatic
+    /// format detection. Perfect for embedded configuration strings.
+    ///
+    /// # Examples
+    /// ```rust,no_run
+    /// use superconfig::SuperConfig;
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Deserialize, Serialize)]
+    /// struct CliArgs { host: Option<String> }
+    ///
+    /// // Embedded default configuration (common pattern)
+    /// const DEFAULT_CONFIG: &str = r#"
+    /// host = "localhost"
+    /// port = 8080
+    /// 
+    /// [database]
+    /// url = "postgres://localhost"
+    /// timeout = 30
+    /// "#;
+    ///
+    /// let cli_args = CliArgs { host: None };
+    /// let config = SuperConfig::new()
+    ///     .with_defaults_string(DEFAULT_CONFIG)  // Load TOML string as defaults
+    ///     .with_hierarchical_config("myapp")     // Apply hierarchical configs
+    ///     .with_env("APP_")                      // Apply env variables
+    ///     .with_cli_opt(Some(cli_args));         // Apply CLI overrides
+    /// ```
+    pub fn with_defaults_string(self, content: &str) -> Self {
+        self.merge(crate::providers::Universal::string(content))
     }
 
     /// Add CLI option values with empty value filtering

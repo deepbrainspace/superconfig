@@ -709,6 +709,109 @@ fn test_with_file_opt() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
+fn test_with_defaults_string() -> Result<(), Box<dyn std::error::Error>> {
+    // Test with TOML string
+    const TOML_DEFAULTS: &str = r#"
+host = "default.example.com"
+port = 9000
+features = ["default_feature"]
+
+[database]
+url = "postgres://default"
+timeout = 45
+"#;
+
+    let config_toml = SuperConfig::new()
+        .with_defaults_string(TOML_DEFAULTS);
+
+    let result_toml: TestConfig = config_toml.extract()?;
+    assert_eq!(result_toml.host, "default.example.com");
+    assert_eq!(result_toml.port, 9000);
+    assert_eq!(result_toml.features, vec!["default_feature"]);
+    assert_eq!(result_toml.database.url, "postgres://default");
+    assert_eq!(result_toml.database.timeout, 45);
+
+    // Test with JSON string
+    const JSON_DEFAULTS: &str = r#"{
+    "host": "json.example.com",
+    "port": 7000,
+    "features": ["json_feature"],
+    "database": {
+        "url": "mysql://json",
+        "timeout": 25
+    }
+}"#;
+
+    let config_json = SuperConfig::new()
+        .with_defaults_string(JSON_DEFAULTS);
+
+    let result_json: TestConfig = config_json.extract()?;
+    assert_eq!(result_json.host, "json.example.com");
+    assert_eq!(result_json.port, 7000);
+    assert_eq!(result_json.features, vec!["json_feature"]);
+    assert_eq!(result_json.database.url, "mysql://json");
+    assert_eq!(result_json.database.timeout, 25);
+
+    // Test with YAML string
+    const YAML_DEFAULTS: &str = r#"
+host: yaml.example.com
+port: 6000
+features:
+  - yaml_feature
+database:
+  url: redis://yaml
+  timeout: 15
+"#;
+
+    let config_yaml = SuperConfig::new()
+        .with_defaults_string(YAML_DEFAULTS);
+
+    let result_yaml: TestConfig = config_yaml.extract()?;
+    assert_eq!(result_yaml.host, "yaml.example.com");
+    assert_eq!(result_yaml.port, 6000);
+    assert_eq!(result_yaml.features, vec!["yaml_feature"]);
+    assert_eq!(result_yaml.database.url, "redis://yaml");
+    assert_eq!(result_yaml.database.timeout, 15);
+
+    Ok(())
+}
+
+#[test]
+fn test_with_defaults_string_priority() -> Result<(), Box<dyn std::error::Error>> {
+    // Test that string defaults have lowest priority and can be overridden
+    const DEFAULT_CONFIG: &str = r#"
+host = "default.example.com"
+port = 8000
+features = ["default"]
+"#;
+
+    let temp_dir = TempDir::new()?;
+    let override_file = temp_dir.path().join("override.toml");
+    fs::write(
+        &override_file,
+        r#"
+host = "override.example.com"
+port = 9000
+"#,
+    )?;
+
+    let config = SuperConfig::new()
+        .with_defaults_string(DEFAULT_CONFIG)  // Lowest priority
+        .with_file(&override_file);             // Should override
+
+    let result: TestConfig = config.extract()?;
+    
+    // Values from override file should win
+    assert_eq!(result.host, "override.example.com");
+    assert_eq!(result.port, 9000);
+    
+    // Values not in override file should come from defaults
+    assert_eq!(result.features, vec!["default"]);
+
+    Ok(())
+}
+
+#[test]
 #[serial] // Prevent concurrent env var modification
 fn test_with_env_ignore_empty() -> Result<(), Box<dyn std::error::Error>> {
     // Set up test environment variables - some empty, some with values
