@@ -232,8 +232,11 @@ mod integration_tests {
         let dir_path = temp_dir.path();
 
         // Create test configuration files
+        let config_path = dir_path.join("config.toml");
+        let override_path = dir_path.join("override.toml");
+
         fs::write(
-            dir_path.join("config.toml"),
+            &config_path,
             r#"
 [database]
 host = "localhost"
@@ -247,7 +250,7 @@ debug = true
         .unwrap();
 
         fs::write(
-            dir_path.join("override.toml"),
+            &override_path,
             r#"
 [database]
 port = 5433
@@ -257,6 +260,11 @@ debug = false
 "#,
         )
         .unwrap();
+
+        // Ensure files are fully written and visible to filesystem by reading them back
+        // This verifies the write is complete and visible to subsequent readers
+        let _ = std::fs::read_to_string(&config_path).unwrap();
+        let _ = std::fs::read_to_string(&override_path).unwrap();
 
         // Change to temp directory
         let original_dir = std::env::current_dir().unwrap();

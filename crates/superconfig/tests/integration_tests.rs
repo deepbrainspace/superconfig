@@ -678,6 +678,176 @@ allowed_origins_add = ["E"]
 }
 
 #[test]
+fn test_with_file_opt() -> Result<(), Box<dyn std::error::Error>> {
+    let temp_dir = TempDir::new()?;
+    let config_path = temp_dir.path().join("config.json");
+
+    fs::write(
+        &config_path,
+        r#"{"host": "optional.example.com", "port": 4000}"#,
+    )?;
+
+    // Test with Some(path)
+    let config_some = SuperConfig::new()
+        .with_defaults(TestConfig::default())
+        .with_file_opt(Some(&config_path));
+
+    let result_some: TestConfig = config_some.extract()?;
+    assert_eq!(result_some.host, "optional.example.com");
+    assert_eq!(result_some.port, 4000);
+
+    // Test with None
+    let config_none = SuperConfig::new()
+        .with_defaults(TestConfig::default())
+        .with_file_opt(None::<&std::path::Path>);
+
+    let result_none: TestConfig = config_none.extract()?;
+    assert_eq!(result_none.host, "localhost"); // From defaults
+    assert_eq!(result_none.port, 8080); // From defaults
+
+    Ok(())
+}
+
+#[test]
+fn test_with_defaults_string() -> Result<(), Box<dyn std::error::Error>> {
+    // Test with TOML string
+    const TOML_DEFAULTS: &str = r#"
+host = "default.example.com"
+port = 9000
+features = ["default_feature"]
+
+[database]
+url = "postgres://default"
+timeout = 45
+"#;
+
+    let config_toml = SuperConfig::new().with_defaults_string(TOML_DEFAULTS);
+
+    let result_toml: TestConfig = config_toml.extract()?;
+    assert_eq!(result_toml.host, "default.example.com");
+    assert_eq!(result_toml.port, 9000);
+    assert_eq!(result_toml.features, vec!["default_feature"]);
+    assert_eq!(result_toml.database.url, "postgres://default");
+    assert_eq!(result_toml.database.timeout, 45);
+
+    // Test with JSON string
+    const JSON_DEFAULTS: &str = r#"{
+    "host": "json.example.com",
+    "port": 7000,
+    "features": ["json_feature"],
+    "database": {
+        "url": "mysql://json",
+        "timeout": 25
+    }
+}"#;
+
+    let config_json = SuperConfig::new().with_defaults_string(JSON_DEFAULTS);
+
+    let result_json: TestConfig = config_json.extract()?;
+    assert_eq!(result_json.host, "json.example.com");
+    assert_eq!(result_json.port, 7000);
+    assert_eq!(result_json.features, vec!["json_feature"]);
+    assert_eq!(result_json.database.url, "mysql://json");
+    assert_eq!(result_json.database.timeout, 25);
+
+    // Test with YAML string
+    const YAML_DEFAULTS: &str = r#"
+host: yaml.example.com
+port: 6000
+features:
+  - yaml_feature
+database:
+  url: redis://yaml
+  timeout: 15
+"#;
+
+    let config_yaml = SuperConfig::new().with_defaults_string(YAML_DEFAULTS);
+
+    let result_yaml: TestConfig = config_yaml.extract()?;
+    assert_eq!(result_yaml.host, "yaml.example.com");
+    assert_eq!(result_yaml.port, 6000);
+    assert_eq!(result_yaml.features, vec!["yaml_feature"]);
+    assert_eq!(result_yaml.database.url, "redis://yaml");
+    assert_eq!(result_yaml.database.timeout, 15);
+
+    Ok(())
+}
+
+#[test]
+fn test_with_defaults_string_priority() -> Result<(), Box<dyn std::error::Error>> {
+    // Test that string defaults have lowest priority and can be overridden
+    const DEFAULT_CONFIG: &str = r#"
+host = "default.example.com"
+port = 8000
+features = ["default"]
+"#;
+
+    let temp_dir = TempDir::new()?;
+    let override_file = temp_dir.path().join("override.toml");
+    fs::write(
+        &override_file,
+        r#"
+host = "override.example.com"
+port = 9000
+"#,
+    )?;
+
+    let config = SuperConfig::new()
+        .with_defaults_string(DEFAULT_CONFIG) // Lowest priority
+        .with_file(&override_file); // Should override
+
+    let result: TestConfig = config.extract()?;
+
+    // Values from override file should win
+    assert_eq!(result.host, "override.example.com");
+    assert_eq!(result.port, 9000);
+
+    // Values not in override file should come from defaults
+    assert_eq!(result.features, vec!["default"]);
+
+    Ok(())
+}
+
+#[test]
+#[serial] // Prevent concurrent env var modification
+fn test_with_env_ignore_empty() -> Result<(), Box<dyn std::error::Error>> {
+    // Set up test environment variables - some empty, some with values
+    unsafe {
+        std::env::set_var("TESTIGNORE_HOST", "env.example.com");
+        std::env::set_var("TESTIGNORE_PORT", "5000");
+        std::env::set_var("TESTIGNORE_EMPTY_STRING", ""); // Should be ignored
+        std::env::set_var("TESTIGNORE_FEATURES", r#"["feature1"]"#);
+        std::env::set_var("TESTIGNORE_DATABASE_URL", "postgres://test");
+    }
+
+    let config = SuperConfig::new()
+        .with_defaults(TestConfig::default())
+        .with_env_ignore_empty("TESTIGNORE_");
+
+    let result: TestConfig = config.extract()?;
+
+    // Values with content should be loaded
+    assert_eq!(result.host, "env.example.com");
+    assert_eq!(result.port, 5000);
+    assert_eq!(result.features, vec!["feature1"]);
+    assert_eq!(result.database.url, "postgres://test");
+
+    // Empty values should be ignored, defaults should remain
+    // (We can't easily test this without checking what wasn't overridden)
+
+    // Clean up
+    unsafe {
+        std::env::remove_var("TESTIGNORE_HOST");
+        std::env::remove_var("TESTIGNORE_PORT");
+        std::env::remove_var("TESTIGNORE_EMPTY_STRING");
+        std::env::remove_var("TESTIGNORE_FEATURES");
+        std::env::remove_var("TESTIGNORE_DATABASE_URL");
+    }
+
+    Ok(())
+}
+
+#[test]
 fn test_conversion_methods() -> Result<(), Box<dyn std::error::Error>> {
     let temp_dir = TempDir::new()?;
     let config_path = temp_dir.path().join("config.json");

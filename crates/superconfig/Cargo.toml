@@ -39,6 +39,7 @@ serde = { version = "1.0", features = ["derive"] }
 toml = "0.8"
 serde_yml = "0.0.12"
 lazy_static = "1.4"
+dirs = "6.0"
 
 # Optional core dependencies (used by features)
 anyhow = "1.0"

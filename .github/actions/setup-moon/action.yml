@@ -10,11 +10,22 @@ inputs:
     description: 'Proto version to install'
     required: false
     default: '0.51.4'
+  crate-name:
+    description: 'Name of the crate for targeted caching'
+    required: false
+    default: ''
+  fail-on-cache-miss:
+    description: 'Fail if target cache is not found'
+    required: false
+    default: 'false'
 
 outputs:
   cache-hit:
     description: 'Whether tools were loaded from cache'
     value: ${{ steps.tools-cache.outputs.cache-hit }}
+  target-cache-hit:
+    description: 'Whether target directory was loaded from cache'
+    value: ${{ steps.target-cache.outputs.cache-hit }}
 
 runs:
   using: 'composite'
@@ -70,11 +81,20 @@ runs:
           ~/.cargo/git/db/
         key: cargo-${{ runner.os }}-${{ hashFiles('.prototools') }}-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Cache Rust target directory
-      uses: actions/cache@v4
+    - name: Cache Rust target directory (restore)
+      if: inputs.crate-name != ''
+      uses: actions/cache/restore@v4
+      id: target-cache
       with:
-        path: target/
-        key: cargo-target-${{ runner.os }}-${{ hashFiles('.prototools') }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
+        path: crates/${{ inputs.crate-name }}/target/
+        key: cargo-target-${{ inputs.crate-name }}-${{ runner.os }}-${{ hashFiles('.prototools') }}-${{ hashFiles('crates/${{ inputs.crate-name }}/Cargo.lock', 'crates/${{ inputs.crate-name }}/Cargo.toml') }}
+
+    - name: Fail on cache miss
+      if: inputs.crate-name != '' && inputs.fail-on-cache-miss == 'true' && steps.target-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        echo "Build artifacts not found for ${{ inputs.crate-name }} - build job must complete first"
+        exit 1
 
     - name: Cache Moon workspace outputs
       uses: actions/cache@v4  

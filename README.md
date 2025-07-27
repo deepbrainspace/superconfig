@@ -17,6 +17,7 @@ Built on [Figment's](https://github.com/SergioBenitez/Figment) foundation, Super
 - **🌐 Enhanced Environment Variables**: JSON parsing, nested structures, and smart type detection
 - **🔧 Production Optimizations**: Lazy loading, modification time caching, and optimized data structures
 - **🔍 Configuration Debugging**: Built-in introspection, source tracking, and validation tools
+- **🗣️ Verbosity System**: CLI-style debugging with `-v`, `-vv`, `-vvv` levels for troubleshooting configuration issues
 
 - **Production-Ready**: Performance optimized for real-world applications
 - **Figment Compatible**: Seamless upgrade path for existing Figment users
@@ -91,6 +92,7 @@ let cli_args = AppConfig {
 
 let config: AppConfig = SuperConfig::new()
     .with_defaults(AppConfig::default())        // Set smart defaults
+    .with_verbosity(VerbosityLevel::Debug)      // Enable configuration debugging  
     .with_hierarchical_config("myapp")          // System → user → project cascade
     .with_file("config")                        // Auto-detects .toml/.json/.yaml
     .with_env("APP_")                           // JSON parsing + nesting
@@ -353,6 +355,7 @@ let config = SuperConfig::new()
 ## 📚 Documentation & Resources
 
 - **[API Documentation](https://docs.rs/superconfig)** - Complete API reference with examples
+- **[Examples](crates/superconfig/examples/)** - Practical examples including verbosity system usage
 - **[Figment Documentation](https://docs.rs/figment)** - Core concepts (SuperConfig is compatible)
 - **[GitHub Repository](https://github.com/deepbrainspace/superconfig)** - Source code and issue tracking
 
