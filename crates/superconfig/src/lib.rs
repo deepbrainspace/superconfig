@@ -1,43 +1,141 @@
 //! # SuperConfig
 //!
-//! **Next-Generation Configuration Management Platform** - Advanced configuration management with hierarchical cascading, intelligent array composition, smart format detection, and enterprise-grade optimizations. Designed for modern applications that demand flexibility, performance, and sophisticated configuration patterns.
+//! **Advanced Configuration Management System** - Built on Figment's proven foundation while retaining 100% compatibility, SuperConfig provides advanced features including hierarchical cascading, intelligent array merging, pattern-based discovery, resilient loading with warnings, and advanced environment variable processing.
 //!
-//! Built on [Figment's](https://github.com/SergioBenitez/Figment) solid foundation, SuperConfig adds the advanced features modern applications need while maintaining 100% compatibility for existing Figment users.
+//! SuperConfig is designed for modern applications that demand sophisticated configuration patterns, high performance, and bulletproof reliability.
 //!
 //! ## 🚀 Advanced Configuration Features
 //!
-//! SuperConfig provides enterprise-grade capabilities for sophisticated configuration management:
+//! SuperConfig goes far beyond basic configuration loading with advanced capabilities:
 //!
-//! - **Hierarchical Configuration**: Git-like config inheritance across system → user → project levels
-//! - **Advanced Array Composition**: Intelligent merging with `_add`/`_remove` patterns across all sources
-//! - **Smart Format Detection**: Content-based parsing with caching and performance optimizations
-//! - **Enhanced Environment Variables**: JSON parsing, nested structures, and smart type detection
-//! - **Configuration Debugging**: Built-in introspection, source tracking, and validation tools
-//! - **Production Optimizations**: Lazy loading, modification time caching, and optimized data structures
+//! - **🔄 Resilient Loading**: Continues loading even when some configs fail, collecting warnings instead of crashing
+//! - **🌳 Hierarchical Discovery**: Git-style config inheritance across system → user → project → local levels  
+//! - **🔀 Intelligent Array Merging**: Advanced composition with `_add`/`_remove` patterns across all sources
+//! - **🎯 Pattern-Based Discovery**: Powerful glob patterns for flexible multi-source configuration loading
+//! - **🧠 Smart Format Detection**: Content-based parsing with intelligent caching and fallback strategies
+//! - **⚡ Enhanced Environment Variables**: JSON parsing, automatic nesting, and smart type detection
+//! - **🔍 Advanced Debugging**: Built-in introspection, source tracking, validation, and warning collection
+//! - **🚀 Production Optimizations**: Lazy loading, modification time caching, and optimized data structures
 //!
-//! ## 🎯 Core Capabilities
+//! ## 🎯 SuperConfig All-in-One Solution
 //!
-//! ### 🔧 Enhanced Providers (Beyond Figment)
-//! - **Universal** - Smart format detection with caching and content analysis
-//! - **Nested** - Advanced environment variable parsing with JSON arrays and type detection
-//! - **Empty** - Automatic empty value filtering while preserving meaningful falsy values
-//! - **Hierarchical** - Configuration cascade system across directory hierarchy
+//! SuperConfig provides everything you need in a single, powerful interface:
 //!
-//! ### 🚀 Extension Traits (Supercharge existing Figment code)
-//! - **ExtendExt** - Array merging with `_add`/`_remove` patterns across all sources
-//! - **FluentExt** - Builder methods (`.with_file()`, `.with_env()`, `.with_hierarchical_config()`)
-//! - **AccessExt** - Convenience methods (`.as_json()`, `.get_string()`, `.debug_config()`)
+//! ### 🔧 Advanced Configuration Providers
+//! - **Universal Provider** - Smart format detection with intelligent caching and content analysis
+//! - **Nested Environment Variables** - JSON parsing, automatic nesting, and smart type detection  
+//! - **Empty Value Filtering** - Automatic filtering while preserving meaningful falsy values
+//! - **Wildcard Pattern Discovery** - Unified glob-based configuration discovery with advanced sorting
 //!
-//! ### 💫 SuperConfig Builder (All-in-one solution)
-//! - Built-in methods combining all enhancements  
-//! - Zero import complexity for new projects
-//! - Direct Figment compatibility through Deref
+//! ### 🛠️ Built-in Configuration Methods
+//! - **Fluent Builder API** - `.with_file()`, `.with_env()`, `.with_hierarchical_config()`, `.with_defaults()`
+//! - **Array Merging** - Intelligent composition with `_add`/`_remove` patterns across all sources
+//! - **Access & Export** - `.as_json()`, `.as_yaml()`, `.get_string()`, `.has_key()`, `.debug_config()`
+//! - **Warning System** - Resilient loading with comprehensive error collection and reporting
+//!
+//! ### 💯 100% Figment Compatibility  
+//! - All Figment methods and functionalities work out of the box with SuperConfig
+//! - Drop-in replacement for existing Figment code
+//! - Gradual migration path for existing projects
 //!
 //! ## 🎯 Quick Start
+//!
+//! SuperConfig provides a clean, powerful API for all your configuration needs:
+//!
 //! ```rust,no_run
-//! use superconfig::SuperConfig;  // Recommended: clean all-in-one API
-//! // or
-//! use superconfig::prelude::*;    // For existing Figment users: add superpowers to current setup
+//! use superconfig::SuperConfig;
+//!
+//! // Simple configuration loading
+//! let config = SuperConfig::new()
+//!     .with_file("config.toml")           // Smart format detection
+//!     .with_env("APP_")                   // Enhanced environment variables
+//!     .with_hierarchical_config("myapp"); // Git-style discovery
+//! ```
+//!
+//! ## 🌟 Real-World Examples
+//!
+//! ### Web Application Configuration
+//! ```rust,no_run
+//! use superconfig::SuperConfig;
+//! use serde::{Deserialize, Serialize};
+//!
+//! #[derive(Deserialize, Serialize, Default)]
+//! struct WebConfig {
+//!     server: ServerConfig,
+//!     database: DatabaseConfig,
+//!     features: Vec<String>,
+//! }
+//!
+//! #[derive(Deserialize, Serialize, Default)]
+//! struct ServerConfig {
+//!     host: String,
+//!     port: u16,
+//! }
+//!
+//! #[derive(Deserialize, Serialize, Default)]
+//! struct DatabaseConfig {
+//!     url: String,
+//!     timeout: u32,
+//! }
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! // Load configuration with intelligent fallbacks and validation
+//! let super_config = SuperConfig::new()
+//!     .with_defaults(WebConfig::default())
+//!     .with_file("config.toml")                    // Base configuration
+//!     .with_file("config.local.toml")              // Local overrides
+//!     .with_env("WEBAPP_")                         // Environment variables
+//!     .with_cli_opt(Some(std::env::args().collect::<Vec<_>>())); // CLI arguments
+//!
+//! let config: WebConfig = super_config.extract()?;
+//!
+//! // Check for configuration warnings
+//! if super_config.has_warnings() {
+//!     super_config.print_warnings();
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ### Microservice with Dynamic Discovery
+//! ```rust,no_run
+//! use superconfig::{SuperConfig, Wildcard};
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! // Load configuration from multiple sources with pattern matching
+//! let config = SuperConfig::new()
+//!     .merge(Wildcard::hierarchical("config", "myservice"))  // Git-style discovery
+//!     .merge(Wildcard::new("./config/features/*.toml"))      // Feature configs
+//!     .merge(Wildcard::new("/etc/myservice/**/*.yaml"))      // System configs
+//!     .with_env("SERVICE_");                                 // Environment
+//!
+//! // Export for debugging
+//! println!("Final config: {}", config.as_yaml()?);
+//! println!("Sources: {:#?}", config.debug_sources());
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ### Production Configuration with Array Merging
+//! ```rust,no_run
+//! // config/base.toml
+//! // features = ["auth", "logging"]
+//! // allowed_ips = ["127.0.0.1"]
+//!
+//! // config/production.toml  
+//! // features_add = ["metrics", "tracing"]
+//! // features_remove = ["logging"]
+//! // allowed_ips_add = ["10.0.0.0/8", "192.168.0.0/16"]
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # use superconfig::SuperConfig;
+//! let config = SuperConfig::new()
+//!     .with_file("config/base.toml")
+//!     .with_file("config/production.toml");
+//! # Ok(())
+//! # }
+//!
+//! // Result: features = ["auth", "metrics", "tracing"]
+//! // Result: allowed_ips = ["127.0.0.1", "10.0.0.0/8", "192.168.0.0/16"]
 //! ```
 //!
 //! ## ⚡ Performance Characteristics
@@ -77,6 +175,7 @@
 //!     features: Vec<String>,
 //! }
 //!
+//! # fn main() -> Result<(), figment::Error> {
 //! let cli_args = AppConfig {
 //!     name: "myapp".to_string(),
 //!     port: 3000,
@@ -91,19 +190,19 @@
 //!     .with_cli_opt(Some(cli_args))               // Filtered CLI overrides
 //!     .extract()?;                                // Direct extraction
 //!
-//! # Ok::<(), figment::Error>(())
+//! Ok(())
+//! # }
 //! ```
 //!
 //! ### Alternative: Figment Compatibility Mode
 //!
-//! **For existing Figment users** - Add SuperConfig's advanced features to your current Figment setup without changing existing code:
+//! **For existing Figment users** - SuperConfig provides all Figment functionality while adding enhanced features:
 //!
 //! ```rust,no_run
-//! use figment::Figment;
-//! use superconfig::prelude::*;  // Add SuperConfig superpowers
-//! use serde::Serialize;
+//! use superconfig::{SuperConfig, Universal, Nested};
+//! use serde::{Serialize, Deserialize};
 //!
-//! #[derive(Serialize)]
+//! #[derive(Serialize, Deserialize)]
 //! struct Config { name: String, features: Vec<String> }
 //!
 //! let cli_args = Config {
@@ -111,17 +210,15 @@
 //!     features: vec!["auth".to_string()]
 //! };
 //!
-//! let config = Figment::new()                           // Keep existing Figment code
-//!     .merge_extend(Universal::file("config"))          // Enhanced provider
-//!     .merge_extend(Nested::prefixed("APP_"))           // Enhanced provider  
-//!     .with_hierarchical_config("myapp")                // Extension trait method
-//!     .merge_extend(Empty::new(                         // Enhanced provider
-//!         figment::providers::Serialized::defaults(cli_args)
-//!     ));
+//! let config = SuperConfig::new()                      // SuperConfig with Figment compatibility
+//!     .merge(Universal::file("config"))               // Enhanced provider
+//!     .merge(Nested::prefixed("APP_"))                // Enhanced provider  
+//!     .with_cli_opt(Some(cli_args));                  // SuperConfig method
 //!
-//! // All extension traits available:
-//! let json_output = config.as_json()?;                 // AccessExt
-//! let has_redis = config.has_key("redis.enabled")?;    // AccessExt
+//! // All Figment methods work seamlessly
+//! let result = config.extract::<Config>()?;
+//! let json_output = config.as_json()?;                // SuperConfig extension
+//! let has_redis = config.has_key("redis.enabled")?;   // SuperConfig extension
 //! # Ok::<(), figment::Error>(())
 //! ```
 //!
@@ -130,8 +227,9 @@
 //! SuperConfig provides rich debugging capabilities for development and troubleshooting:
 //!
 //! ```rust,no_run
-//! use superconfig::{SuperConfig, AccessExt};
+//! use superconfig::SuperConfig;
 //!
+//! # fn main() -> Result<(), figment::Error> {
 //! let config = SuperConfig::new()
 //!     .with_hierarchical_config("myapp")
 //!     .with_env("APP_");
@@ -156,7 +254,8 @@
 //! for source in sources {
 //!     println!("Provider: {:?}", source);
 //! }
-//! # Ok::<(), figment::Error>(())
+//! # Ok(())
+//! # }
 //! ```
 
 use figment::Figment;
@@ -165,27 +264,25 @@ use std::ops::Deref;
 // Re-export figment for compatibility
 pub use figment;
 
-pub mod ext;
+pub mod access;
+mod fluent;
+pub mod merge;
 pub mod providers;
 
 // Re-export enhanced providers for existing Figment users
-pub use providers::{Empty, Hierarchical, Nested, Universal};
-
-// Re-export extension traits
-pub use ext::{AccessExt, ExtendExt, FluentExt};
-
-// Re-export prelude module for convenient imports
-pub use ext::prelude;
+pub use providers::{
+    Empty, MergeOrder, Nested, SearchStrategy, Universal, Wildcard, WildcardBuilder,
+};
 
 /// SuperConfig is a universal configuration management platform that combines
-/// enterprise-grade features with 100% Figment compatibility.
+/// advanced features with 100% Figment compatibility.
 ///
 /// Built on Figment's solid foundation, SuperConfig adds production-ready capabilities
 /// including hierarchical configuration cascades, advanced array merging, intelligent
 /// format detection, and performance optimizations - while maintaining seamless
 /// compatibility with existing Figment code.
 ///
-/// ## Enterprise Features
+/// ## Core Features
 ///
 /// - **Hierarchical Configuration**: Git-like config inheritance across system → user → project levels
 /// - **Advanced Array Merging**: Compose configurations with `_add`/`_remove` patterns
@@ -199,6 +296,7 @@ pub use ext::prelude;
 #[derive(Debug, Clone)]
 pub struct SuperConfig {
     figment: Figment,
+    warnings: Vec<String>,
 }
 
 impl SuperConfig {
@@ -206,12 +304,16 @@ impl SuperConfig {
     pub fn new() -> Self {
         Self {
             figment: Figment::new(),
+            warnings: Vec::new(),
         }
     }
 
     /// Create SuperConfig from an existing Figment
     pub fn from_figment(figment: Figment) -> Self {
-        Self { figment }
+        Self {
+            figment,
+            warnings: Vec::new(),
+        }
     }
 
     /// Extract configuration directly (equivalent to calling .extract() on the inner Figment)
@@ -271,76 +373,4 @@ impl From<SuperConfig> for Figment {
     }
 }
 
-impl SuperConfig {
-    /// Add file-based configuration with automatic format detection and array merging
-    pub fn with_file<P: AsRef<std::path::Path>>(self, path: P) -> Self {
-        use crate::ext::FluentExt;
-        Self {
-            figment: self.figment.with_file(path),
-        }
-    }
-
-    /// Add environment variable configuration with automatic nesting and array merging
-    pub fn with_env<S: AsRef<str>>(self, prefix: S) -> Self {
-        use crate::ext::FluentExt;
-        Self {
-            figment: self.figment.with_env(prefix),
-        }
-    }
-
-    /// Add optional CLI arguments with empty value filtering and array merging
-    pub fn with_cli_opt<T: serde::Serialize>(self, cli: Option<T>) -> Self {
-        use crate::ext::FluentExt;
-        Self {
-            figment: self.figment.with_cli_opt(cli),
-        }
-    }
-
-    /// Add hierarchical configuration files with automatic cascade merging
-    pub fn with_hierarchical_config<S: AsRef<str>>(self, base_name: S) -> Self {
-        use crate::ext::FluentExt;
-        Self {
-            figment: self.figment.with_hierarchical_config(base_name),
-        }
-    }
-
-    /// Add any provider with automatic array merging
-    pub fn with_provider<P: figment::Provider>(self, provider: P) -> Self {
-        use crate::ext::FluentExt;
-        Self {
-            figment: self.figment.with_provider(provider),
-        }
-    }
-
-    /// Add default configuration values with automatic array merging
-    pub fn with_defaults<T: serde::Serialize>(self, defaults: T) -> Self {
-        use crate::ext::FluentExt;
-        Self {
-            figment: self.figment.with_defaults(defaults),
-        }
-    }
-
-    /// Add optional file-based configuration
-    pub fn with_file_opt<P: AsRef<std::path::Path>>(self, path: Option<P>) -> Self {
-        use crate::ext::FluentExt;
-        Self {
-            figment: self.figment.with_file_opt(path),
-        }
-    }
-
-    /// Add environment variable configuration with empty value filtering
-    pub fn with_env_ignore_empty<S: AsRef<str>>(self, prefix: S) -> Self {
-        use crate::ext::FluentExt;
-        Self {
-            figment: self.figment.with_env_ignore_empty(prefix),
-        }
-    }
-
-    /// Add CLI arguments with empty value filtering and array merging
-    pub fn with_cli<T: serde::Serialize>(self, cli: T) -> Self {
-        use crate::ext::FluentExt;
-        Self {
-            figment: self.figment.with_cli(cli),
-        }
-    }
-}
+// Fluent methods are now implemented directly in fluent.rs

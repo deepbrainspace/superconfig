@@ -43,6 +43,8 @@ lazy_static = "1.4"
 # Optional core dependencies (used by features)
 anyhow = "1.0"
 serde_json = "1.0"
+globset = "0.4.16"
+walkdir = "2.5"
 
 # Future optional dependencies (when we implement them)
 # clap = { version = "4", optional = true, features = ["derive"] }
