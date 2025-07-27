@@ -183,7 +183,10 @@ impl SuperConfig {
                 VerbosityLevel::Debug,
                 "env",
                 step,
-                &format!("Found {} environment variables with prefix: {prefix_str}", env_vars.len()),
+                &format!(
+                    "Found {} environment variables with prefix: {prefix_str}",
+                    env_vars.len()
+                ),
                 true,
             );
 
@@ -488,7 +491,10 @@ impl SuperConfig {
                 VerbosityLevel::Debug,
                 "env",
                 step,
-                &format!("Found {} environment variables with prefix: {prefix_str}", env_vars.len()),
+                &format!(
+                    "Found {} environment variables with prefix: {prefix_str}",
+                    env_vars.len()
+                ),
                 true,
             );
 

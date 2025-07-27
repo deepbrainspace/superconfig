@@ -259,7 +259,6 @@ impl VerbosityLevel {
     }
 }
 
-
 impl std::fmt::Display for VerbosityLevel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
