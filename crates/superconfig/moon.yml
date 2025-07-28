@@ -17,20 +17,15 @@ fileGroups:
 
 # Project-specific tasks (inherits common tasks from .moon/tasks.yml)
 tasks:
-  # Project-specific build variant
-  build-release:
-    command: 'cargo build --release'
-    inputs: ['@globs(sources)', 'Cargo.toml']
-    
   # Override test to use release mode
   test:
     command: 'cargo test --all-features --release'
-    inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
+    inputs: ['@globs(sources)', '@globs(tests)', '@globs(configs)']
     
   # Documentation tasks with custom theme
   doc:
     command: 'cargo doc --no-deps --all-features'
-    inputs: ['@globs(sources)', 'Cargo.toml']
+    inputs: ['@globs(sources)', '@globs(configs)']
     env:
       RUSTDOCFLAGS: '--default-theme ayu'
     

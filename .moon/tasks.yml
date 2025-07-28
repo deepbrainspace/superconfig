@@ -33,7 +33,7 @@ tasks:
       
   deny:
     command: 'cargo deny check'
-    inputs: ['Cargo.lock', 'deny.toml']
+    inputs: ['Cargo.lock']
     options:
       cache: true
       
@@ -57,6 +57,10 @@ tasks:
   # Standard build and test tasks
   build:
     command: 'cargo build'
+    inputs: ['@globs(sources)', '@globs(configs)']
+    
+  build-release:
+    command: 'cargo build --release'
     inputs: ['@globs(sources)', '@globs(configs)']
     
   test:
