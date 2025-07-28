@@ -17,11 +17,6 @@ fileGroups:
 
 # Project-specific tasks (inherits common tasks from .moon/tasks.yml)
 tasks:
-  # Override test to use release mode
-  test:
-    command: 'cargo test --all-features --release'
-    inputs: ['@globs(sources)', '@globs(tests)', '@globs(configs)']
-    
   # Documentation tasks with custom theme
   doc:
     command: 'cargo doc --no-deps --all-features'
