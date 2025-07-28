@@ -11,14 +11,14 @@
 2. **Domain acquired** ✅ 
 3. **Next Priority**: Website + CLI tool
 
-## 🎯 NEW STRATEGIC DECISION: CLI First
+## 🎯 NEW STRATEGIC DECISION: Language Bindings First
 
-**Why CLI Before Language Bindings**:
-- Immediate demo vehicle (screenshots, videos)
-- Shows all SuperConfig features in action
-- Lower barrier to entry (no code needed)
-- Validates user experience patterns
-- Marketing goldmine (CLI screenshots perform well)
+**Updated Strategy (July 27, 2025)**:
+- **FFI over WASM**: Native performance (99% vs 90%)
+- **Direct napi-rs first**: Ship fast, build uniffi later if needed
+- **Node.js priority**: Biggest ecosystem, most developers
+- **CLI pushed to Week 4**: Bindings drive adoption more than CLI
+- **Next.js website**: Simple, beautiful, easy to maintain
 
 ## 📅 Week-by-Week Execution Plan
 
@@ -27,68 +27,67 @@
 
 #### Monday-Tuesday
 - ✅ Crates.io published
-- ✅ Email routing configured  
-- ✅ Twitter account created
-- [ ] Dioxus project initialized
+- ✅ Strategic decisions made (FFI, priorities)
+- [ ] Next.js project initialized in apps/website
 - [ ] Basic website structure
+- [ ] Moon + Cloudflare Pages setup
 
 #### Wednesday-Thursday  
 - [ ] Hero section complete
-- [ ] Features section
-- [ ] Figment positioning clear
+- [ ] Features section with code examples
+- [ ] Documentation structure planned
 - [ ] Deploy to Cloudflare Pages
 
 #### Friday-Sunday
 - [ ] Full website complete
+- [ ] Docs section with guides
 - [ ] Analytics (Plausible) setup
 - [ ] SEO/meta tags optimized
-- [ ] Start planning CLI architecture
 
-### Week 2: WasmBridge + CLI (Parallel Development)
-**Goal**: Build foundation for multi-language support + CLI demo
+### Week 2: Node.js Bindings via napi-rs
+**Goal**: Ship @superconfig/node package
 
 #### Monday-Tuesday
-- [ ] Create WasmBridge architecture
-- [ ] Set up basic WASM compilation pipeline
-- [ ] Migrate SuperCLI into monorepo
-- [ ] Start CLI structure (parallel track)
+- [ ] Add napi-rs to superconfig crate
+- [ ] Create Node.js wrapper functions
+- [ ] Set up packages/superconfig-node structure
+- [ ] Basic TypeScript definitions
   
 #### Wednesday-Thursday
-- [ ] WasmBridge Node.js template
-- [ ] Test WASM compilation with SuperConfig
-- [ ] CLI core commands:
-  - `superconfig init` - Bootstrap configs
-  - `superconfig get/set` - Basic operations
+- [ ] Complete all API bindings
+- [ ] Test on multiple Node versions
+- [ ] Create example projects
+- [ ] Package.json with platform binaries
   
 #### Friday-Sunday  
-- [ ] Polish CLI with beautiful output
-- [ ] Create demo video/GIF
-- [ ] Write CLI documentation
-- [ ] Test on multiple platforms
+- [ ] Polish TypeScript types
+- [ ] Write Node.js documentation
+- [ ] Publish @superconfig/node to npm
+- [ ] Update website with Node.js examples
 
-### Week 3: Node.js Release & Launch
-**Goal**: Ship @superconfig/node + Launch!
+### Week 3: Python Bindings & Launch Prep
+**Goal**: Ship Python package + Prepare launch
 
 #### Monday-Tuesday  
-- [ ] Finalize Node.js bindings via WasmBridge
-- [ ] Publish to npm: @superconfig/node
-- [ ] TypeScript definitions working
-- [ ] Node.js examples ready
+- [ ] Add PyO3 to superconfig crate
+- [ ] Create Python wrapper functions
+- [ ] Set up packages/superconfig-python structure
+- [ ] Build wheels with maturin
 
-#### Monday-Wednesday
-- [ ] Node.js WASM binding working
-- [ ] Basic npm package structure
-- [ ] "Hello World" example
-- [ ] Package.json configured
+#### Wednesday-Thursday
+- [ ] Complete all API bindings for Python
+- [ ] Test on Python 3.8+
+- [ ] Create example projects
+- [ ] Publish to PyPI
 
-#### Thursday-Sunday
+#### Friday-Sunday
 - [ ] Write: "Introducing SuperConfig"  
 - [ ] Write: "Why Config Management Needs Rust"
 - [ ] Create comparison tables
 - [ ] Prepare Show HN submission
 - [ ] README.md polished
 
-### Week 3: Launch Week 🚀
+### Week 4: Launch Week 🚀
 **Goal**: Public launch with maximum impact
 
 #### Monday (Launch Day)
@@ -110,15 +109,15 @@
 - [ ] Plan adjustments
 - [ ] Celebrate launch!
 
-### Week 4: Python & Features
-**Goal**: Second language + core features
+### Week 5: CLI Tool & uniffi Evaluation
+**Goal**: CLI tool + Decide on uniffi
 
 #### Deliverables
-- [ ] Python WASM bindings
-- [ ] PyPI package ready
-- [ ] Basic CLI tool
-- [ ] Start encryption feature
-- [ ] Contributing guide
+- [ ] Migrate SuperCLI into monorepo
+- [ ] SuperConfig CLI with beautiful output
+- [ ] CLI documentation and examples
+- [ ] Evaluate: Do we need uniffi tool?
+- [ ] If yes: Start uniffi development
 
 ### Month 2: Momentum Building
 **Goal**: Multi-language reality + encryption
@@ -143,16 +142,18 @@
 ## 🎯 Priority Framework
 
 ### P0 - Ship Stoppers (Do First)
-1. Crates.io publish
-2. Website live
-3. Node.js bindings
-4. Launch content
+1. ✅ Crates.io publish
+2. Website live (Next.js)
+3. Node.js bindings (napi-rs)
+4. Python bindings (PyO3)
+5. Launch content
 
 ### P1 - Growth Drivers (Do Next)  
-1. Python bindings
-2. Encryption feature
-3. CLI tool
+1. CLI tool
+2. uniffi tool (if needed)
+3. Encryption feature
 4. Go bindings
+5. Documentation site
 
 ### P2 - Nice to Have (Do Later)
 1. Java bindings
