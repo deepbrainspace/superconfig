@@ -225,8 +225,10 @@ mod integration_tests {
     use figment::{Figment, Provider};
     use std::fs;
     use tempfile::TempDir;
+    use serial_test::serial;
 
     #[test]
+    #[serial]
     fn test_wildcard_provider_integration() {
         let temp_dir = TempDir::new().unwrap();
         let dir_path = temp_dir.path();
@@ -285,6 +287,7 @@ debug = false
     }
 
     #[test]
+    #[serial]
     fn test_figment_integration() {
         let temp_dir = TempDir::new().unwrap();
         let dir_path = temp_dir.path();
