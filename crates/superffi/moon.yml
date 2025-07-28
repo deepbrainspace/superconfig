@@ -1,0 +1,71 @@
+language: 'rust'
+type: 'library'
+
+fileGroups:
+  sources: ['src/**/*']
+  tests: ['tests/**/*']
+
+tasks:
+  build:
+    command: 'cargo build'
+    inputs: ['@globs(sources)', 'Cargo.toml']
+    
+  build-release:
+    command: 'cargo build --release'
+    inputs: ['@globs(sources)', 'Cargo.toml']
+    
+  test:
+    command: 'cargo test'
+    inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
+    
+  test-python:
+    command: 'cargo test --features python'
+    inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
+    
+  test-nodejs:
+    command: 'cargo test --features nodejs'
+    inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
+    
+  test-wasm:
+    command: 'cargo test --features wasm'
+    inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
+    
+  test-all:
+    command: 'cargo test --features all'
+    inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
+    
+  lint:
+    command: 'cargo clippy --all-features -- -D warnings'
+    inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
+    
+  format:
+    command: 'cargo fmt --check'
+    inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
+    
+  format-fix:
+    command: 'cargo fmt'
+    inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
+    
+  doc:
+    command: 'cargo doc --all-features --no-deps'
+    inputs: ['@globs(sources)', 'Cargo.toml']
+    
+  expand:
+    command: 'cargo expand'
+    inputs: ['@globs(sources)', 'Cargo.toml']
+    
+  check:
+    command: 'cargo check --all-features'
+    inputs: ['@globs(sources)', 'Cargo.toml']
+    
+  check-python:
+    command: 'cargo check --features python'
+    inputs: ['@globs(sources)', 'Cargo.toml']
+    
+  check-nodejs:
+    command: 'cargo check --features nodejs'
+    inputs: ['@globs(sources)', 'Cargo.toml']
+    
+  check-wasm:
+    command: 'cargo check --features wasm'
+    inputs: ['@globs(sources)', 'Cargo.toml']
