@@ -6,7 +6,7 @@
 //! ## Features
 //!
 //! - **Python bindings** via PyO3 (feature: `python`)
-//! - **Node.js bindings** via NAPI (feature: `nodejs`) 
+//! - **Node.js bindings** via NAPI (feature: `nodejs`)
 //! - **WebAssembly bindings** via wasm-bindgen (feature: `wasm`)
 //! - **Zero-cost abstractions** - only generates code for enabled features
 //! - **Simple annotation** - just add `#[superffi]` to your items
