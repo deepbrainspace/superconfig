@@ -43,6 +43,12 @@ tasks:
     options:
       cache: false
       
+  # Additional maintenance tasks
+  outdated:
+    command: 'cargo outdated'
+    options:
+      cache: false
+      
   # Documentation
   doc:
     command: 'cargo doc --no-deps --all-features'

@@ -11,58 +11,26 @@ env:
   CI: 'true'
   MOON_BASE: 'origin/main'
 
+fileGroups:
+  sources: ['src/**/*']
+  tests: ['tests/**/*']
+
+# Project-specific tasks (inherits common tasks from .moon/tasks.yml)
 tasks:
-  # Core development tasks
-  build:
-    command: 'cargo build'
-    inputs: 
-      - 'src/**/*'
-      - 'Cargo.toml'
-  
+  # Project-specific build variant
   build-release:
     command: 'cargo build --release'
-    inputs: 
-      - 'src/**/*'
-      - 'Cargo.toml'
+    inputs: ['@globs(sources)', 'Cargo.toml']
     
+  # Override test to use release mode
   test:
     command: 'cargo test --all-features --release'
-    inputs:
-      - 'src/**/*'
-      - 'tests/**/*'
-      - 'Cargo.toml'
+    inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
     
-  # Code quality tasks
-  clippy:
-    command: 'cargo clippy --all-features -- -D warnings'
-    inputs:
-      - 'src/**/*'
-      - 'Cargo.toml'
-    
-  fmt:
-    command: 'cargo fmt'
-    inputs:
-      - 'src/**/*'
-    options:
-      cache: false
-      
-  fmt-check:
-    command: 'cargo fmt --check'
-    inputs:
-      - 'src/**/*'
-    
-  check:
-    command: 'cargo check --all-features'
-    inputs:
-      - 'src/**/*'
-      - 'Cargo.toml'
-    
-  # Documentation tasks  
+  # Documentation tasks with custom theme
   doc:
     command: 'cargo doc --no-deps --all-features'
-    inputs:
-      - 'src/**/*'
-      - 'Cargo.toml'
+    inputs: ['@globs(sources)', 'Cargo.toml']
     env:
       RUSTDOCFLAGS: '--default-theme ayu'
     
@@ -74,38 +42,7 @@ tasks:
     options:
       cache: false
       
-  # Security and maintenance tasks
-  security-audit:
-    command: 'cargo audit'
-    inputs:
-      - 'Cargo.lock'  # Re-run if dependencies change
-    options:
-      cache: true  # Time-based invalidation handled by CI cache keys
-      
-  deny:
-    command: 'cargo deny check'
-    inputs:
-      - 'Cargo.lock'
-      - 'deny.toml'
-    options:
-      cache: true
-      
-  coverage:
-    command: 'cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml'
-    options:
-      cache: false  # Always generate fresh coverage
-      
-  outdated:
-    command: 'cargo outdated'
-    options:
-      cache: false
-      
   # Publishing tasks (actual publishing handled by GitHub Actions)
   publish-dry:
     command: 'cargo publish --dry-run --allow-dirty'
     deps: ['build', 'test', 'clippy', 'fmt-check']
-
-# Project dependencies and relationships  
-# dependsOn:
-#   - id: 'workspace-root'
-#     scope: 'self'
