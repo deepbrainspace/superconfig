@@ -223,9 +223,9 @@ pub use figment::Error;
 mod integration_tests {
     use super::*;
     use figment::{Figment, Provider};
+    use serial_test::serial;
     use std::fs;
     use tempfile::TempDir;
-    use serial_test::serial;
 
     #[test]
     #[serial]
