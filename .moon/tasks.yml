@@ -1,0 +1,62 @@
+# Moon workspace-level task inheritance configuration
+# Tasks defined here are inherited by all projects in the workspace
+# Docs: https://moonrepo.dev/docs/config/tasks
+
+fileGroups:
+  sources: ['src/**/*']
+  tests: ['tests/**/*']
+  configs: ['Cargo.toml', '*.toml']
+
+tasks:
+  # Standard formatting tasks
+  fmt:
+    command: 'cargo fmt'
+    inputs: ['@globs(sources)']
+    options:
+      cache: false
+      
+  fmt-check:
+    command: 'cargo fmt --check'
+    inputs: ['@globs(sources)']
+    
+  # Standard linting
+  clippy:
+    command: 'cargo clippy --all-features -- -D warnings'
+    inputs: ['@globs(sources)', '@globs(configs)']
+    
+  # Security and compliance tasks
+  security-audit:
+    command: 'cargo audit'
+    inputs: ['Cargo.lock']
+    options:
+      cache: true
+      
+  deny:
+    command: 'cargo deny check'
+    inputs: ['Cargo.lock', 'deny.toml']
+    options:
+      cache: true
+      
+  # Coverage (requires tarpaulin)
+  coverage:
+    command: 'cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml'
+    options:
+      cache: false
+      
+  # Documentation
+  doc:
+    command: 'cargo doc --no-deps --all-features'
+    inputs: ['@globs(sources)', '@globs(configs)']
+    
+  # Standard build and test tasks
+  build:
+    command: 'cargo build'
+    inputs: ['@globs(sources)', '@globs(configs)']
+    
+  test:
+    command: 'cargo test --all-features'
+    inputs: ['@globs(sources)', '@globs(tests)', '@globs(configs)']
+    
+  check:
+    command: 'cargo check --all-features'
+    inputs: ['@globs(sources)', '@globs(configs)']

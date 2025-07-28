@@ -5,19 +5,26 @@ fileGroups:
   sources: ['src/**/*']
   tests: ['tests/**/*']
 
+# Project-specific tasks (inherits common tasks from .moon/tasks.yml)
 tasks:
-  build:
-    command: 'cargo build'
+  # Feature-specific builds
+  build-python:
+    command: 'cargo build --features python'
     inputs: ['@globs(sources)', 'Cargo.toml']
     
-  build-release:
-    command: 'cargo build --release'
+  build-nodejs:
+    command: 'cargo build --features nodejs'
     inputs: ['@globs(sources)', 'Cargo.toml']
     
-  test:
-    command: 'cargo test'
-    inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
+  build-wasm:
+    command: 'cargo build --features wasm'
+    inputs: ['@globs(sources)', 'Cargo.toml']
     
+  build-all:
+    command: 'cargo build --features all'
+    inputs: ['@globs(sources)', 'Cargo.toml']
+    
+  # Feature-specific tests
   test-python:
     command: 'cargo test --features python'
     inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
@@ -34,30 +41,7 @@ tasks:
     command: 'cargo test --features all'
     inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
     
-  lint:
-    command: 'cargo clippy --all-features -- -D warnings'
-    inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
-    
-  format:
-    command: 'cargo fmt --check'
-    inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
-    
-  format-fix:
-    command: 'cargo fmt'
-    inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
-    
-  doc:
-    command: 'cargo doc --all-features --no-deps'
-    inputs: ['@globs(sources)', 'Cargo.toml']
-    
-  expand:
-    command: 'cargo expand'
-    inputs: ['@globs(sources)', 'Cargo.toml']
-    
-  check:
-    command: 'cargo check --all-features'
-    inputs: ['@globs(sources)', 'Cargo.toml']
-    
+  # Feature-specific checks
   check-python:
     command: 'cargo check --features python'
     inputs: ['@globs(sources)', 'Cargo.toml']
@@ -68,4 +52,9 @@ tasks:
     
   check-wasm:
     command: 'cargo check --features wasm'
+    inputs: ['@globs(sources)', 'Cargo.toml']
+    
+  # Macro expansion for debugging
+  expand:
+    command: 'cargo expand'
     inputs: ['@globs(sources)', 'Cargo.toml']

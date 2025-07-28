@@ -1,0 +1,6 @@
+# Workspace-level Moon configuration for SuperConfig
+# Tasks are now inherited from .moon/tasks.yml
+
+# Enable project discovery
+projects:
+  - 'crates/*'
