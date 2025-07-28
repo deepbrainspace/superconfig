@@ -1,0 +1,60 @@
+language: 'rust'
+type: 'library'
+
+fileGroups:
+  sources: ['src/**/*']
+  tests: ['tests/**/*']
+
+# Project-specific tasks (inherits common tasks from .moon/tasks.yml)
+tasks:
+  # Feature-specific builds
+  build-python:
+    command: 'cargo build --features python'
+    inputs: ['@globs(sources)', 'Cargo.toml']
+    
+  build-nodejs:
+    command: 'cargo build --features nodejs'
+    inputs: ['@globs(sources)', 'Cargo.toml']
+    
+  build-wasm:
+    command: 'cargo build --features wasm'
+    inputs: ['@globs(sources)', 'Cargo.toml']
+    
+  build-all:
+    command: 'cargo build --features all'
+    inputs: ['@globs(sources)', 'Cargo.toml']
+    
+  # Feature-specific tests
+  test-python:
+    command: 'cargo test --features python'
+    inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
+    
+  test-nodejs:
+    command: 'cargo test --features nodejs'
+    inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
+    
+  test-wasm:
+    command: 'cargo test --features wasm'
+    inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
+    
+  test-all:
+    command: 'cargo test --features all'
+    inputs: ['@globs(sources)', '@globs(tests)', 'Cargo.toml']
+    
+  # Feature-specific checks
+  check-python:
+    command: 'cargo check --features python'
+    inputs: ['@globs(sources)', 'Cargo.toml']
+    
+  check-nodejs:
+    command: 'cargo check --features nodejs'
+    inputs: ['@globs(sources)', 'Cargo.toml']
+    
+  check-wasm:
+    command: 'cargo check --features wasm'
+    inputs: ['@globs(sources)', 'Cargo.toml']
+    
+  # Macro expansion for debugging
+  expand:
+    command: 'cargo expand'
+    inputs: ['@globs(sources)', 'Cargo.toml']

@@ -1,13 +1,13 @@
-# WASM Translation Tool Strategy - "WasmBridge"
+# Universal Language Bindings Strategy - "WasmBridge"
 
 **Created**: July 27, 2025  
 **Author**: Claude Opus 4  
 **Status**: Strategic Architecture Decision - CONFIRMED NAME  
-**Purpose**: Define the Rust→WASM→Multi-language translation tool
+**Purpose**: Define the Rust→Multi-language translation tool using native FFI bindings
 
 ## 🎯 Executive Summary
 
-**Critical Insight**: Building a general-purpose Rust→WASM translation tool solves multiple problems:
+**Critical Insight**: Building a general-purpose Rust→Multi-language FFI binding tool solves multiple problems:
 1. **Immediate Need**: Node.js bindings for SuperConfig
 2. **Future Languages**: Python, Go, Java via templates
 3. **Ecosystem Value**: Other Rust projects need this
@@ -15,19 +15,19 @@
 
 ## 🏗️ Architecture Vision
 
-### Tool Name: "WasmBridge" (FINAL - Better than SuperWASM!)
+### Tool Name: "WasmBridge" (FINAL - Bridges Rust to any language via FFI!)
 
 ```
 wasmbridge/
 ├── Core Engine
-│   ├── WASM compilation
+│   ├── FFI Analysis
 │   ├── Bindings generation
 │   └── Template system
-├── Language Templates
-│   ├── Node.js/TypeScript
-│   ├── Python
-│   ├── Go
-│   └── Java
+├── Language Bindings
+│   ├── Node.js (napi-rs)
+│   ├── Python (PyO3)
+│   ├── Ruby (magnus)
+│   └── Go (cgo)
 └── SuperConfig Integration
     └── Uses SuperConfig for configuration!
 ```
@@ -36,8 +36,8 @@ wasmbridge/
 
 ### The Problem
 - Every Rust library wanting multi-language support rebuilds the same infrastructure
-- WASM compilation + bindings is complex and error-prone
-- No standard tooling exists
+- FFI bindings (PyO3, napi-rs, etc.) require lots of boilerplate
+- No unified tooling exists for multi-language FFI
 
 ### The Solution: WasmBridge
 ```bash
@@ -45,10 +45,10 @@ wasmbridge/
 wasmbridge build --target node
 
 # Generates:
-# - WASM binary
+# - Native Node.js addon (via napi-rs)
 # - TypeScript definitions
-# - Node.js wrapper
-# - Package.json
+# - Package.json with prebuilds
+# - Platform-specific binaries
 # - Documentation
 ```
 
@@ -66,17 +66,19 @@ wasmbridge build --target node
 ```toml
 # .wasmbridge/config.toml
 [build]
-targets = ["node", "python", "web"]
-optimize_size = true
+targets = ["node", "python", "ruby"]
+parallel_builds = true
 
 [node]
 package_name = "@superconfig/node"
 typescript = true
 min_node_version = "16"
+platforms = ["darwin-x64", "darwin-arm64", "linux-x64", "win32-x64"]
 
 [python]
 package_name = "superconfig"
 min_python = "3.8"
+manylinux = "2014"
 
 [output]
 directory = "dist/"
@@ -87,7 +89,7 @@ directory = "dist/"
 ### Phase 1: Node.js MVP (Week 2-3)
 **Goal**: Just enough to ship SuperConfig Node.js bindings
 
-1. **Basic WASM compilation** via wasm-pack
+1. **Basic FFI generation** via napi-rs for Node.js
 2. **Node.js template** with TypeScript
 3. **Simple CLI interface**
 4. **Test with SuperConfig**
@@ -112,15 +114,16 @@ directory = "dist/"
 // crates/wasmbridge/src/lib.rs
 pub struct WasmBridge {
     config: BridgeConfig,  // Via SuperConfig!
-    compiler: WasmCompiler,
-    templates: TemplateEngine,
+    analyzer: ApiAnalyzer,
+    generators: HashMap<Target, Box<dyn BindingGenerator>>,
 }
 
 impl WasmBridge {
     pub fn build(&self, target: Target) -> Result<Output> {
-        let wasm = self.compiler.compile()?;
-        let bindings = self.templates.generate(target, &wasm)?;
-        Ok(Output { wasm, bindings })
+        let api = self.analyzer.extract_api()?;
+        let generator = self.generators.get(&target)?;
+        let bindings = generator.generate(&api)?;
+        Ok(Output { bindings, build_scripts: generator.build_scripts() })
     }
 }
 ```
@@ -175,7 +178,7 @@ templates/
 ## 💰 Revenue Implications
 
 ### WasmBridge as a Product
-- **Open Source Core**: Basic WASM→JS/Python
+- **Open Source Core**: Basic FFI bindings for JS/Python
 - **Pro Features**: 
   - Advanced optimizations
   - Custom templates
@@ -186,7 +189,7 @@ templates/
 ### Market Size
 - Every Rust library needs this
 - Growing WASM ecosystem
-- Could become the "webpack of WASM"
+- Could become the standard for Rust multi-language bindings
 
 ## 🚫 What This Means for Guardy
 
@@ -224,4 +227,4 @@ Guardy can always be revisited after SuperConfig dominates.
 
 ---
 
-**This is a game-changer**: WasmBridge not only solves your immediate need but could become a significant product in its own right. The Rust ecosystem desperately needs this tool.
+**This is a game-changer**: WasmBridge not only solves your immediate need but could become a significant product in its own right. By using native FFI (99% performance) instead of WASM (90-95%), we're delivering the fastest possible multi-language bindings.

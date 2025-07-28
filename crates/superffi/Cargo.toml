@@ -1,0 +1,37 @@
+[package]
+name = "superffi"
+version = "0.1.0"
+edition = "2024"  # Using the latest stable edition
+license = "MIT OR Apache-2.0"
+description = "Procedural macro for generating multi-language FFI bindings"
+repository = "https://github.com/deepbrainspace/superconfig"
+keywords = ["ffi", "macro", "python", "nodejs", "wasm"]
+categories = ["development-tools", "api-bindings"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "2.0", features = ["full", "extra-traits"] }
+serde = { version = "1.0", features = ["derive"], optional = true }
+serde_json = { version = "1.0", optional = true }
+
+# Optional FFI dependencies - latest versions as of 2025
+pyo3 = { version = "0.25", optional = true }
+napi = { version = "3.0", optional = true }
+napi-derive = { version = "3.0", optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
+js-sys = { version = "0.3", optional = true }
+serde-wasm-bindgen = { version = "0.6", optional = true }
+
+[features]
+default = []
+python = ["pyo3", "serde", "serde_json"]
+nodejs = ["napi", "napi-derive", "serde", "serde_json"]
+wasm = ["wasm-bindgen", "js-sys", "serde-wasm-bindgen", "serde", "serde_json"]
+all = ["python", "nodejs", "wasm"]
+
+[dev-dependencies]
+trybuild = "1.0"

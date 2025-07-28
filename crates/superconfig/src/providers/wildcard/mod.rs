@@ -223,10 +223,12 @@ pub use figment::Error;
 mod integration_tests {
     use super::*;
     use figment::{Figment, Provider};
+    use serial_test::serial;
     use std::fs;
     use tempfile::TempDir;
 
     #[test]
+    #[serial]
     fn test_wildcard_provider_integration() {
         let temp_dir = TempDir::new().unwrap();
         let dir_path = temp_dir.path();
@@ -285,6 +287,7 @@ debug = false
     }
 
     #[test]
+    #[serial]
     fn test_figment_integration() {
         let temp_dir = TempDir::new().unwrap();
         let dir_path = temp_dir.path();

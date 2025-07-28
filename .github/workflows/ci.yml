@@ -122,6 +122,9 @@ jobs:
       - name: Run clippy for ${{ matrix.crate }}
         run: moon run ${{ matrix.crate }}:clippy
 
+      - name: Check for outdated dependencies for ${{ matrix.crate }}
+        run: moon run ${{ matrix.crate }}:outdated
+
 
   security:
     name: Security (${{ matrix.crate }})
