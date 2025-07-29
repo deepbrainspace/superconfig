@@ -3,17 +3,37 @@
 set -e
 
 PROJECT_NAME="$1"
+OVERRIDE_VERSION="$2"
 
 if [ -z "$PROJECT_NAME" ]; then
-    echo "❌ Usage: $0 <project-name>"
+    echo "❌ Usage: $0 <project-name> [version-override]"
+    echo "   Example: $0 superffi"
+    echo "   Example: $0 superffi 0.2.0"
     exit 1
 fi
 
-# Get version from Cargo.toml
-VERSION=$(cargo metadata --format-version 1 --no-deps | jq -r ".packages[] | select(.name == \"$PROJECT_NAME\") | .version")
+# Get version from Cargo.toml or use override
+if [ -n "$OVERRIDE_VERSION" ]; then
+    VERSION="$OVERRIDE_VERSION"
+    echo "📝 Using override version: $VERSION"
+else
+    VERSION=$(cargo metadata --format-version 1 --no-deps | jq -r ".packages[] | select(.name == \"$PROJECT_NAME\") | .version")
+    if [ -z "$VERSION" ]; then
+        echo "❌ Could not find version for $PROJECT_NAME"
+        exit 1
+    fi
+fi
 
-if [ -z "$VERSION" ]; then
-    echo "❌ Could not find version for $PROJECT_NAME"
+echo "📦 Package: $PROJECT_NAME"
+echo "🏷️  Version: $VERSION"
+echo ""
+
+# Confirmation prompt
+read -p "🤔 Do you want to release $PROJECT_NAME v$VERSION? (y/N): " -n 1 -r
+echo ""
+
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "❌ Release cancelled"
     exit 1
 fi
 
