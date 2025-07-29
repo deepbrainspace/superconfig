@@ -48,15 +48,6 @@ pre-commit:
         - merge
         - rebase
 
-    # Check for common issues
-    trailing-whitespace:
-      run: |
-        git diff --cached --name-only | xargs -I {} sh -c 'test -f "{}" && sed -i "s/[[:space:]]*$//" "{}"'
-      stage_fixed: true
-      skip:
-        - merge
-        - rebase
-
 pre-push:
   parallel: true
   commands:
