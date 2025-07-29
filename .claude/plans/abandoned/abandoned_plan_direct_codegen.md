@@ -3,18 +3,21 @@
 ## Analysis: XTP vs Direct Generation
 
 ### What XTP Provides
+
 - **Schema Validation**: OpenAPI-like IDL validation
 - **Template Engine**: EJS-based code generation
 - **Plugin Architecture**: Language-specific bindgen plugins
 - **CLI Orchestration**: `xtp plugin init` workflow
 
 ### What We Actually Need
+
 - **WASM Loading**: Load and call our SuperConfig WASM binary
 - **Ergonomic APIs**: Builder pattern methods in each language
 - **Type Mapping**: Rust types → language-specific types
 - **Package Structure**: Native package layouts (npm, PyPI, etc.)
 
 ### XTP Overhead We Don't Need
+
 - **Complex Schema Format**: We can use simpler metadata
 - **Plugin Architecture**: We control the entire generation pipeline
 - **External Dependencies**: Less moving parts = more reliable
@@ -290,16 +293,19 @@ async def load_{{snake_case class_name}}(builder_fn: Callable[['{{class_name}}']
 ## Benefits of Direct Generation
 
 ### Simplified Pipeline
+
 1. **Cargo Extension** analyzes Rust code → **Builder Metadata**
 2. **Direct Templates** generate native packages with embedded WASM
 3. **No XTP Dependencies** or complex schema validation
 
 ### Better Performance
+
 - **Faster Generation**: No XTP plugin loading/execution
 - **Smaller Output**: Only generate what we need
 - **Direct Control**: Optimize for builder patterns specifically
 
 ### Easier Maintenance
+
 - **Fewer Dependencies**: Just Handlebars for templating
 - **Simpler Debugging**: Direct template → code mapping
 - **Custom Optimizations**: Builder-pattern specific optimizations

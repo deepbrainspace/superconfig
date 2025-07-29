@@ -15,6 +15,7 @@ SuperFigment's encryption feature will provide automatic encryption/decryption o
 ## Encryption Methods
 
 ### 1. Pattern-Based Auto-Detection
+
 ```rust
 // Automatically encrypt values matching sensitive patterns
 let config = SuperFigment::new()
@@ -23,11 +24,12 @@ let config = SuperFigment::new()
 
 // In config.toml:
 // password = "secret123"           -> gets encrypted automatically
-// api_key = "sk-1234567890"        -> gets encrypted automatically  
+// api_key = "sk-1234567890"        -> gets encrypted automatically
 // database_host = "localhost"      -> stays plaintext
 ```
 
 ### 2. Explicit Annotation
+
 ```rust
 // Use special suffix to mark values for encryption
 // In config.toml:
@@ -37,6 +39,7 @@ let config = SuperFigment::new()
 ```
 
 ### 3. Schema-Driven Encryption
+
 ```rust
 use serde::{Deserialize, Serialize};
 
@@ -44,10 +47,10 @@ use serde::{Deserialize, Serialize};
 struct Config {
     #[superfigment(encrypt)]
     database_password: String,
-    
+
     #[superfigment(encrypt)]
     api_keys: Vec<String>,
-    
+
     // Normal field - not encrypted
     database_host: String,
 }
@@ -61,7 +64,7 @@ SuperFigment uses **hybrid encryption** (RSA + AES) to support teams with differ
 
 ```rust
 // Each encrypted value uses:
-// 1. Random AES-256 key (for actual encryption)  
+// 1. Random AES-256 key (for actual encryption)
 // 2. AES key encrypted with each authorized user's RSA public key
 // 3. Stored format: ENC[recipient1:encrypted_aes_key1,recipient2:encrypted_aes_key2:aes_encrypted_data]
 ```
@@ -72,7 +75,7 @@ SuperFigment uses **hybrid encryption** (RSA + AES) to support teams with differ
 # .superfigment/recipients
 [users]
 alice = "ssh-rsa AAAAB3NzaC1yc2E... alice@company.com"
-bob = "ssh-rsa AAAAB3NzaC1yc2E... bob@company.com" 
+bob = "ssh-rsa AAAAB3NzaC1yc2E... bob@company.com"
 deployment = "ssh-rsa AAAAB3NzaC1yc2E... deployment@ci.company.com"
 
 [groups]
@@ -98,8 +101,8 @@ for recipient in recipients {
 }
 
 // 4. Store in format: ENC[alice:key1,bob:key2:encrypted_data]
-let final_value = format!("ENC[{}:{}]", 
-    encrypted_keys.join(","), 
+let final_value = format!("ENC[{}:{}]",
+    encrypted_keys.join(","),
     base64_encode(encrypted_data)
 );
 ```
@@ -128,7 +131,7 @@ let plaintext = aes_decrypt(encrypted_data, &aes_key);
 // SuperFigment automatically identifies current user and finds keys
 let encryption_config = SuperFigment::bootstrap()
     .with_ssh_agent()                    // 1. SSH agent keys (highest priority)
-    .with_gpg_keys()                     // 2. GPG keys 
+    .with_gpg_keys()                     // 2. GPG keys
     .with_env("SUPERFIGMENT_")           // 3. Environment variables
     .with_keyfiles()                     // 4. Local key files
     .with_defaults(default_encryption)   // 5. Development fallback
@@ -138,6 +141,7 @@ let encryption_config = SuperFigment::bootstrap()
 ### Identity Sources (in priority order):
 
 1. **SSH Agent** (most common for developers)
+
    ```bash
    # Uses existing SSH keys from ssh-agent
    ssh-add -l  # Lists available keys
@@ -145,12 +149,14 @@ let encryption_config = SuperFigment::bootstrap()
    ```
 
 2. **GPG Keys**
+
    ```bash
    # Uses GPG keyring for encryption/decryption
    gpg --list-secret-keys
    ```
 
 3. **Environment Variables** (for CI/CD)
+
    ```bash
    SUPERFIGMENT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----..."
    SUPERFIGMENT_KEY_ID="deployment"
@@ -165,10 +171,11 @@ let encryption_config = SuperFigment::bootstrap()
 ## File Format Design
 
 ### Encrypted Value Format
+
 ```toml
 # Original config.toml
 database_url = "postgres://user:pass@localhost/db"
-api_key = "sk-1234567890abcdef" 
+api_key = "sk-1234567890abcdef"
 features = ["auth", "logging"]
 log_level = "info"
 
@@ -176,34 +183,36 @@ log_level = "info"
 database_url = "ENC[alice:RSA_encrypted_AES_key1,bob:RSA_encrypted_AES_key2:AES_encrypted_data]"
 api_key = "ENC[alice:different_AES_key1,deployment:different_AES_key2:different_AES_data]"
 features = "ENC[alice:array_AES_key1,bob:array_AES_key2:encrypted_json_array]"
-log_level = "info"  # Not encrypted - not sensitive
+log_level = "info" # Not encrypted - not sensitive
 ```
 
 ### Array Merging with Encryption
+
 ```toml
 # Base config (encrypted arrays work with _add/_remove)
 features = "ENC[alice:key1,bob:key2:encrypted_base_array]"
 
-# Override config  
+# Override config
 features_add = "ENC[alice:key3,bob:key4:encrypted_additions]"
 features_remove = "ENC[alice:key5,bob:key6:encrypted_removals]"
 
 # SuperFigment process:
 # 1. Decrypt all three arrays to plaintext
-# 2. Apply intelligent merging: base + additions - removals  
+# 2. Apply intelligent merging: base + additions - removals
 # 3. Application receives final merged plaintext array
 ```
 
 ### Metadata Preservation
+
 ```toml
 # SuperFigment preserves all formatting and comments
 [database]
 # Production database configuration
 url = "ENC[alice:key1,deployment:key2:encrypted_connection_string]"
-timeout = 30  # seconds
+timeout = 30 # seconds
 
-# API Configuration  
-[api] 
+# API Configuration
+[api]
 key = "ENC[developers:key3,production:key4:encrypted_api_key]"
 rate_limit = 1000
 ```
@@ -236,7 +245,7 @@ impl SuperFigment {
         self.encryption_enabled = enabled;
         self
     }
-    
+
     pub fn with_encryption_patterns(mut self, patterns: Vec<String>) -> Self {
         self.encryption_patterns = patterns;
         self
@@ -253,22 +262,22 @@ impl SuperFigment {
         if !self.encryption_enabled {
             return Ok(self.figment.merge(provider));
         }
-        
+
         // 1. Load raw config data
         let raw_data = provider.data()?;
-        
+
         // 2. Process each value
         let processed_data = self.process_encryption(raw_data)?;
-        
+
         // 3. Create provider with processed data
         let encrypted_provider = ProcessedProvider::new(processed_data);
-        
+
         Ok(self.figment.merge(encrypted_provider))
     }
-    
+
     fn process_encryption(&self, data: figment::value::Map) -> Result<figment::value::Map, Error> {
         let mut result = figment::value::Map::new();
-        
+
         for (key, value) in data {
             let processed_value = if self.should_encrypt(&key, &value)? {
                 self.encrypt_value(&key, &value)?
@@ -277,10 +286,10 @@ impl SuperFigment {
             } else {
                 value
             };
-            
+
             result.insert(key, processed_value);
         }
-        
+
         Ok(result)
     }
 }
@@ -294,16 +303,16 @@ The encryption functionality maintains identical APIs across all languages:
 
 ```typescript
 // TypeScript (via WASM)
-import { SuperFigment } from '@superfigment/wasm';
+import { SuperFigment } from "@superfigment/wasm";
 
 const config = new SuperFigment()
-    .withAutoEncryption(true)
-    .withFile('config.toml')
-    .extract<AppConfig>();
+  .withAutoEncryption(true)
+  .withFile("config.toml")
+  .extract<AppConfig>();
 ```
 
 ```python
-# Python (via WASM) 
+# Python (via WASM)
 from superfigment import SuperFigment
 
 config = (SuperFigment()
@@ -341,7 +350,7 @@ impl WasmSuperFigment {
             inner: SuperFigment::new()
         }
     }
-    
+
     #[wasm_bindgen(js_name = withAutoEncryption)]
     pub fn with_auto_encryption(mut self, enabled: bool) -> Self {
         self.inner = self.inner.with_auto_encryption(enabled);
@@ -353,12 +362,14 @@ impl WasmSuperFigment {
 ## Security Considerations
 
 ### Encryption Standards
+
 - **Algorithm**: AES-256-GCM for authenticated encryption
 - **Key Derivation**: PBKDF2 with 100,000 iterations + salt
 - **Nonce Generation**: Cryptographically secure random per value
 - **Key Storage**: Never persisted to disk without explicit user action
 
 ### Threat Model Protection
+
 - ✅ **Git Repository Exposure**: Encrypted values are safe in public repos
 - ✅ **Config File Theft**: Individual files contain no usable secrets
 - ✅ **Memory Dumps**: Keys are cleared after use
@@ -385,6 +396,7 @@ let config = SuperFigment::new()
 ## CLI Tools Integration
 
 ### Encryption Commands
+
 ```bash
 # Encrypt sensitive values in existing config
 superfigment encrypt config.toml
@@ -400,6 +412,7 @@ superfigment validate config.toml
 ```
 
 ### Git Integration
+
 ```bash
 # Git clean filter (automatic encryption on commit)
 echo "*.toml filter=superfigment" >> .gitattributes
@@ -410,25 +423,29 @@ git config filter.superfigment.smudge 'superfigment decrypt --stdin'
 ## Migration Strategy
 
 ### Phase 1: Core Implementation
+
 - [x] Research existing solutions
-- [x] Architecture design  
+- [x] Architecture design
 - [ ] Core encryption/decryption engine
 - [ ] Bootstrap key management
 - [ ] Pattern-based value detection
 
 ### Phase 2: SuperFigment Integration
+
 - [ ] Provider chain integration
 - [ ] Auto-encryption during config loading
 - [ ] Error handling and validation
 - [ ] Comprehensive test suite
 
 ### Phase 3: WASM & Cross-Language
+
 - [ ] WASM bindings for encryption
 - [ ] TypeScript wrapper library
 - [ ] Python wrapper library
 - [ ] Go wrapper library
 
 ### Phase 4: Developer Experience
+
 - [ ] CLI tools for key management
 - [ ] Git integration utilities
 - [ ] IDE extensions for encrypted value editing

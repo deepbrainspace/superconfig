@@ -1,8 +1,8 @@
 # Guardy Decision: Focus on SuperConfig
 
-**Created**: July 27, 2025  
-**Author**: Claude Opus 4  
-**Status**: Strategic Decision - FINAL  
+**Created**: July 27, 2025\
+**Author**: Claude Opus 4\
+**Status**: Strategic Decision - FINAL\
 **Decision**: DO NOT BUILD GUARDY - Focus 100% on SuperConfig Ecosystem
 
 ## 🎯 Clear Recommendation: Abandon Guardy
@@ -18,6 +18,7 @@
 ### What About SuperCLI?
 
 **Keep SuperCLI** but as part of SuperConfig ecosystem:
+
 - Move into SuperConfig monorepo
 - Use for SuperConfig CLI tool
 - Eventually could be its own product
@@ -26,6 +27,7 @@
 ## 📊 Resource Allocation
 
 ### Next 3 Months: 100% SuperConfig
+
 - **Week 1**: Website
 - **Week 2**: WasmBridge + CLI
 - **Week 3**: Node.js + Launch
@@ -33,6 +35,7 @@
 - **Month 3**: Enterprise features, revenue
 
 ### What Happens to Guardy Code?
+
 1. **Archive it** - Keep for future reference
 2. **Extract useful parts** - Like SuperCLI
 3. **Maybe revisit in 2026** - After SuperConfig succeeds
@@ -41,13 +44,15 @@
 ## 🎯 Why This is the Right Decision
 
 ### SuperConfig Has Everything
+
 - **Clear market need**: Every app needs config
-- **Technical moat**: WASM multi-language strategy  
+- **Technical moat**: WASM multi-language strategy
 - **Revenue path**: Teams → Enterprise
 - **Ecosystem potential**: WasmBridge adds value
 - **Timing**: AI boom needs better config management
 
 ### Guardy Doesn't Add Up
+
 - **Solved problem**: Husky already dominates
 - **Small market**: Git hooks are niche
 - **No clear monetization**: Hard to charge for git hooks

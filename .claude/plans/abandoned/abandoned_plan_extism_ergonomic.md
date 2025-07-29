@@ -7,12 +7,14 @@ This plan outlines how to implement SuperConfig using Extism with **ergonomic, n
 ## Understanding XTP and Extism Relationship
 
 ### What is XTP?
+
 - **XTP** (eXtensible Typescript Plugins) is a **platform and toolchain** built on top of Extism
 - **XTP Bindgen** is the code generation framework that creates language bindings from schemas
 - **XTP CLI** is the command-line tool that orchestrates the binding generation process
 - XTP is **the official way to create production Extism plugins with type safety**
 
 ### Architecture Overview
+
 ```
 SuperConfig Schema (YAML)
     ↓
@@ -48,11 +50,13 @@ xtp plugin init --schema-file ./schema.yaml
 ```
 
 Each bindgen is a **zip bundle** containing:
+
 - `plugin.wasm` - Extism plugin that processes templates
-- `config.yaml` - Generator configuration  
+- `config.yaml` - Generator configuration
 - `template/` - EJS template files for the target language
 
 ### Existing Template Structure (TypeScript Example)
+
 ```
 typescript-bindgen-bundle/
 ├── config.yaml
@@ -443,7 +447,7 @@ fn generate_typescript(schema: &serde_json::Value) -> FnResult<String> {
 2. **Package Distribution**
    - NPM: `@superconfig/typescript`
    - PyPI: `superconfig-extism`
-   - Cargo: `superconfig-extism`  
+   - Cargo: `superconfig-extism`
    - Go Module: `github.com/superconfig/extism-go`
 
 3. **WASM Binary Distribution**
@@ -456,24 +460,30 @@ fn generate_typescript(schema: &serde_json::Value) -> FnResult<String> {
 ### Template Generation: Manual vs AI-Assisted
 
 #### Manual Template Creation (Recommended)
+
 **Pros:**
+
 - Full control over generated code quality
 - Optimized for each language's idioms
 - Predictable and debuggable output
 - Maintainable long-term
 
-**Cons:**  
+**Cons:**
+
 - Initial setup time (1-2 weeks per language)
 - Need to understand each language's conventions
 - Manual updates when schema changes
 
 #### AI-Assisted Template Creation
+
 **Pros:**
+
 - Faster initial creation
 - Can generate multiple languages quickly
 - Consistent patterns across languages
 
 **Cons:**
+
 - Generated code may not be idiomatic
 - Requires manual review and cleanup
 - Less predictable output quality
@@ -506,6 +516,7 @@ packages/
 **Approach**: Fork existing XTP bindgens and modify templates
 
 **Pros:**
+
 - Leverages mature, tested framework
 - Inherits XTP's schema validation and tooling
 - Compatible with existing XTP CLI workflow
@@ -513,6 +524,7 @@ packages/
 - Future XTP improvements benefit us automatically
 
 **Cons:**
+
 - Dependent on XTP's roadmap and decisions
 - Need to maintain forks of multiple repositories
 - May have limitations we can't easily change
@@ -522,14 +534,16 @@ packages/
 **Approach**: Build completely custom code generation tool
 
 **Pros:**
+
 - Full control over generation process
 - Can optimize specifically for SuperConfig needs
 - No dependency on external tools
 - Custom schema extensions without limitations
 
 **Cons:**
+
 - Need to build schema parsing, validation, CLI tooling from scratch
-- Miss out on XTP ecosystem improvements  
+- Miss out on XTP ecosystem improvements
 - More maintenance burden
 - Need to create documentation and tooling
 
@@ -538,6 +552,7 @@ packages/
 ## User Experience Comparison
 
 ### Current Approach (Basic Extism)
+
 ```javascript
 // Visible complexity
 const result = await plugin.call('load_config', JSON.stringify({
@@ -547,6 +562,7 @@ const result = await plugin.call('load_config', JSON.stringify({
 ```
 
 ### Our Enhanced Approach (Custom XTP Templates)
+
 ```javascript
 // Clean, ergonomic API - identical to plan_wasm.md
 const config = await SuperConfig.new()
@@ -558,6 +574,7 @@ const result = await config.extract();
 ### Generated Across All Languages
 
 **Python:**
+
 ```python
 config = await SuperConfig.new() \
     .with_file('config.toml') \
@@ -566,6 +583,7 @@ result = await config.extract()
 ```
 
 **Go:**
+
 ```go
 config, _ := superconfig.New(ctx)
 result, _ := config.WithFile("config.toml").
@@ -574,6 +592,7 @@ result, _ := config.WithFile("config.toml").
 ```
 
 **Rust:**
+
 ```rust
 let config = SuperConfig::new()
     .with_file("config.toml")
@@ -585,7 +604,7 @@ let result = config.extract()?;
 
 1. **Perfect Ergonomics**: No `plugin.call()` visible - native feeling APIs
 2. **Write Once, Deploy Everywhere**: Single schema → 15+ languages automatically
-3. **Type Safety**: Generated types for every language from the schema  
+3. **Type Safety**: Generated types for every language from the schema
 4. **Maintenance Efficiency**: Update schema, regenerate all languages
 5. **Performance**: Same optimized WASM binary across all languages
 6. **Future-Proof**: New XTP language support benefits us automatically
@@ -594,18 +613,21 @@ let result = config.extract()?;
 ## Technical Requirements
 
 ### Development Tools Needed
+
 - XTP CLI installation
 - Node.js (for template development)
 - Language-specific toolchains for testing
 - WASM toolchain (wasm-pack, wasm-opt)
 
 ### Infrastructure
+
 - GitHub repositories for custom bindgens
 - Package registries (npm, PyPI, Cargo, etc.)
 - CI/CD for automated testing and publishing
 - Documentation hosting
 
 ### Skills Required
+
 - Understanding of XTP schema format
 - Template engine knowledge (EJS)
 - Language-specific packaging (npm, pip, cargo, etc.)

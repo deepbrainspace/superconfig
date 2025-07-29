@@ -888,7 +888,7 @@ fn generate_config_request_schema(fluent_methods: &[FluentMethod], project_name:
 
 ## CLI Tool for Complete Automation
 
-```bash
+````bash
 #!/bin/bash
 # tools/generate-universal-bindings.sh
 
@@ -1068,9 +1068,10 @@ const config = await SuperConfig.new()
   .withFile('config.toml')
   .withEnvIgnoreEmpty('APP_')
   .extract();
-```
+````
 
 ### Python
+
 ```python
 from superconfig import SuperConfig
 
@@ -1081,6 +1082,7 @@ async with SuperConfig.new() as config:
 ```
 
 ### Go
+
 ```go
 import "github.com/superconfig/extism-go"
 
@@ -1091,6 +1093,7 @@ result, _ := config.WithFile("config.toml").
 ```
 
 ### Rust
+
 ```rust
 use superconfig_extism::SuperConfig;
 
@@ -1099,16 +1102,18 @@ let result = SuperConfig::new()
     .with_env_ignore_empty("APP_")
     .extract()?;
 ```
+
 EOF
 
 echo "✅ Documentation generated: $OUTPUT_DIR/README.md"
 
 # Step 6: Package publishing preparation
+
 echo "📦 Step 6: Preparing packages for publishing..."
 
 for lang in "${LANGUAGES[@]}"; do
     package_dir="$OUTPUT_DIR/packages/$lang"
-    
+
     case $lang in
         "typescript")
             cd "$package_dir"
@@ -1129,21 +1134,22 @@ for lang in "${LANGUAGES[@]}"; do
             cd "$PROJECT_ROOT"
             ;;
     esac
+
 done
 
 echo ""
 echo "🎉 Universal binding generation complete!"
-echo "   📊 Schema: $SCHEMA_FILE"
-echo "   📦 Packages: $OUTPUT_DIR/packages/"
-echo "   📚 Docs: $OUTPUT_DIR/README.md"
+echo " 📊 Schema: $SCHEMA_FILE"
+echo " 📦 Packages: $OUTPUT_DIR/packages/"
+echo " 📚 Docs: $OUTPUT_DIR/README.md"
 echo ""
 echo "Next steps:"
-echo "  1. Review generated schema and packages"
-echo "  2. Test packages in your target environments"
-echo "  3. Publish packages to respective registries"
-echo "  4. Update documentation with specific usage examples"
-```
+echo " 1. Review generated schema and packages"
+echo " 2. Test packages in your target environments"
+echo " 3. Publish packages to respective registries"
+echo " 4. Update documentation with specific usage examples"
 
+````
 ## Key Benefits of This Approach
 
 1. **Zero Hardcoding**: All field names, actions, and types are inferred from actual Rust code
@@ -1214,7 +1220,7 @@ components:
           type: string
           description: "Parameter for withEnvIgnoreEmpty"
         # ... other dynamically discovered fields
-```
+````
 
 ### Generic HTTP Client Example
 
@@ -1266,6 +1272,7 @@ exports:
 The generated packages work identically across languages, with language-specific naming conventions:
 
 ### Any Builder - TypeScript
+
 ```typescript
 const result = await MyBuilder.new()
   .withOption1('value')
@@ -1274,6 +1281,7 @@ const result = await MyBuilder.new()
 ```
 
 ### Any Builder - Python
+
 ```python
 result = await MyBuilder.new() \
     .with_option1('value') \
@@ -1282,6 +1290,7 @@ result = await MyBuilder.new() \
 ```
 
 ### Any Builder - Go
+
 ```go
 result, _ := mybuilder.New(ctx).
     WithOption1("value").
@@ -1290,6 +1299,7 @@ result, _ := mybuilder.New(ctx).
 ```
 
 ### Any Builder - Rust
+
 ```rust
 let result = MyBuilder::new()
     .with_option1("value")

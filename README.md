@@ -11,6 +11,7 @@ Built on [Figment's](https://github.com/SergioBenitez/Figment) foundation, Super
 ## 🚀 Core Features
 
 ### Core Capabilities
+
 - **🏗️ Hierarchical Configuration**: Git-like config inheritance across system → user → project levels
 - **🔄 Advanced Array Merging**: Compose configurations with `_add`/`_remove` patterns across all sources
 - **🧠 Intelligent Format Detection**: Content-based parsing with caching and performance optimizations
@@ -25,23 +26,27 @@ Built on [Figment's](https://github.com/SergioBenitez/Figment) foundation, Super
 ## 🔌 Enhanced Providers
 
 ### Universal Provider - Intelligent Format Detection
+
 - **4-Scenario Detection Strategy**: Handles standard files, misnamed files, unknown extensions, and auto-extension search
 - **Performance Optimized**: Content-based detection with modification time caching
 - **Format Support**: JSON, TOML, YAML with automatic fallback chains
 - **Example**: `Universal::file("config")` tries `config.toml`, `config.yaml`, `config.json` automatically
 
-### Nested Provider - Advanced Environment Variables  
+### Nested Provider - Advanced Environment Variables
+
 - **JSON Parsing**: `APP_FEATURES='["auth", "cache"]'` → `features` array
 - **Automatic Nesting**: `APP_DATABASE_HOST=localhost` → `database.host`
 - **Smart Type Detection**: Strings, numbers, booleans, arrays, objects
 - **Performance Caching**: Optimized parsing with intelligent caching
 
 ### Empty Provider - Clean Configuration
+
 - **Smart Filtering**: Removes empty strings, arrays, objects while preserving meaningful falsy values
 - **CLI Integration**: Perfect for filtering meaningless CLI arguments
 - **Preserves Intent**: Keeps `false`, `0`, and other intentional values
 
 ### Hierarchical Provider - Configuration Cascade
+
 - **Search Hierarchy**: `~/.config/app/`, `~/.app/`, `~/`, ancestor directories, current directory
 - **Automatic Merging**: Later configs override earlier ones with array merging support
 - **Git-like Behavior**: Similar to `.gitconfig` hierarchical resolution
@@ -49,6 +54,7 @@ Built on [Figment's](https://github.com/SergioBenitez/Figment) foundation, Super
 ## 🚀 Built-In Features
 
 ### Array Merging & Export
+
 ```rust
 // Built into SuperConfig - no extension traits needed
 let config = SuperConfig::new()
@@ -58,7 +64,7 @@ let config = SuperConfig::new()
 
 // Rich export and debugging capabilities
 let json = config.as_json()?;              // Export as JSON
-let yaml = config.as_yaml()?;              // Export as YAML 
+let yaml = config.as_yaml()?;              // Export as YAML
 let host = config.get_string("db.host")?;   // Extract values
 let exists = config.has_key("redis")?;      // Check existence
 let debug = config.debug_config()?;        // Full debug output
@@ -92,7 +98,7 @@ let cli_args = AppConfig {
 
 let config: AppConfig = SuperConfig::new()
     .with_defaults(AppConfig::default())        // Set smart defaults
-    .with_verbosity(VerbosityLevel::Debug)      // Enable configuration debugging  
+    .with_verbosity(VerbosityLevel::Debug)      // Enable configuration debugging
     .with_hierarchical_config("myapp")          // System → user → project cascade
     .with_file("config")                        // Auto-detects .toml/.json/.yaml
     .with_env("APP_")                           // JSON parsing + nesting
@@ -102,10 +108,10 @@ let config: AppConfig = SuperConfig::new()
 # Ok::<(), figment::Error>(())
 ```
 
-
 ## 💡 Real-World Examples
 
 ### Production Configuration Setup
+
 ```rust
 use superconfig::SuperConfig;
 use serde::{Deserialize, Serialize};
@@ -146,11 +152,12 @@ let config: AppConfig = SuperConfig::new()
 ```
 
 ### Hierarchical Configuration Discovery
+
 ```rust
 // with_hierarchical_config("myapp") searches in priority order:
-// 
+//
 // 1. ~/.config/myapp/myapp.{toml,yaml,json}    (XDG system config)
-// 2. ~/.myapp/myapp.{toml,yaml,json}           (User home config)  
+// 2. ~/.myapp/myapp.{toml,yaml,json}           (User home config)
 // 3. ~/myapp.{toml,yaml,json}                  (Home root config)
 // 4. ../../myapp.{toml,yaml,json}              (Ancestor directories)
 // 5. ../myapp.{toml,yaml,json}                 (Parent directory)
@@ -165,6 +172,7 @@ let config = SuperConfig::new()
 ```
 
 ### Advanced Array Composition
+
 ```toml
 # ~/.config/myapp/myapp.toml (system defaults)
 [server]
@@ -177,21 +185,22 @@ allowed_origins = ["https://app.example.com"]
 
 ```toml
 # ./myapp.toml (project overrides)
-[server] 
-features_add = ["debug", "hot-reload"]      # Adds to existing array
-features_remove = ["metrics"]               # Removes from array
-ignore_paths_add = ["*.cache", "build/*"]    # Extends ignore patterns
+[server]
+features_add = ["debug", "hot-reload"] # Adds to existing array
+features_remove = ["metrics"] # Removes from array
+ignore_paths_add = ["*.cache", "build/*"] # Extends ignore patterns
 
 [cors]
-allowed_origins_add = ["http://localhost:3000"]  # Add dev origin
+allowed_origins_add = ["http://localhost:3000"] # Add dev origin
 
 # Final result:
 # features = ["auth", "logging", "debug", "hot-reload"]
-# ignore_paths = ["*.tmp", "*.log", "*.cache", "build/*"] 
+# ignore_paths = ["*.tmp", "*.log", "*.cache", "build/*"]
 # allowed_origins = ["https://app.example.com", "http://localhost:3000"]
 ```
 
 ### Advanced Environment Variable Scenarios
+
 ```bash
 # Simple nesting
 export MYAPP_DATABASE_HOST="localhost"              # → database.host
@@ -205,13 +214,14 @@ export MYAPP_REDIS_CONFIG='{"host": "redis.example.com", "pool_size": 10}' # →
 export MYAPP_FEATURES_ADD='["debug"]'               # Adds "debug" to features array
 export MYAPP_FEATURES_REMOVE='["cache"]'            # Removes "cache" from features
 
-# Nested object construction  
+# Nested object construction
 export MYAPP_SERVER_TLS_CERT_PATH="/etc/ssl/cert.pem"
 export MYAPP_SERVER_TLS_KEY_PATH="/etc/ssl/key.pem"
 # → server.tls.cert_path and server.tls.key_path
 ```
 
 ### Configuration Debugging & Introspection
+
 ```rust
 use superconfig::{SuperConfig, AccessExt};
 
@@ -246,6 +256,7 @@ for source in sources {
 ```
 
 ### Performance Features
+
 ```rust
 let config = SuperConfig::new()
     .with_hierarchical_config("prod-app")
@@ -259,6 +270,7 @@ let config = SuperConfig::new()
 ## 🎯 When to Use SuperConfig
 
 ### ✅ Use Cases
+
 - Complex applications with multiple environments
 - Advanced configuration patterns and array merging
 - Performance-critical systems
@@ -280,6 +292,7 @@ Existing Figment users can easily migrate to SuperConfig's enhanced capabilities
 ## 🛠️ Advanced Features
 
 ### Configuration Validation
+
 ```rust
 use superconfig::{SuperConfig, AccessExt};
 use serde::{Deserialize, Serialize};
@@ -308,6 +321,7 @@ let db_config: DatabaseConfig = config.extract_inner("database")?;
 ```
 
 ### Error Handling & Diagnostics
+
 ```rust
 use superconfig::{SuperConfig, AccessExt};
 
@@ -319,10 +333,10 @@ match config.extract::<AppConfig>() {
     Ok(cfg) => println!("Configuration loaded successfully"),
     Err(e) => {
         eprintln!("Configuration error: {}", e);
-        
+
         // Debug what went wrong
         eprintln!("Debug info:\n{}", config.debug_config()?);
-        
+
         // Show all sources
         for source in config.debug_sources() {
             eprintln!("Source: {:?}", source);
@@ -332,6 +346,7 @@ match config.extract::<AppConfig>() {
 ```
 
 ### Custom Provider Integration
+
 ```rust
 use superconfig::{SuperConfig, ExtendExt};
 use figment::Provider;
@@ -350,7 +365,6 @@ let config = SuperConfig::new()
     .with_provider(DatabaseProvider { /* ... */ })  // Automatic array merging
     .with_env("APP_");
 ```
-
 
 ## 📚 Documentation & Resources
 
@@ -374,3 +388,5 @@ Licensed under the MIT License. See [LICENSE](LICENSE) for details.
 ---
 
 **SuperConfig** - Configuration management that scales with your application.
+
+# Test change

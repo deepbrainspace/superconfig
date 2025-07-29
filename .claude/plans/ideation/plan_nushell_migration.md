@@ -1,9 +1,11 @@
 # Nushell Migration Plan for SuperConfig Development
 
 ## Project Overview
+
 Migrate SuperConfig development workflow from bash to nushell to enable AI-integrated development with structured data handling and improved developer experience.
 
 ## Vision: AI-First Development Environment
+
 - **Structured Data Throughout**: Every command output is queryable, pipeable data
 - **AI-Friendly Scripting**: Natural language-like commands that AI can generate reliably
 - **Configuration Synergy**: Nushell's data model aligns perfectly with SuperConfig's multi-format philosophy
@@ -12,12 +14,14 @@ Migrate SuperConfig development workflow from bash to nushell to enable AI-integ
 ## Phase 1: Foundation Setup (1-2 hours)
 
 ### 1.1 Install and Configure Nushell
+
 - [ ] **Install nushell**: `cargo install nu` (from your fork if needed)
 - [ ] **Set as default shell**: `chsh -s $(which nu)` or configure terminal
 - [ ] **Create config directory**: `mkdir -p ~/.config/nushell`
 - [ ] **Basic configuration**: Set up `config.nu` and `env.nu`
 
 ### 1.2 Essential Configuration
+
 ```nu
 # ~/.config/nushell/config.nu
 $env.config = {
@@ -43,6 +47,7 @@ alias cn = cargo nextest run
 ```
 
 ### 1.3 Verify Installation
+
 - [ ] **Test basic commands**: `ls`, `ps`, `sys`
 - [ ] **Test JSON handling**: `cargo metadata | from json | get packages.0.name`
 - [ ] **Test file operations**: `ls **/*.rs | where size > 10kb`
@@ -52,6 +57,7 @@ alias cn = cargo nextest run
 ### 2.1 Replace Common Bash Commands
 
 **File Operations:**
+
 ```nu
 # Instead of: find . -name "*.rs" -type f
 glob **/*.rs
@@ -64,6 +70,7 @@ glob **/*.rs | each { |file| {file: $file, lines: (open $file | lines | length)}
 ```
 
 **Git Operations:**
+
 ```nu
 # Rich git log analysis
 git log --oneline -n 20 | lines | each { |line| $line | parse "{hash} {message}" } | flatten
@@ -73,6 +80,7 @@ git log --pretty=format:"%h,%an,%s" | from csv | group-by column2 | transpose ke
 ```
 
 ### 2.2 Create justfile with Nushell Integration
+
 - [ ] **Install just**: `cargo install just`
 - [ ] **Create initial justfile**:
 
@@ -110,17 +118,17 @@ ci-report:
 
 # SuperConfig specific tasks
 validate-configs:
-    ["examples/config.toml", "examples/config.json", "examples/config.yaml"] 
-    | each { |file| 
+    ["examples/config.toml", "examples/config.json", "examples/config.yaml"]
+    | each { |file|
         {
-            file: $file, 
+            file: $file,
             valid: (cargo run -- validate $file | complete | get exit_code) == 0
-        } 
+        }
     }
 
 benchmark-formats:
-    ["toml", "json", "yaml"] 
-    | each { |fmt| 
+    ["toml", "json", "yaml"]
+    | each { |fmt|
         {
             format: $fmt,
             parse_time: (cargo bench --bench format_bench -- $fmt | parse "time: {time}" | get time.0)
@@ -129,6 +137,7 @@ benchmark-formats:
 ```
 
 ### 2.3 Update CLAUDE.md Rules
+
 - [ ] **Add nushell preferences** to package manager section
 - [ ] **Update command examples** to use nushell syntax where beneficial
 - [ ] **Add structured output guidelines** for AI integration
@@ -138,6 +147,7 @@ benchmark-formats:
 ### 3.1 Structured Development Commands
 
 **Create `~/.config/nushell/superconfig-dev.nu`:**
+
 ```nu
 # AI-friendly development utilities for SuperConfig
 
@@ -171,7 +181,7 @@ export def ai-context [] {
 export def analyze-tests [] {
     let test_files = (glob tests/**/*.rs src/**/*test*.rs)
     let src_files = (glob src/**/*.rs | where $it !~ test)
-    
+
     {
         coverage: {
             test_files: ($test_files | length),
@@ -180,11 +190,11 @@ export def analyze-tests [] {
         },
         test_results: (cargo nextest run --message-format=json | from json | where type == "test" | group-by outcome),
         suggestions: (
-            $src_files 
-            | each { |f| 
+            $src_files
+            | each { |f|
                 let test_exists = ($test_files | any { |t| ($t | path basename | str starts-with ($f | path basename | str replace ".rs" "")) })
                 if not $test_exists { $f }
-            } 
+            }
             | compact
         )
     }
@@ -192,8 +202,8 @@ export def analyze-tests [] {
 
 # Performance benchmarking with structured output
 export def benchmark-features [] {
-    ["core", "cli", "mcp", "api"] 
-    | each { |feature| 
+    ["core", "cli", "mcp", "api"]
+    | each { |feature|
         {
             feature: $feature,
             build_time: (time (cargo build --features $feature) | get real),
@@ -206,6 +216,7 @@ export def benchmark-features [] {
 ### 3.2 Integration with Development Tools
 
 **VS Code/Cursor Integration:**
+
 ```nu
 # Generate project context for AI coding assistants
 export def cursor-context [] {
@@ -221,7 +232,7 @@ export def ai-commit [] {
         files: (git diff --cached --name-only | lines),
         diff: (git diff --cached)
     }
-    
+
     print "=== Changes to commit ==="
     $changes.staged | each { |line| print $line }
     print "\n=== AI Analysis Context ==="
@@ -231,6 +242,7 @@ export def ai-commit [] {
 ```
 
 ### 3.3 Moon Integration (Optional)
+
 - [ ] **Compare Moon vs justfile** for SuperConfig's needs
 - [ ] **Create hybrid approach** if beneficial:
 
@@ -251,18 +263,19 @@ ai-analysis:
 ## Phase 4: Advanced Workflows (2-3 hours)
 
 ### 4.1 Configuration Testing Workflows
+
 ```nu
 # Test SuperConfig across all supported formats
 export def test-all-formats [] {
     let formats = ["toml", "json", "yaml", "ron"]
     let test_configs = (ls examples/ | where name =~ config | get name)
-    
-    $formats | each { |fmt| 
+
+    $formats | each { |fmt|
         let configs = ($test_configs | where $it =~ $fmt)
         {
             format: $fmt,
             config_count: ($configs | length),
-            validation_results: ($configs | each { |cfg| 
+            validation_results: ($configs | each { |cfg|
                 {
                     file: $cfg,
                     valid: (cargo run -- validate $cfg | complete | get exit_code) == 0,
@@ -284,6 +297,7 @@ export def prepare-bindings [] {
 ```
 
 ### 4.2 Release Automation
+
 ```nu
 export def release-check [] {
     {
@@ -299,12 +313,15 @@ export def release-check [] {
 ## Phase 5: Documentation and Polish (1-2 hours)
 
 ### 5.1 Update Documentation
+
 - [ ] **Update README** with nushell workflow examples
 - [ ] **Create nushell usage guide** in docs/
 - [ ] **Document AI integration features**
 
 ### 5.2 Share Configuration
+
 - [ ] **Export nushell config** to version control:
+
 ```nu
 # Create shareable config
 {
@@ -317,21 +334,25 @@ export def release-check [] {
 ## Success Criteria
 
 ### Phase 1 Success:
+
 - [ ] **Nushell installed and configured** as primary shell
 - [ ] **Basic commands working**: file operations, git, cargo
 - [ ] **JSON/YAML parsing** working seamlessly
 
 ### Phase 2 Success:
+
 - [ ] **All bash scripts replaced** with nushell equivalents
 - [ ] **justfile integration** working smoothly
 - [ ] **Development workflow** faster than before
 
 ### Phase 3 Success:
+
 - [ ] **AI context generation** working
 - [ ] **Structured data workflows** providing rich insights
 - [ ] **Integration with coding tools** functional
 
 ### Phase 4 Success:
+
 - [ ] **SuperConfig-specific workflows** implemented
 - [ ] **Multi-format testing** automated with rich reporting
 - [ ] **Release automation** with comprehensive checks
@@ -339,6 +360,7 @@ export def release-check [] {
 ## Long-term Vision
 
 ### AI-Enhanced Development Loop:
+
 1. **Context Generation**: `ai-context` provides rich structured data to AI
 2. **Code Analysis**: `analyze-codebase` gives AI architectural understanding
 3. **Test Insights**: `analyze-tests` identifies coverage gaps
@@ -346,12 +368,14 @@ export def release-check [] {
 5. **Release Readiness**: `release-check` ensures quality gates
 
 ### Integration Points:
+
 - **Claude Code**: Rich context from structured commands
 - **Cursor**: Project state via `.cursor-context.json`
 - **CI/CD**: Structured reports for automated decision making
 - **Documentation**: Auto-generated insights from codebase analysis
 
 ## Next Steps
+
 1. **Start with Phase 1**: Basic nushell setup and configuration
 2. **Gradual Migration**: Replace one workflow at a time
 3. **Measure Impact**: Compare productivity before/after
@@ -362,10 +386,11 @@ export def release-check [] {
 
 **Timeline Estimate**: 8-12 hours total across 1-2 weeks
 **Risk Level**: Low - can run parallel to existing bash workflows
-**Expected Benefits**: 
+**Expected Benefits**:
+
 - 40% faster common operations through structured data
 - 60% better AI integration through rich context
 - 30% reduction in debugging time through better error handling
 - Foundation for advanced SuperConfig features (multi-language bindings, AI-powered config generation)
 
-*This plan transforms SuperConfig development into an AI-first, data-structured workflow that scales with the project's multi-language ambitions.*
+_This plan transforms SuperConfig development into an AI-first, data-structured workflow that scales with the project's multi-language ambitions._

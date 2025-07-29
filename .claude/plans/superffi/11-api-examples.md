@@ -5,16 +5,19 @@ This document provides comprehensive usage examples for SuperConfig across all s
 ## Installation
 
 ### Python
+
 ```bash
 pip install superconfig
 ```
 
 ### Node.js
+
 ```bash
 npm install superconfig
 ```
 
 ### WebAssembly
+
 ```bash
 npm install superconfig-wasm
 ```
@@ -92,6 +95,7 @@ config = SuperConfig.new()
 ### Wildcard File Discovery
 
 #### Python
+
 ```python
 from superconfig import SuperConfig
 
@@ -118,6 +122,7 @@ config = SuperConfig.new().with_wildcard(advanced_wildcard)
 ```
 
 #### Node.js
+
 ```javascript
 const { SuperConfig } = require('superconfig');
 
@@ -144,6 +149,7 @@ const config = SuperConfig.new().withWildcard(advancedWildcard);
 ```
 
 #### WebAssembly
+
 ```javascript
 import { SuperConfig } from 'superconfig-wasm';
 
@@ -174,6 +180,7 @@ const config = SuperConfig.new().withWildcard(advancedWildcard);
 ### Scenario 1: Web Application Configuration
 
 #### Python (Flask/Django)
+
 ```python
 from superconfig import SuperConfig
 import os
@@ -197,6 +204,7 @@ SECRET_KEY = app_config['security']['secret_key']
 ```
 
 #### Node.js (Express)
+
 ```javascript
 const { SuperConfig } = require('superconfig');
 
@@ -221,6 +229,7 @@ const SECRET_KEY = appConfig.security.secretKey;
 ### Scenario 2: Microservice Configuration
 
 #### Python
+
 ```python
 from superconfig import SuperConfig
 
@@ -263,6 +272,7 @@ db_config = auth_service.get_database_config()
 ```
 
 #### Node.js
+
 ```javascript
 const { SuperConfig } = require('superconfig');
 
@@ -312,6 +322,7 @@ const dbConfig = authService.getDatabaseConfig();
 ## Configuration Debugging & Introspection
 
 ### Python
+
 ```python
 from superconfig import SuperConfig
 
@@ -333,6 +344,7 @@ for source in metadata['sources']:
 ```
 
 ### Node.js
+
 ```javascript
 const { SuperConfig } = require('superconfig');
 
@@ -358,6 +370,7 @@ metadata.sources.forEach(source => {
 ## Error Handling
 
 ### Python
+
 ```python
 from superconfig import SuperConfig
 
@@ -380,6 +393,7 @@ except Exception as e:
 ```
 
 ### Node.js
+
 ```javascript
 const { SuperConfig } = require('superconfig');
 
@@ -477,11 +491,12 @@ function createUniversalConfig(platform) {
 ```
 
 This consistent API design enables:
+
 - **Code Reuse**: Same configuration logic across server and client
-- **Developer Experience**: Learn once, use everywhere  
+- **Developer Experience**: Learn once, use everywhere
 - **Migration Flexibility**: Easy switching between Node.js and WASM
 - **Testing Consistency**: Same test patterns across environments
 
 ---
 
-*See [`12-testing-strategy.md`](./12-testing-strategy.md) for comprehensive testing examples and [`03-architecture.md`](./03-architecture.md) for technical implementation details.*
+_See [`12-testing-strategy.md`](./12-testing-strategy.md) for comprehensive testing examples and [`03-architecture.md`](./03-architecture.md) for technical implementation details._

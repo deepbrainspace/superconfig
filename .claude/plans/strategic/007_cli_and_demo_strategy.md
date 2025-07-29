@@ -1,13 +1,14 @@
 # SuperConfig CLI & Demo Strategy
 
-**Created**: July 27, 2025  
-**Author**: Claude Opus 4  
-**Status**: Strategic Decision Document  
+**Created**: July 27, 2025\
+**Author**: Claude Opus 4\
+**Status**: Strategic Decision Document\
 **Purpose**: Define CLI priority, SuperCLI integration, and demonstration strategy
 
 ## 🎯 Executive Summary
 
 **Key Decisions:**
+
 1. **Bring SuperCLI into this monorepo** - Essential for CLI features
 2. **CLI is HIGH PRIORITY** - Move to Week 2 (right after website)
 3. **Dogfood SuperConfig** - Use it for our own tools' configuration
@@ -20,12 +21,14 @@
 **Location**: `crates/supercli/`
 
 **Rationale**:
+
 - SuperConfig CLI needs professional color output and formatting
 - Any project using SuperConfig will want CLI capabilities
 - Unified development and release cycles
 - SuperCLI becomes part of the SuperConfig ecosystem
 
 **Migration Plan**:
+
 ```bash
 # Week 2
 cp -r ../guardy/packages/supercli crates/
@@ -38,6 +41,7 @@ cp -r ../guardy/packages/supercli crates/
 ### **New Priority: Week 2 (After Website)**
 
 The CLI is **essential** because:
+
 1. **Immediate Value**: Users can use SuperConfig without writing code
 2. **Demo Vehicle**: Shows all SuperConfig features in action
 3. **Debugging Tool**: Helps users understand their configs
@@ -122,11 +126,12 @@ error = "red"
 warning = "yellow"
 
 [output]
-format = "pretty"  # or "json", "plain"
-verbosity = "normal"  # or "quiet", "verbose"
+format = "pretty" # or "json", "plain"
+verbosity = "normal" # or "quiet", "verbose"
 ```
 
 ### **Benefits of Dogfooding**:
+
 1. **Find pain points** before users do
 2. **Showcase real usage** in our own repo
 3. **Build empathy** for user experience
@@ -137,6 +142,7 @@ verbosity = "normal"  # or "quiet", "verbose"
 ### **Option 1: CLI as Primary Demo** ✅ (Recommended)
 
 The CLI itself demonstrates everything:
+
 - Multi-source loading (files + env + CLI args)
 - Array merging (show `features_add` in action)
 - Format detection (auto-detect .toml/.json/.yaml)
@@ -178,6 +184,7 @@ Create `examples/` directory with:
 ### **Option 3: Interactive Playground**
 
 Website with WASM-powered playground:
+
 - Edit config files in browser
 - See merge results live
 - Try different formats
@@ -186,24 +193,28 @@ Website with WASM-powered playground:
 ## 📅 Updated Timeline
 
 ### **Week 1: Foundation**
+
 - [x] Crates.io published ✅
 - [x] Domain acquired ✅
 - [ ] Website MVP deployed
 - [ ] Basic documentation
 
 ### **Week 2: CLI Development**
+
 - [ ] Migrate SuperCLI into monorepo
 - [ ] Implement core CLI commands
 - [ ] Beautiful colored output
 - [ ] First video demo of CLI
 
 ### **Week 3: Launch**
+
 - [ ] CLI available via `cargo install superconfig-cli`
 - [ ] Show HN with CLI demo
 - [ ] Blog post: "Introducing SuperConfig"
 - [ ] Tweet thread with CLI screenshots
 
 ### **Week 4-5: Language Bindings**
+
 - [ ] Node.js WASM binding
 - [ ] npm package with CLI included
 - [ ] Python binding started

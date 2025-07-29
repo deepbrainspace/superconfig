@@ -23,17 +23,20 @@ This document outlines the strategy to make SuperFigment universally available a
 Current configuration management libraries across languages have significant gaps:
 
 #### JavaScript/Node.js Ecosystem
+
 - **nconf**: No intelligent array merging (arrays get replaced, not merged)
 - **node-config**: Basic hierarchical support but no array operations
 - **cosmiconfig**: Only file discovery, no merging capabilities
 - **dotenv**: Only environment variables, no complex merging
 
-#### Python Ecosystem  
+#### Python Ecosystem
+
 - **dynaconf**: No array merging intelligence
 - **pydantic-settings**: Basic validation but limited merging
 - **hydra**: Complex, ML-focused, heavyweight for general use
 
 #### Go Ecosystem
+
 - **viper**: No array merging, complex setup for multiple formats
 - **spf13**: Manual environment variable handling
 
@@ -54,6 +57,7 @@ SuperFigment offers features **no other configuration library provides**:
 **Overall Compatibility: 85% Ready**
 
 #### ✅ Fully Compatible Components
+
 - Core SuperFigment builder API
 - All extension traits (ExtendExt, FluentExt, AccessExt)
 - Array merging algorithms (`_add`/`_remove` patterns)
@@ -62,16 +66,18 @@ SuperFigment offers features **no other configuration library provides**:
 - All serde-based serialization/deserialization
 
 #### ⚠️ Needs Minor Modifications
+
 - File system operations (requires WASI)
 - Environment variable access (works with WASI setup)
 - Hierarchical path discovery (needs WASM-specific logic)
 
 #### ❌ Won't Work (Optional Features Only)
+
 - Network features (tokio, axum, reqwest)
 - Database connectivity (sqlx)
 - External services (vaultrs)
 
-*Note: These are optional features behind feature flags and don't affect core functionality.*
+_Note: These are optional features behind feature flags and don't affect core functionality._
 
 ### Required Code Changes
 
@@ -90,11 +96,11 @@ console_error_panic_hook = { version = "0.1", optional = true }
 default = ["providers"]
 providers = []
 wasm = [
-    "wasm-bindgen", 
-    "js-sys", 
-    "wasm-bindgen-futures", 
-    "serde-wasm-bindgen",
-    "console_error_panic_hook"
+  "wasm-bindgen",
+  "js-sys",
+  "wasm-bindgen-futures",
+  "serde-wasm-bindgen",
+  "console_error_panic_hook",
 ]
 
 [lib]
@@ -296,17 +302,20 @@ pub use wasm::*;
 ### Production-Ready Languages
 
 #### Tier 1: Immediate Support
+
 - **JavaScript/TypeScript** - Native WASM support, largest ecosystem
 - **Python** - wasmtime-py, wasmer-python bindings
 - **Go** - wasmtime-go, wasmer-go bindings
 - **Rust** - Native WASM support
 
-#### Tier 2: Strong Support  
+#### Tier 2: Strong Support
+
 - **C/C++** - wasmtime-c-api, wasmer-c-api
 - **C#/.NET** - wasmtime-dotnet, Wasmtime.NetCore
 - **Java** - wasmtime-jni, Chicory WASM runtime
 
 #### Tier 3: Emerging Support
+
 - **Ruby** - wasmtime-rb
 - **PHP** - wasm-php, Extism
 - **Swift** - WasmKit, SwiftWasm
@@ -323,6 +332,7 @@ This covers virtually every major programming language ecosystem, providing univ
 ### TypeScript/Node.js Wrapper
 
 #### Package Structure
+
 ```
 @superfigment/nodejs/
 ├── package.json
@@ -336,6 +346,7 @@ This covers virtually every major programming language ecosystem, providing univ
 ```
 
 #### Internal WASM Loader (Hidden Complexity)
+
 ```typescript
 // src/wasm-loader.ts - Users never see this!
 import { WASI } from '@wasmer/wasi';
@@ -390,6 +401,7 @@ class WasmSuperFigmentLoader {
 ```
 
 #### Clean Public API
+
 ```typescript
 // src/index.ts - What users actually see and use!
 import { WasmSuperFigmentLoader } from './wasm-loader';
@@ -515,6 +527,7 @@ const DEFAULT_CONFIG = {
 ```
 
 #### User Experience (Zero WASM Complexity)
+
 ```typescript
 // users/my-app/src/config.ts
 import { GuardyConfig } from '@superfigment/nodejs';
@@ -537,6 +550,7 @@ async function loadConfig() {
 ### Python Wrapper
 
 #### Package Structure
+
 ```
 superfigment/
 ├── setup.py
@@ -550,6 +564,7 @@ superfigment/
 ```
 
 #### Clean Public API
+
 ```python
 # superfigment/__init__.py
 import json
@@ -623,6 +638,7 @@ DEFAULT_CONFIG = {
 ```
 
 #### User Experience (Zero WASM Complexity)
+
 ```python
 # users/my-app/config.py  
 from superfigment import GuardyConfig
@@ -756,6 +772,7 @@ func (gc *GuardyConfig) GetSection(path string) (map[string]interface{}, error) 
 ### Features No Other Library Provides
 
 #### 1. Intelligent Array Merging
+
 ```yaml
 # base.yaml
 features: ["auth", "logging"]
@@ -773,12 +790,14 @@ allowed_hosts: ["app.com", "api.com"]       # Not simple replacement
 ```
 
 **Competitive Analysis**:
+
 - **nconf (Node.js)**: Arrays get replaced, not merged ❌
-- **dynaconf (Python)**: No array merging intelligence ❌  
+- **dynaconf (Python)**: No array merging intelligence ❌
 - **viper (Go)**: No array operations ❌
 - **SuperFigment**: Full `_add`/`_remove` pattern support ✅
 
 #### 2. Smart Environment Variable Parsing
+
 ```bash
 # These work automatically in SuperFigment:
 export APP_DATABASE_HOSTS='["db1.com", "db2.com"]'      # JSON array parsing
@@ -788,10 +807,12 @@ export APP_ENABLE_DEBUG=""                               # Filtered out (empty)
 ```
 
 **Competitive Analysis**:
+
 - **Other libraries**: Manual JSON parsing required ❌
 - **SuperFigment**: Automatic JSON detection and parsing ✅
 
 #### 3. Zero-Config Hierarchical Discovery
+
 ```bash
 # SuperFigment automatically finds and merges:
 ~/.config/myapp/config.*    # System-wide
@@ -801,10 +822,12 @@ export APP_ENABLE_DEBUG=""                               # Filtered out (empty)
 ```
 
 **Competitive Analysis**:
+
 - **Other libraries**: Manual path specification required ❌
 - **SuperFigment**: Automatic discovery with intelligent cascade ✅
 
 #### 4. Universal Format Support
+
 ```rust
 // One API, all formats:
 SuperFigment::new()
@@ -813,6 +836,7 @@ SuperFigment::new()
 ```
 
 **Competitive Analysis**:
+
 - **Other libraries**: Format-specific loaders ❌
 - **SuperFigment**: Universal format detection ✅
 
@@ -824,7 +848,7 @@ SuperFigment::new()
    - Current: Manual config merging leads to conflicts
    - SuperFigment: Intelligent array operations prevent conflicts
 
-2. **Environment Promotion Complexity**  
+2. **Environment Promotion Complexity**
    - Current: Error-prone manual config copying between environments
    - SuperFigment: Smart merging with `_add`/`_remove` patterns
 
@@ -850,18 +874,21 @@ Enterprise (50 engineers): $900,000/year savings
 ### Key Marketing Benefits
 
 #### For Individual Developers
+
 - **"Config that just works"** - Zero-config hierarchical discovery
-- **"No more array conflicts"** - Intelligent merging prevents overwrites  
+- **"No more array conflicts"** - Intelligent merging prevents overwrites
 - **"Same API everywhere"** - Learn once, use in any language
 - **"Smart environment parsing"** - JSON arrays work automatically
 
-#### For Development Teams  
+#### For Development Teams
+
 - **"End config conflicts"** - Team members can't overwrite each other's arrays
 - **"Universal consistency"** - Same behavior across all microservices
 - **"Faster deployment"** - Environment promotion without manual merging
 - **"Reduce debugging time"** - Predictable configuration behavior
 
 #### For Enterprise
+
 - **"Standardize configuration"** - Single approach across all languages
 - **"Reduce training costs"** - One configuration system to learn
 - **"Improve reliability"** - Consistent behavior reduces production issues
@@ -870,14 +897,16 @@ Enterprise (50 engineers): $900,000/year savings
 #### Unique Selling Propositions
 
 1. **"The only config library with intelligent array merging"**
-2. **"Universal configuration management across all languages"**  
+2. **"Universal configuration management across all languages"**
 3. **"Zero-config hierarchical discovery with smart merging"**
 4. **"From microservice config hell to configuration paradise"**
 
 ## Implementation Roadmap
 
 ### Phase 1: Foundation (Months 1-2)
+
 **Deliverables**:
+
 - ✅ Add WASM bindings to SuperFigment Rust crate
 - ✅ Implement conditional compilation for WASM compatibility
 - ✅ Create build process with wasm-pack
@@ -885,27 +914,33 @@ Enterprise (50 engineers): $900,000/year savings
 - ✅ Basic documentation and examples
 
 **Success Metrics**:
+
 - WASM binary builds successfully
 - TypeScript wrapper passes all tests
 - Performance benchmarks meet targets (<100ms initialization)
 - Early user feedback validates approach
 
 ### Phase 2: Language Expansion (Months 3-5)
+
 **Deliverables**:
+
 - ✅ Python wrapper library (data science/ML market)
-- ✅ Go wrapper library (cloud-native/DevOps market)  
+- ✅ Go wrapper library (cloud-native/DevOps market)
 - ✅ Java wrapper library (enterprise market)
 - ✅ Comprehensive test suites for all languages
 - ✅ Performance optimization and profiling
 
 **Success Metrics**:
+
 - All 4 languages have feature-complete wrappers
 - Consistent behavior across all implementations
 - Documentation and examples for each language
 - Community adoption begins
 
 ### Phase 3: Polish & Scale (Months 6-8)
+
 **Deliverables**:
+
 - ✅ Advanced wrapper features (async support, streaming)
 - ✅ Enterprise features (validation, schema support)
 - ✅ Performance optimizations based on profiling
@@ -913,13 +948,16 @@ Enterprise (50 engineers): $900,000/year savings
 - ✅ Community tools and ecosystem
 
 **Success Metrics**:
+
 - Production deployments across multiple languages
 - Community contributions and ecosystem growth
 - Enterprise customer adoption
 - Market leadership in configuration management
 
 ### Phase 4: Ecosystem (Months 9-12)
+
 **Deliverables**:
+
 - ✅ Additional language support (C#, Ruby, PHP)
 - ✅ Cloud service offerings (hosted configuration)
 - ✅ Advanced enterprise features (audit, compliance)
@@ -927,6 +965,7 @@ Enterprise (50 engineers): $900,000/year savings
 - ✅ Developer tooling and IDE plugins
 
 **Success Metrics**:
+
 - 10+ language ecosystems supported
 - Significant market share in configuration management
 - Enterprise sales pipeline established
@@ -937,79 +976,97 @@ Enterprise (50 engineers): $900,000/year savings
 ### WASM/WASI Limitations
 
 #### 1. File System Access Restrictions
+
 **Limitation**: WASM runs in a sandboxed environment with limited file system access.
 
-**Impact**: 
+**Impact**:
+
 - Hierarchical configuration discovery is limited to explicitly mounted directories
 - No access to system-wide config directories (`~/.config/`, etc.) without explicit mounting
 - File paths must be relative to WASM sandbox root
 
 **Mitigation**:
+
 - WASI allows mounting specific directories into WASM sandbox
 - Wrapper libraries handle mounting common config locations
 - Provide clear documentation on file system limitations
 
 #### 2. Environment Variable Access
+
 **Limitation**: WASM only has access to environment variables explicitly provided by the host.
 
 **Impact**:
+
 - Environment variables must be passed through WASI configuration
 - No automatic access to all system environment variables
 - Host language must explicitly provide environment context
 
 **Mitigation**:
+
 - Wrapper libraries automatically pass through `process.env` (Node.js), `os.environ` (Python), etc.
 - Document environment variable access patterns for each language
 - Provide fallback mechanisms for missing variables
 
-#### 3. Network and System Services  
+#### 3. Network and System Services
+
 **Limitation**: WASM cannot directly access network resources or system services.
 
 **Impact**:
+
 - Optional features like HTTP config fetching won't work in WASM
 - Database connectivity features unavailable
 - External service integrations (Vault, etc.) won't function
 
 **Mitigation**:
+
 - These are optional features behind feature flags
 - Core configuration functionality (95% use case) works perfectly
 - Consider future WASI proposals for network access
 
 #### 4. Performance Considerations
+
 **Limitation**: WASM has initialization overhead and some performance characteristics.
 
 **Impact**:
+
 - 50-100ms initialization time vs 1-5ms for native libraries
 - Slightly higher memory usage (2MB WASM binary + runtime)
 - Function call overhead for WASM boundary crossings
 
 **Mitigation**:
+
 - Initialization happens once per application startup (negligible impact)
 - Memory usage is reasonable for modern applications
 - Performance difference is imperceptible for configuration loading
 
 ### Browser Compatibility
+
 **Limitation**: Browser WASM has more restrictions than server-side WASM.
 
 **Impact**:
+
 - No file system access in browsers (security restriction)
 - Limited environment variable access
 - Reduced functionality for browser-based tools
 
 **Mitigation**:
+
 - Configuration management primarily needed server-side
 - Browser applications typically receive config from server
 - Consider separate browser-optimized version if needed
 
 ### Development Complexity
+
 **Limitation**: WASM development requires additional tooling and knowledge.
 
 **Impact**:
+
 - Need wasm-pack, WASI SDK, and WASM-specific tooling
 - Memory management across WASM boundary
 - Debugging across language/WASM boundaries
 
 **Mitigation**:
+
 - Wrapper libraries hide complexity from end users
 - Good tooling and documentation for maintainers
 - Growing ecosystem of WASM development tools
@@ -1019,7 +1076,7 @@ Enterprise (50 engineers): $900,000/year savings
 The WASM implementation strategy positions SuperFigment as the **universal configuration management solution** across all programming languages. By leveraging a single, well-tested Rust codebase with WASM bindings, we can deliver:
 
 1. **Unique Features**: Intelligent array merging, smart environment parsing, hierarchical discovery
-2. **Universal Compatibility**: Identical functionality across 12+ programming languages  
+2. **Universal Compatibility**: Identical functionality across 12+ programming languages
 3. **Maintenance Efficiency**: Single codebase reduces bugs and accelerates feature development
 4. **Market Leadership**: First-mover advantage in intelligent configuration management
 5. **Strong ROI**: Significant time savings for developers and DevOps teams

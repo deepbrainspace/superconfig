@@ -1,19 +1,22 @@
 # SuperConfig UniFfi Tool Plan
 
-**Created**: July 27, 2025  
+**Created**: July 27, 2025\
 **Status**: Active Development Plan
 
 ## Objective
+
 Build a tool that generates and publishes multi-language bindings from a single Rust crate, avoiding code duplication.
 
 ## Problem
+
 - napi-rs requires separate crate with duplicated wrapper code
-- PyO3 requires separate crate with duplicated wrapper code  
+- PyO3 requires separate crate with duplicated wrapper code
 - Maintaining 3 copies of the same API is error-prone
 
 ## Solution: UniFfi Tool
 
 ### Architecture
+
 ```
 superconfig/
 ├── crates/
@@ -25,6 +28,7 @@ superconfig/
 ```
 
 ### How It Works
+
 1. Analyzes superconfig's public API
 2. Generates binding code using napi-rs/PyO3
 3. Builds platform binaries
@@ -33,6 +37,7 @@ superconfig/
 ### Implementation Steps
 
 #### Phase 1: Node.js MVP (Week 1)
+
 - [ ] Create `crates/uniffi` with basic CLI
 - [ ] Parse superconfig's public API using syn
 - [ ] Generate napi-rs binding code
@@ -40,11 +45,13 @@ superconfig/
 - [ ] Publish @superconfig/node to npm
 
 #### Phase 2: Python Support (Week 2)
+
 - [ ] Add PyO3 code generation
 - [ ] Build Python wheels
 - [ ] Publish to PyPI
 
 #### Phase 3: Generalization (Week 3+)
+
 - [ ] Make tool work for any Rust crate
 - [ ] Add more language targets
 - [ ] Open source as separate project
@@ -80,12 +87,14 @@ impl UniFfi {
 ```
 
 ### Benefits
+
 - Single source of truth
 - Automated publishing
 - No manual wrapper maintenance
 - Can become its own product later
 
 ### Naming
+
 - Internal: `uniffi` (crate name)
 - If open sourced: TBD based on functionality
 

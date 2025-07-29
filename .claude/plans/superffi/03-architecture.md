@@ -46,18 +46,18 @@ This document outlines the three-layer architecture for SuperConfig multi-langua
 
 ## Performance Benefits
 
-| User Type | Current | With This Plan | Impact |
-|-----------|---------|----------------|---------|
-| **Rust** | Native types (optimal) | Native types (unchanged) | **No regression** |
-| **Python** | Complex PyO3 marshaling | Simple JSON parsing | **Major improvement** |
-| **Node.js** | Complex napi-rs marshaling | Simple JSON parsing | **major improvement** |
+| User Type   | Current                    | With This Plan           | Impact                |
+| ----------- | -------------------------- | ------------------------ | --------------------- |
+| **Rust**    | Native types (optimal)     | Native types (unchanged) | **No regression**     |
+| **Python**  | Complex PyO3 marshaling    | Simple JSON parsing      | **Major improvement** |
+| **Node.js** | Complex napi-rs marshaling | Simple JSON parsing      | **major improvement** |
 
 ## Layer Details
 
 ### Layer 1: Core SuperConfig (Unchanged)
 
-**Purpose**: Maintain high-performance native Rust API  
-**Changes**: None - preserves existing API contract  
+**Purpose**: Maintain high-performance native Rust API\
+**Changes**: None - preserves existing API contract\
 **Users**: Rust developers who need maximum performance
 
 ```rust
@@ -72,11 +72,12 @@ let config = SuperConfig::new()
 
 ### Layer 2: SuperConfig FFI Wrapper
 
-**Purpose**: FFI-compatible interface using JSON for complex types  
-**Location**: `crates/superconfig-ffi/`  
+**Purpose**: FFI-compatible interface using JSON for complex types\
+**Location**: `crates/superconfig-ffi/`\
 **Approach**: Wraps core SuperConfig with JSON parameter handling
 
 **Design Pattern**:
+
 ```rust
 #[superffi]
 pub struct SuperConfig {
@@ -99,11 +100,12 @@ impl SuperConfig {
 
 ### Layer 3: SuperFFI Macro Generator
 
-**Purpose**: Generates language-specific bindings from annotated Rust code  
-**Location**: `crates/superffi/`  
+**Purpose**: Generates language-specific bindings from annotated Rust code\
+**Location**: `crates/superffi/`\
 **Status**: ✅ COMPLETED in Phase 1
 
 **Generation Strategy**:
+
 ```rust
 #[superffi]  // Applied to struct/impl/fn
 // Generates based on enabled features:
@@ -119,6 +121,7 @@ impl SuperConfig {
 SuperFFI ensures **identical function signatures** across all JavaScript environments (Node.js and WebAssembly) by implementing a generic naming conversion strategy:
 
 **Problem**: Raw bindings produce inconsistent APIs:
+
 - Node.js (NAPI): `withFile()` (automatically camelCase)
 - WebAssembly (wasm-bindgen): `with_file()` (preserves snake_case)
 
@@ -188,18 +191,21 @@ fn test_javascript_api_consistency() {
 ## Required Build Tools
 
 ### Python (PyO3) Distribution
+
 - **Tool**: `maturin` (Python packaging tool for Rust extensions)
 - **Install**: `pip install maturin`
 - **What it does**: Compiles `superconfig-ffi` Rust code → `superconfig.so` → packages into `.whl`
 - **Command**: `maturin build --release`
 
-### Node.js (NAPI) Distribution  
+### Node.js (NAPI) Distribution
+
 - **Tool**: `@napi-rs/cli` (Node.js native addon build tool)
 - **Install**: `npm install -g @napi-rs/cli`
 - **What it does**: Compiles `superconfig-ffi` Rust code → `superconfig.node` → packages into `.tgz`
 - **Command**: `napi build --platform --release`
 
 ### WebAssembly Distribution
+
 - **Tool**: `wasm-pack` (WebAssembly build tool)
 - **Install**: `cargo install wasm-pack`
 - **What it does**: Compiles `superconfig-ffi` Rust code → `superconfig.wasm` + JS bindings → packages into `.tgz`
@@ -208,41 +214,49 @@ fn test_javascript_api_consistency() {
 ## API Coverage Strategy
 
 ### Simple Methods (68% of API)
-**Characteristics**: Direct parameter mapping, no complex types  
-**Implementation**: One-to-one wrapper around core SuperConfig  
+
+**Characteristics**: Direct parameter mapping, no complex types\
+**Implementation**: One-to-one wrapper around core SuperConfig\
 **Languages**: All get native APIs with proper naming conventions
 
 **Examples**:
+
 - `with_file(path: String)` → `with_file(path: str)` (Python) / `withFile(path: string)` (Node.js)
 - `with_env(prefix: String)` → Native language equivalents
 - `set_debug(debug: bool)` → Native boolean handling
 
-### Complex Methods (21% of API) 
-**Characteristics**: Multiple parameters, complex types (Wildcard, SearchStrategy)  
-**Implementation**: JSON schema interface with internal conversion  
+### Complex Methods (21% of API)
+
+**Characteristics**: Multiple parameters, complex types (Wildcard, SearchStrategy)\
+**Implementation**: JSON schema interface with internal conversion\
 **Languages**: Accept JSON objects, return native types
 
 **Examples**:
+
 - `with_hierarchical_config(base: String, env: String, auto: bool)` → Multiple native parameters
 - `with_wildcard(config: JsonValue)` → JSON object with schema validation
 
 ### Debug/Introspection (11% of API)
-**Characteristics**: Figment method exposure, debugging utilities  
-**Implementation**: JSON serialization of internal state  
+
+**Characteristics**: Figment method exposure, debugging utilities\
+**Implementation**: JSON serialization of internal state\
 **Languages**: Return JSON objects for inspection
 
 ## Error Handling Strategy
 
 ### Rust Layer
+
 - Maintains existing Result<T, Error> patterns
 - No breaking changes to error types
 
-### FFI Layer  
+### FFI Layer
+
 - All errors converted to `Result<T, String>` for language compatibility
 - Detailed error messages preserved
 - Error context maintained across language boundaries
 
 ### Language-Specific
+
 - **Python**: Raises appropriate Python exceptions
 - **Node.js**: Returns Error objects with message property
 - **WebAssembly**: Returns Result-like objects
@@ -250,15 +264,18 @@ fn test_javascript_api_consistency() {
 ## Memory Management
 
 ### Rust Objects
+
 - SuperConfig instances managed by Rust ownership system
 - No changes to existing memory patterns
 
 ### FFI Boundaries
+
 - **Python**: PyO3 handles reference counting automatically
-- **Node.js**: NAPI manages garbage collection integration  
+- **Node.js**: NAPI manages garbage collection integration
 - **WebAssembly**: wasm-bindgen handles JS object lifecycle
 
 ### JSON Parameters
+
 - Temporary JSON objects created for parameter conversion
 - Immediately converted to native types
 - No long-term JSON storage
@@ -266,19 +283,23 @@ fn test_javascript_api_consistency() {
 ## Security Considerations
 
 ### Input Validation
+
 - All JSON parameters validated before conversion
 - Schema validation for complex types
 - Bounds checking for numeric types
 
 ### Memory Safety
+
 - No unsafe code in FFI layer
 - All conversions use safe Rust patterns
 - Language-specific safety guaranteed by underlying frameworks
 
 ### Error Boundaries
+
 - All FFI functions return Results
 - No panics propagated across language boundaries
 - Graceful degradation for malformed inputs
 
 ---
-*See [`project-structure.md`](./project-structure.md) for implementation layout*
+
+_See [`project-structure.md`](./project-structure.md) for implementation layout_

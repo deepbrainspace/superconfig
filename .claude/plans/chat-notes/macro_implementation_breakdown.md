@@ -1,7 +1,7 @@
 # Multi-FFI Macro Implementation Breakdown
 
-**Created**: July 28, 2025  
-**Estimated Total Time**: 8-12 hours with AI assistance  
+**Created**: July 28, 2025\
+**Estimated Total Time**: 8-12 hours with AI assistance\
 **Complexity**: Moderate (proc macro + code generation)
 
 ## 📋 Implementation Tasks
@@ -9,6 +9,7 @@
 ### Phase 1: Proc Macro Foundation (2-3 hours)
 
 **Task 1.1: Setup Proc Macro Crate (30 minutes)**
+
 ```toml
 # Cargo.toml
 [lib]
@@ -21,6 +22,7 @@ quote = "1.0"
 ```
 
 **Task 1.2: Basic Attribute Parsing (1.5 hours)**
+
 ```rust
 use syn::{parse_macro_input, AttributeArgs, ItemImpl, NestedMeta, Lit, Meta};
 
@@ -43,6 +45,7 @@ pub fn multi_ffi(args: TokenStream, input: TokenStream) -> TokenStream {
 ```
 
 **Task 1.3: Target Language Detection (1 hour)**
+
 ```rust
 fn parse_targets(args: AttributeArgs) -> Vec<String> {
     args.into_iter()
@@ -59,6 +62,7 @@ fn parse_targets(args: AttributeArgs) -> Vec<String> {
 ### Phase 2: Code Generation Engine (3-4 hours)
 
 **Task 2.1: Method Signature Analysis (1.5 hours)**
+
 ```rust
 struct MethodInfo {
     name: syn::Ident,
@@ -76,6 +80,7 @@ fn analyze_method(method: &syn::ImplItemMethod) -> MethodInfo {
 ```
 
 **Task 2.2: Node.js (napi-rs) Generator (1 hour)**
+
 ```rust
 fn generate_nodejs_wrapper(method: &MethodInfo) -> TokenStream2 {
     let method_name = &method.name;
@@ -105,6 +110,7 @@ fn generate_nodejs_wrapper(method: &MethodInfo) -> TokenStream2 {
 ```
 
 **Task 2.3: Python (PyO3) Generator (1 hour)**
+
 ```rust
 fn generate_python_wrapper(method: &MethodInfo) -> TokenStream2 {
     let method_name = &method.name;
@@ -132,6 +138,7 @@ fn generate_python_wrapper(method: &MethodInfo) -> TokenStream2 {
 ```
 
 **Task 2.4: UniFFI Generator (30 minutes)**
+
 ```rust
 fn generate_uniffi_wrapper(method: &MethodInfo) -> TokenStream2 {
     let method_name = &method.name;
@@ -158,6 +165,7 @@ fn generate_uniffi_wrapper(method: &MethodInfo) -> TokenStream2 {
 ### Phase 3: Type System (2-3 hours)
 
 **Task 3.1: Type Mapping Rules (1.5 hours)**
+
 ```rust
 fn map_return_type(return_type: &syn::ReturnType, target: &str) -> TokenStream2 {
     match return_type {
@@ -193,6 +201,7 @@ fn map_to_uniffi_type(ty: &syn::Type) -> TokenStream2 {
 ```
 
 **Task 3.2: Parameter Handling (1 hour)**
+
 ```rust
 fn generate_napi_params(inputs: &[syn::FnArg]) -> TokenStream2 {
     // Convert &self to self, handle mut, etc.
@@ -204,6 +213,7 @@ fn generate_pyo3_params(inputs: &[syn::FnArg]) -> TokenStream2 {
 ```
 
 **Task 3.3: Error Type Conversion (30 minutes)**
+
 ```rust
 // Convert Result<T, MyError> to target-specific error types
 fn generate_error_conversion(target: &str) -> TokenStream2 {
@@ -219,6 +229,7 @@ fn generate_error_conversion(target: &str) -> TokenStream2 {
 ### Phase 4: Integration & Testing (1-2 hours)
 
 **Task 4.1: Feature Flag Generation (30 minutes)**
+
 ```rust
 fn wrap_with_cfg(tokens: TokenStream2, target: &str) -> TokenStream2 {
     let feature = match target {
@@ -236,6 +247,7 @@ fn wrap_with_cfg(tokens: TokenStream2, target: &str) -> TokenStream2 {
 ```
 
 **Task 4.2: Test Suite (1 hour)**
+
 ```rust
 #[cfg(test)]
 mod tests {
@@ -257,6 +269,7 @@ mod tests {
 ```
 
 **Task 4.3: Documentation (30 minutes)**
+
 - Usage examples
 - Supported types
 - Limitations
@@ -264,6 +277,7 @@ mod tests {
 ### Phase 5: Advanced Features (1-2 hours)
 
 **Task 5.1: Generic Type Support (1 hour)**
+
 ```rust
 // Handle generic methods like extract<T>()
 fn handle_generics(method: &MethodInfo) -> Vec<TokenStream2> {
@@ -273,6 +287,7 @@ fn handle_generics(method: &MethodInfo) -> Vec<TokenStream2> {
 ```
 
 **Task 5.2: Async Method Support (1 hour)**
+
 ```rust
 // Handle async methods appropriately per target
 async fn async_method() -> Result<String, Error>
@@ -310,8 +325,9 @@ impl SuperConfig {
 ## ⚡ Development Acceleration with AI
 
 **With Claude Code assistance:**
+
 - **Syntax parsing**: AI helps with syn/quote syntax
-- **Code generation**: AI writes repetitive wrapper patterns  
+- **Code generation**: AI writes repetitive wrapper patterns
 - **Testing**: AI generates comprehensive test cases
 - **Debugging**: AI helps debug macro expansion issues
 
@@ -319,10 +335,11 @@ impl SuperConfig {
 
 ## 🎯 Return on Investment
 
-**One-time cost**: 8-12 hours macro development  
+**One-time cost**: 8-12 hours macro development\
 **Ongoing benefit**: Zero signature duplication forever
 
 Every new method in SuperConfig:
+
 - **Without macro**: Write 4 signatures (Rust + Node.js + Python + UniFFI)
 - **With macro**: Write 1 signature, get 3 wrappers automatically
 
@@ -332,7 +349,7 @@ After 5-10 methods, the macro pays for itself in maintenance time saved.
 
 1. **MVP macro** (basic method wrapping) - 6 hours
 2. **Test with SuperConfig** - validate it works
-3. **Add advanced features** (generics, async) - 4 hours  
+3. **Add advanced features** (generics, async) - 4 hours
 4. **Open source the macro** - others can benefit too
 
 The macro becomes a **reusable tool for the entire Rust ecosystem** - potentially more valuable than SuperConfig itself!

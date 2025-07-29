@@ -1,8 +1,8 @@
 # Phase 2: SuperConfig FFI Wrapper
 
-**Status**: 🔄 READY FOR IMPLEMENTATION  
-**Estimated Duration**: 4-6 hours  
-**Dependencies**: Phase 1 Complete ✅  
+**Status**: 🔄 READY FOR IMPLEMENTATION\
+**Estimated Duration**: 4-6 hours\
+**Dependencies**: Phase 1 Complete ✅
 
 ## Overview
 
@@ -13,7 +13,7 @@ Phase 2 involves creating the `superconfig-ffi` crate that wraps the core SuperC
 ### 🎯 **Core Objectives**
 
 1. **Create `superconfig-ffi` crate** with feature flags matching SuperFFI
-2. **Implement wrapper struct** that contains core SuperConfig instance  
+2. **Implement wrapper struct** that contains core SuperConfig instance
 3. **Map simple methods** (68% of API) with direct parameter translation
 4. **Map complex methods** (21% of API) with JSON parameter handling
 5. **Implement error handling** across all FFI boundaries
@@ -23,6 +23,7 @@ Phase 2 involves creating the `superconfig-ffi` crate that wraps the core SuperC
 #### Task 1: Crate Setup (1 hour)
 
 **Create `crates/superconfig-ffi/Cargo.toml`**:
+
 ```toml
 [package]
 name = "superconfig-ffi"
@@ -43,10 +44,11 @@ wasm = ["superffi/wasm"]
 all = ["python", "nodejs", "wasm"]
 
 [lib]
-crate-type = ["cdylib", "rlib"]  # cdylib needed for WASM
+crate-type = ["cdylib", "rlib"] # cdylib needed for WASM
 ```
 
 **Create `crates/superconfig-ffi/moon.yml`**:
+
 ```yaml
 language: 'rust'
 type: 'library'
@@ -68,6 +70,7 @@ tasks:
 #### Task 2: Core Wrapper Structure (1 hour)
 
 **Create `crates/superconfig-ffi/src/lib.rs`** with basic structure:
+
 ```rust
 use superconfig::SuperConfig as CoreSuperConfig;
 use superffi::superffi;
@@ -93,6 +96,7 @@ impl SuperConfig {
 #### Task 3: Simple Method Mappings (2-3 hours)
 
 **Target Methods (68% of SuperConfig API)**:
+
 ```rust
 #[superffi]
 impl SuperConfig {
@@ -139,6 +143,7 @@ impl SuperConfig {
 ```
 
 **Generated APIs** (SuperFFI macro produces with naming strategy):
+
 - **Python**: `def with_file(self, path: str) -> SuperConfig` (snake_case preserved)
 - **Node.js**: `withFile(path: string): SuperConfig` (converted to camelCase)
 - **WASM**: `withFile(path: string): SuperConfig` (converted to camelCase - **identical to Node.js**)
@@ -146,6 +151,7 @@ impl SuperConfig {
 #### Task 4: Complex Method Mappings (1-2 hours)
 
 **JSON Parameter Handling for Complex Types**:
+
 ```rust
 #[superffi]
 impl SuperConfig {
@@ -205,12 +211,13 @@ fn convert_figment_to_json(figment_value: figment::value::Value) -> Result<Value
 ```
 
 **JSON Schema Example**:
+
 ```json
 {
   "pattern": "*.toml",
   "search": {
     "type": "recursive",
-    "root": "./config", 
+    "root": "./config",
     "max_depth": 3
   },
   "merge_order": {
@@ -223,32 +230,38 @@ fn convert_figment_to_json(figment_value: figment::value::Value) -> Result<Value
 ## API Coverage Strategy
 
 ### **Simple Methods (68% of API)**
+
 **Characteristics**: Direct parameter mapping, primitive types only
 **Implementation**: One-to-one wrapper with error string conversion
 **Languages**: Native APIs with proper type conversion
 
 **Examples**:
+
 - Configuration sources: `with_file`, `with_env`, `with_directory`
-- Behavior settings: `set_debug`, `set_strict_mode`  
+- Behavior settings: `set_debug`, `set_strict_mode`
 - Hierarchical configs: `with_hierarchical_config`
 - Profile management: `with_profile`, `with_auto_profiles`
 
 ### **Complex Methods (21% of API)**
+
 **Characteristics**: Complex types requiring JSON schemas
 **Implementation**: JSON parameter interface with internal conversion
 **Languages**: Accept JSON objects, return native types
 
 **Examples**:
+
 - Wildcard configuration: `with_wildcard(json_config)`
 - Custom providers: `with_provider(json_spec)`
 - Advanced merging: `with_merge_strategy(json_strategy)`
 
 ### **Debug/Introspection (11% of API)**
+
 **Characteristics**: Figment method exposure for debugging
 **Implementation**: JSON serialization of internal state
 **Languages**: Return JSON objects for inspection
 
 **Examples**:
+
 - Value extraction: `extract_json() -> JSON`
 - Path finding: `find(path) -> Option<JSON>`
 - Configuration inspection: `debug_info() -> JSON`
@@ -256,6 +269,7 @@ fn convert_figment_to_json(figment_value: figment::value::Value) -> Result<Value
 ## Error Handling Strategy
 
 ### **Rust Error Types → String Conversion**
+
 ```rust
 // All FFI methods return Result<T, String>
 pub fn with_file(&self, path: String) -> Result<Self, String> {
@@ -266,11 +280,13 @@ pub fn with_file(&self, path: String) -> Result<Self, String> {
 ```
 
 ### **Language-Specific Error Handling**
+
 - **Python**: SuperFFI generates `PyResult<T>` with appropriate Python exceptions
 - **Node.js**: SuperFFI generates NAPI error handling with Error objects
 - **WebAssembly**: SuperFFI generates `Result<T, JsValue>` for JS error compatibility
 
 ### **Error Context Preservation**
+
 - File paths included in file loading errors
 - JSON schema validation errors with path information
 - Type conversion errors with expected vs actual type information
@@ -278,6 +294,7 @@ pub fn with_file(&self, path: String) -> Result<Self, String> {
 ## Testing Strategy
 
 ### **Unit Tests** (`crates/superconfig-ffi/tests/`)
+
 ```rust
 #[test]
 fn test_basic_wrapper_functionality() {
@@ -307,6 +324,7 @@ fn test_error_handling() {
 ```
 
 ### **Feature Flag Testing**
+
 ```rust
 #[cfg(feature = "python")]
 #[test]
@@ -324,6 +342,7 @@ fn test_nodejs_feature_compilation() {
 ## Success Metrics
 
 ### **Completion Criteria**
+
 - [ ] All simple methods (68% of API) mapped and tested
 - [ ] Complex methods (21% of API) accept JSON parameters
 - [ ] Error handling works across all language boundaries
@@ -331,12 +350,14 @@ fn test_nodejs_feature_compilation() {
 - [ ] Unit tests pass for all implemented methods
 
 ### **Quality Targets**
+
 - [ ] Zero unsafe code in FFI layer
 - [ ] All public methods documented with examples
 - [ ] Comprehensive error messages with context
 - [ ] Memory safety guaranteed by underlying frameworks
 
 ### **Integration Readiness**
+
 - [ ] SuperFFI macro annotations working correctly
 - [ ] JSON parameter validation implemented
 - [ ] Ready for Phase 3 complex type integration
@@ -345,10 +366,12 @@ fn test_nodejs_feature_compilation() {
 ## Next Phase Preparation
 
 **Phase 3 Dependencies**:
+
 - JSON schema validation utilities implemented
-- Complex type conversion helpers created  
+- Complex type conversion helpers created
 - Figment-to-JSON conversion working
 - Error handling patterns established
 
 ---
-*Ready for implementation. See [`build-system.md`](./build-system.md) for Moon task configuration.*
+
+_Ready for implementation. See [`build-system.md`](./build-system.md) for Moon task configuration._
