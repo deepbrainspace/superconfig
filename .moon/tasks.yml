@@ -70,3 +70,14 @@ tasks:
   check:
     command: 'cargo check --all-features'
     inputs: ['@globs(sources)', '@globs(configs)']
+    
+  # Publishing tasks
+  publish-dry:
+    command: 'cargo publish --dry-run'
+    inputs: ['@globs(sources)', '@globs(configs)']
+    deps: ['build-release', 'test', 'clippy', 'fmt-check']
+    
+  publish:
+    command: 'cargo publish'
+    inputs: ['@globs(sources)', '@globs(configs)']
+    deps: ['build-release', 'test', 'clippy', 'fmt-check']
