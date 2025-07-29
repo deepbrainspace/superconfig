@@ -72,6 +72,9 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{Item, ItemFn, ItemImpl, ItemStruct, parse_macro_input};
 
+#[cfg(feature = "wasm")]
+use syn::{ImplItem, Ident};
+
 /// A procedural macro that generates FFI bindings for multiple target languages.
 ///
 /// This macro can be applied to structs, impl blocks, and functions to automatically generate
@@ -186,6 +189,88 @@ pub fn superffi(_args: TokenStream, input: TokenStream) -> TokenStream {
     }
 }
 
+// ============================================================================
+// Naming conversion utilities for cross-language consistency
+// ============================================================================
+
+/// Converts snake_case identifiers to camelCase for JavaScript environments.
+///
+/// This function provides generic naming conversion to ensure consistent APIs across
+/// Node.js and WebAssembly targets, both of which use camelCase conventions.
+///
+/// ## Examples
+///
+/// ```ignore
+/// assert_eq!(convert_to_camel_case("with_file"), "withFile");
+/// assert_eq!(convert_to_camel_case("set_debug"), "setDebug");
+/// assert_eq!(convert_to_camel_case("extract_json"), "extractJson");
+/// assert_eq!(convert_to_camel_case("single"), "single");
+/// ```
+///
+/// ## Rules
+///
+/// - First word remains lowercase
+/// - Subsequent words have their first letter capitalized
+/// - Underscores are removed
+/// - Empty segments are ignored
+/// - Single words are returned unchanged
+///
+/// ## Parameters
+///
+/// * `snake_name` - The snake_case identifier to convert
+///
+/// ## Returns
+///
+/// A String containing the camelCase equivalent
+#[cfg(feature = "wasm")]
+fn convert_to_camel_case(snake_name: &str) -> String {
+    let parts: Vec<&str> = snake_name.split('_').filter(|s| !s.is_empty()).collect();
+    
+    // Handle empty or single word case
+    if parts.is_empty() {
+        return String::new();
+    }
+    if parts.len() == 1 {
+        return parts[0].to_string();
+    }
+    
+    let mut result = String::new();
+    
+    // First non-empty part stays lowercase
+    if let Some(first) = parts.first() {
+        result.push_str(first);
+    }
+    
+    // Subsequent parts get capitalized
+    for part in parts.iter().skip(1) {
+        let mut chars = part.chars();
+        if let Some(first_char) = chars.next() {
+            result.push(first_char.to_ascii_uppercase());
+            result.extend(chars);
+        }
+    }
+    
+    result
+}
+
+/// Creates a new identifier with camelCase naming for JavaScript targets.
+///
+/// This helper function takes a Rust identifier and creates a new Ident with the
+/// camelCase equivalent for use in JavaScript bindings (Node.js and WebAssembly).
+///
+/// ## Parameters
+///
+/// * `ident` - The original Rust identifier
+///
+/// ## Returns
+///
+/// A new Ident with camelCase naming, preserving the original span
+#[cfg(feature = "wasm")]
+fn create_camel_case_ident(ident: &Ident) -> Ident {
+    let camel_name = convert_to_camel_case(&ident.to_string());
+    Ident::new(&camel_name, ident.span())
+}
+
 /// Generates FFI bindings for struct definitions.
 ///
 /// This function takes a parsed struct and generates appropriate bindings for all enabled
@@ -297,7 +382,7 @@ fn generate_impl_bindings(item_impl: ItemImpl) -> TokenStream {
         });
     }
 
-    // Generate Node.js method bindings
+    // Generate Node.js method bindings (Node.js automatically converts to camelCase)
     #[cfg(feature = "nodejs")]
     {
         output.extend(quote! {
@@ -311,16 +396,36 @@ fn generate_impl_bindings(item_impl: ItemImpl) -> TokenStream {
         });
     }
 
-    // Generate WASM method bindings
+    // Generate WASM method bindings with camelCase naming
     #[cfg(feature = "wasm")]
     {
+        let wasm_methods = impl_items.iter().map(|item| {
+            if let ImplItem::Fn(method) = item {
+                let original_name = &method.sig.ident;
+                let camel_name = create_camel_case_ident(original_name);
+                let sig = &method.sig;
+                let block = &method.block;
+                let attrs = &method.attrs;
+                let vis = &method.vis;
+                
+                // Create new signature with camelCase name
+                let mut new_sig = sig.clone();
+                new_sig.ident = camel_name;
+                
+                quote! {
+                    #(#attrs)*
+                    #[wasm_bindgen::prelude::wasm_bindgen]
+                    #vis #new_sig #block
+                }
+            } else {
+                quote! { #item }
+            }
+        });
+        
         output.extend(quote! {
             #[wasm_bindgen::prelude::wasm_bindgen]
             impl #struct_type {
-                #(
-                    #[wasm_bindgen::prelude::wasm_bindgen]
-                    #impl_items
-                )*
+                #(#wasm_methods)*
             }
         });
     }
@@ -370,7 +475,7 @@ fn generate_fn_bindings(item_fn: ItemFn) -> TokenStream {
         });
     }
 
-    // Generate Node.js function binding
+    // Generate Node.js function binding (Node.js automatically converts to camelCase)
     #[cfg(feature = "nodejs")]
     {
         output.extend(quote! {
@@ -379,14 +484,23 @@ fn generate_fn_bindings(item_fn: ItemFn) -> TokenStream {
         });
     }
 
-    // Generate WASM function binding
+    // Generate WASM function binding with camelCase naming
     #[cfg(feature = "wasm")]
     {
+        let original_name = &item_fn.sig.ident;
+        let camel_name = create_camel_case_ident(original_name);
+        let mut wasm_fn = item_fn.clone();
+        wasm_fn.sig.ident = camel_name;
+        
         output.extend(quote! {
             #[wasm_bindgen::prelude::wasm_bindgen]
-            #item_fn
+            #wasm_fn
         });
     }
 
     output.into()
 }
+
+// Tests are in a separate module to keep lib.rs clean
+#[cfg(test)]
+mod tests;
