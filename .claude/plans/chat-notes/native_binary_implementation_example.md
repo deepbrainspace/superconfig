@@ -7,6 +7,7 @@ Your existing Rust library becomes the **core engine**. You create small wrapper
 ## 1. CLI Binary Example
 
 Create `crates/superconfig-cli/Cargo.toml`:
+
 ```toml
 [package]
 name = "superconfig-cli"
@@ -18,7 +19,7 @@ name = "superconfig"
 path = "src/main.rs"
 
 [dependencies]
-superconfig = { path = "../superconfig" }  # Your existing library
+superconfig = { path = "../superconfig" } # Your existing library
 clap = { version = "4", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = "0.9"
@@ -26,6 +27,7 @@ anyhow = "1.0"
 ```
 
 Create `crates/superconfig-cli/src/main.rs`:
+
 ```rust
 use clap::{Parser, Subcommand};
 use superconfig::SuperConfig;
@@ -127,6 +129,7 @@ fn main() -> anyhow::Result<()> {
 ## 2. Distribution Strategy
 
 ### A. Native Binaries via GitHub Releases
+
 ```yaml
 # .github/workflows/release.yml
 - name: Build binaries
@@ -143,7 +146,9 @@ fn main() -> anyhow::Result<()> {
 ### B. Language-Specific Package Managers
 
 #### npm (JavaScript/TypeScript)
+
 Create `packages/superconfig-js/package.json`:
+
 ```json
 {
   "name": "superconfig",
@@ -153,7 +158,7 @@ Create `packages/superconfig-js/package.json`:
   },
   "optionalDependencies": {
     "superconfig-cli-linux-x64": "0.1.0",
-    "superconfig-cli-darwin-x64": "0.1.0", 
+    "superconfig-cli-darwin-x64": "0.1.0",
     "superconfig-cli-darwin-arm64": "0.1.0",
     "superconfig-cli-win32-x64": "0.1.0"
   },
@@ -164,6 +169,7 @@ Create `packages/superconfig-js/package.json`:
 ```
 
 Create `packages/superconfig-js/install.js`:
+
 ```javascript
 // Detects platform and symlinks correct binary
 const os = require('os');
@@ -185,7 +191,9 @@ if (fs.existsSync(binaryPath)) {
 ```
 
 #### pip (Python)
+
 Create `packages/superconfig-py/setup.py`:
+
 ```python
 from setuptools import setup, find_packages
 import platform
@@ -218,6 +226,7 @@ setup(
 ```
 
 Create `packages/superconfig-py/superconfig/cli.py`:
+
 ```python
 import subprocess
 import sys
@@ -242,6 +251,7 @@ if __name__ == "__main__":
 ## 3. WASM Bindings (Fallback/Web)
 
 Create `crates/superconfig-wasm/Cargo.toml`:
+
 ```toml
 [package]
 name = "superconfig-wasm"
@@ -265,6 +275,7 @@ features = [
 ```
 
 Create `crates/superconfig-wasm/src/lib.rs`:
+
 ```rust
 use wasm_bindgen::prelude::*;
 use superconfig::SuperConfig;
@@ -300,6 +311,7 @@ impl WasmSuperConfig {
 ## 4. Build Pipeline Example
 
 Create `scripts/build-all.sh`:
+
 ```bash
 #!/bin/bash
 set -e

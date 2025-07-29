@@ -186,12 +186,12 @@ allowed_origins = ["https://app.example.com"]
 ```toml
 # ./myapp.toml (project overrides)
 [server]
-features_add = ["debug", "hot-reload"]      # Adds to existing array
-features_remove = ["metrics"]               # Removes from array
-ignore_paths_add = ["*.cache", "build/*"]    # Extends ignore patterns
+features_add = ["debug", "hot-reload"] # Adds to existing array
+features_remove = ["metrics"] # Removes from array
+ignore_paths_add = ["*.cache", "build/*"] # Extends ignore patterns
 
 [cors]
-allowed_origins_add = ["http://localhost:3000"]  # Add dev origin
+allowed_origins_add = ["http://localhost:3000"] # Add dev origin
 
 # Final result:
 # features = ["auth", "logging", "debug", "hot-reload"]

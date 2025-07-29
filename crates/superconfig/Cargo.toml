@@ -1,16 +1,16 @@
 [package]
 name = "superconfig"
 version = "0.1.0"
-edition = "2024"
-description = "Advanced configuration management built on Figment with hierarchical loading, array merging, and smart format detection"
-license = "MIT"
 authors = ["Nayeem Syed <hello@superconfig.dev>"]
-repository = "https://github.com/deepbrainspace/superconfig"
-homepage = "https://superconfig.dev"
-documentation = "https://docs.rs/superconfig"
-readme = "../../README.md"
-keywords = ["config", "configuration", "figment", "settings", "env"]
 categories = ["config", "development-tools"]
+documentation = "https://docs.rs/superconfig"
+edition = "2024"
+homepage = "https://superconfig.dev"
+keywords = ["config", "configuration", "figment", "settings", "env"]
+license = "MIT"
+readme = "../../README.md"
+repository = "https://github.com/deepbrainspace/superconfig"
+description = "Advanced configuration management built on Figment with hierarchical loading, array merging, and smart format detection"
 
 [package.metadata.docs.rs]
 all-features = true
@@ -29,7 +29,7 @@ providers = ["core"]
 # mcp = ["core", "tokio"]
 # api = ["core", "axum", "tokio", "tower"]
 # database = ["core", "sqlx", "tokio"]
-# remote = ["core", "reqwest", "tokio"]  
+# remote = ["core", "reqwest", "tokio"]
 # vault = ["core", "vaultrs", "tokio"]
 # wasm = ["core", "wasm-bindgen"]
 
@@ -38,17 +38,17 @@ all = ["providers"]
 
 [dependencies]
 # Core dependencies (always included)
-figment = { version = "0.10.19", features = ["json", "toml", "yaml", "env"] }
-serde = { version = "1.0", features = ["derive"] }
-toml = "0.8"
-serde_yml = "0.0.12"
-lazy_static = "1.4"
 dirs = "6.0"
+figment = { version = "0.10.19", features = ["json", "toml", "yaml", "env"] }
+lazy_static = "1.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_yml = "0.0.12"
+toml = "0.8"
 
 # Optional core dependencies (used by features)
 anyhow = "1.0"
-serde_json = "1.0"
 globset = "0.4.16"
+serde_json = "1.0"
 walkdir = "2.5"
 
 # Future optional dependencies (when we implement them)
@@ -69,5 +69,5 @@ result_large_err = "allow"
 
 [dev-dependencies]
 serde = { version = "1.0", features = ["derive"] }
-tempfile = "3.10"
 serial_test = "3.2.0"
+tempfile = "3.10"

@@ -10,16 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.1] - 2025-07-29
 
 ### Added
+
 - Automatic naming conversion for JavaScript targets (WASM)
 - Comprehensive test suite with 6 test scenarios covering edge cases
 - Conditional compilation for feature-gated functions to eliminate warnings
 
 ### Changed
+
 - WASM bindings now use camelCase naming for JavaScript consistency
 - Node.js bindings rely on native NAPI camelCase conversion (no manual conversion needed)
 - Python bindings preserve snake_case for Pythonic APIs
 
 ### Technical Details
+
 - Added `convert_to_camel_case()` function with edge case handling
 - Added `create_camel_case_ident()` helper for AST manipulation
 - Tests organized in conditional module (`#[cfg(feature = "wasm")]`)
@@ -28,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2025-07-28
 
 ### Added
+
 - Initial SuperFFI procedural macro implementation
 - Support for Python bindings via PyO3 (`#[pyo3::pyclass]`, `#[pyo3::pymethods]`)
 - Support for Node.js bindings via NAPI (`#[napi::napi]`)

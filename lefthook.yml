@@ -39,10 +39,10 @@ pre-commit:
         - merge
         - rebase
 
-    # Markdown and YAML formatting - only changed files
-    docs-fmt:
-      glob: "*.{md,yml,yaml}"
-      run: npx prettier --write {staged_files}
+    # Comprehensive formatting with dprint (Rust-based, fast)
+    dprint-fmt:
+      glob: "*.{md,yml,yaml,json,toml}"
+      run: dprint fmt {staged_files}
       stage_fixed: true
       skip:
         - merge

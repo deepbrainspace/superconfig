@@ -7,6 +7,7 @@ After studying Biome's codebase and architecture, their approach to multi-langua
 ## What Biome Actually Provides
 
 ### 1. **JavaScript/TypeScript Only**
+
 - Biome ONLY supports JavaScript/TypeScript ecosystems
 - No Python, Go, or other language bindings found
 - Their "multi-language" claim refers to supporting multiple JS file types (JS, TS, JSX, TSX, JSON, CSS, etc.)
@@ -14,10 +15,11 @@ After studying Biome's codebase and architecture, their approach to multi-langua
 ### 2. **Multiple Distribution Strategies for JS/TS**
 
 #### **A. Native CLI Binaries**
+
 - Cross-platform native binaries built in Rust
 - Distributed via npm as platform-specific packages:
   - `@biomejs/cli-darwin-arm64`
-  - `@biomejs/cli-darwin-x64` 
+  - `@biomejs/cli-darwin-x64`
   - `@biomejs/cli-linux-x64`
   - `@biomejs/cli-linux-arm64`
   - `@biomejs/cli-linux-x64-musl`
@@ -26,12 +28,14 @@ After studying Biome's codebase and architecture, their approach to multi-langua
   - `@biomejs/cli-win32-arm64`
 
 #### **B. WASM Packages for JavaScript**
+
 - Three different WASM targets for different JS environments:
   - `@biomejs/wasm-bundler` - For bundlers (webpack, rollup, etc.)
-  - `@biomejs/wasm-nodejs` - For Node.js environments  
+  - `@biomejs/wasm-nodejs` - For Node.js environments
   - `@biomejs/wasm-web` - For browser environments
 
 #### **C. Unified JavaScript API**
+
 - `@biomejs/js-api` package that provides a unified interface
 - Automatically selects the best backend (native or WASM) based on environment
 - TypeScript definitions auto-generated from Rust code
@@ -39,6 +43,7 @@ After studying Biome's codebase and architecture, their approach to multi-langua
 ## Technical Architecture
 
 ### **Native Binary Distribution**
+
 ```
 Main Package (@biomejs/biome)
 ├── Detects platform automatically
@@ -47,6 +52,7 @@ Main Package (@biomejs/biome)
 ```
 
 ### **WASM Build Process**
+
 ```rust
 // Uses wasm-bindgen for JavaScript bindings
 // Generates TypeScript definitions automatically
@@ -57,6 +63,7 @@ wasm-pack build --target web --release      // For browsers
 ```
 
 ### **Unified API Layer**
+
 - Single API that works across all environments
 - Runtime detection of best available backend
 - TypeScript support with auto-generated types
@@ -64,6 +71,7 @@ wasm-pack build --target web --release      // For browsers
 ## Comparison with Superconfig's Planned WASM Strategy
 
 ### **Similarities**
+
 1. **Rust Core**: Both use Rust for the core implementation
 2. **WASM for Web**: Both plan to use WASM for JavaScript environments
 3. **Performance Focus**: Both prioritize keeping Rust's performance advantages
@@ -71,12 +79,14 @@ wasm-pack build --target web --release      // For browsers
 ### **Key Differences**
 
 #### **Biome's Approach: JavaScript-Focused**
+
 - ✅ **Simpler**: Only targets JS/TS ecosystem
 - ✅ **Better UX**: Native binaries provide better performance and startup time
 - ✅ **Easier Distribution**: Leverages npm's platform detection
 - ❌ **Limited Reach**: Only serves JavaScript developers
 
 #### **Superconfig's Planned Approach: Universal WASM**
+
 - ✅ **Broader Reach**: Could serve all programming languages
 - ✅ **Universal**: Single WASM binary works everywhere
 - ❌ **Complexity**: Need to create native wrappers for each language
@@ -86,6 +96,7 @@ wasm-pack build --target web --release      // For browsers
 ## Recommendations for Superconfig
 
 ### **Option 1: Follow Biome's Hybrid Model (Recommended)**
+
 ```
 Native Binaries + WASM Fallback
 ├── Rust native binaries for each platform
@@ -95,18 +106,21 @@ Native Binaries + WASM Fallback
 ```
 
 **Benefits:**
+
 - Best performance (native binaries)
 - Broad compatibility (WASM fallback)
 - Better startup times than pure WASM
 - Easier package manager integration
 
 ### **Option 2: Pure WASM Strategy (Original Plan)**
+
 - Single WASM binary with language-specific wrappers
 - Simpler build pipeline
 - Consistent behavior across platforms
 - Higher overhead and complexity
 
 ### **Option 3: Native-Only Strategy**
+
 - Build native binaries for each platform/language combination
 - Best performance
 - Most complex build and distribution pipeline
@@ -114,11 +128,13 @@ Native Binaries + WASM Fallback
 ## Specific Implementation Recommendations
 
 ### **1. Start with JavaScript/TypeScript Support**
+
 - Use Biome's exact approach for JS/TS
 - Validate the market and technical approach
 - Build confidence before expanding
 
 ### **2. Gradually Add Language Support**
+
 ```
 Phase 1: JS/TS (copy Biome's approach)
 Phase 2: Python (native binary + pip distribution)
@@ -127,6 +143,7 @@ Phase 4: Other languages as needed
 ```
 
 ### **3. Hybrid Distribution Strategy**
+
 ```rust
 // Core Rust library
 superconfig-core = "1.0.0"
@@ -138,6 +155,7 @@ superconfig-go = "1.0.0"      // go module
 ```
 
 ### **4. Build Pipeline**
+
 ```yaml
 # GitHub Actions workflow
 - Build native binaries for all platforms
@@ -153,12 +171,14 @@ superconfig-go = "1.0.0"      // go module
 **There are 3 main approaches for exposing Rust libraries to other languages:**
 
 #### **1. CLI Subprocess Wrapper (What I Initially Suggested)**
+
 ```python
 # Python calls Rust CLI via subprocess
 result = subprocess.run(['superconfig', 'validate', 'config.toml'])
 ```
 
 **Performance Characteristics:**
+
 - ❌ **Process startup overhead** (~10-50ms per call)
 - ❌ **Data serialization overhead** (JSON/string conversion)
 - ❌ **No shared memory** between calls
@@ -168,6 +188,7 @@ result = subprocess.run(['superconfig', 'validate', 'config.toml'])
 **Verdict**: This is NOT suitable for your use case. Too slow for programmatic usage.
 
 #### **2. Native FFI Bindings (Fastest - Industry Standard)**
+
 ```python
 # Python directly calls Rust via FFI
 from superconfig import SuperConfig
@@ -177,6 +198,7 @@ result = config.extract()  # Direct Rust call, no subprocess
 ```
 
 **Performance Characteristics:**
+
 - ✅ **Near-zero overhead** (direct function calls)
 - ✅ **Shared memory** between language and Rust
 - ✅ **Stateful operations** possible
@@ -184,6 +206,7 @@ result = config.extract()  # Direct Rust call, no subprocess
 - ⚠️ **More complex to implement** (but standard approach)
 
 #### **3. WASM Bindings (Moderate Performance)**
+
 ```javascript
 // JavaScript calls Rust via WASM
 import { SuperConfig } from '@superconfig/wasm';
@@ -193,6 +216,7 @@ const result = config.extract();
 ```
 
 **Performance Characteristics:**
+
 - ✅ **Good performance** (~90-95% of native)
 - ✅ **Cross-platform compatibility**
 - ✅ **Stateful operations** possible
@@ -204,13 +228,14 @@ const result = config.extract();
 **Yes, native FFI bindings IS the standard way to achieve Rust-level speed in other languages.** Examples:
 
 - **PyO3** (Rust → Python): Used by `cryptography`, `polars`, `pydantic-core`
-- **napi-rs** (Rust → Node.js): Used by `@swc/core`, `@parcel/css` 
+- **napi-rs** (Rust → Node.js): Used by `@swc/core`, `@parcel/css`
 - **cgo** (Rust → Go): Used by many performance-critical Go libraries
 - **JNI** (Rust → Java): Used in Android and enterprise Java apps
 
 ### **Updated Recommendations for SuperConfig**
 
 #### **Option 1: Native FFI Bindings (Recommended)**
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                Your Existing SuperConfig Library            │
@@ -233,6 +258,7 @@ const result = config.extract();
 **Performance**: **True Rust speed** - direct function calls with zero overhead
 
 **Implementation Example for Python**:
+
 ```rust
 // crates/superconfig-python/src/lib.rs
 use pyo3::prelude::*;
@@ -276,6 +302,7 @@ fn superconfig(_py: Python, m: &PyModule) -> PyResult<()> {
 ```
 
 **Usage in Python** (identical to your Rust example):
+
 ```python
 from superconfig import SuperConfig, VerbosityLevel
 
@@ -293,6 +320,7 @@ guardy_config = config.extract()
 ```
 
 #### **Option 2: WASM + Native Hybrid**
+
 - Native FFI for Python/Node.js (best performance)
 - WASM for browsers and exotic environments
 - CLI binary for shell scripts and CI/CD
@@ -307,7 +335,7 @@ guardy_config = config.extract()
 ### **Next Steps**
 
 1. **Start with Python FFI bindings** using PyO3 (most popular language for config tools)
-2. **Add Node.js FFI bindings** using napi-rs 
+2. **Add Node.js FFI bindings** using napi-rs
 3. **Keep CLI binary** for shell scripting
 4. **Add WASM** later for browser usage
 
@@ -328,6 +356,7 @@ So Biome chose the hybrid approach, but only for one language ecosystem (JS/TS).
 ### Node.js FFI Implementation (napi-rs)
 
 **Step 1: Create FFI wrapper crate**
+
 ```toml
 # crates/superconfig-node/Cargo.toml
 [package]
@@ -339,12 +368,13 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-superconfig = { path = "../superconfig" }  # Your existing library
+superconfig = { path = "../superconfig" } # Your existing library
 napi = { version = "2", features = ["napi4", "serde-json"] }
 napi-derive = "2"
 ```
 
 **Step 2: Create Rust FFI bindings**
+
 ```rust
 // crates/superconfig-node/src/lib.rs
 #[macro_use]
@@ -405,6 +435,7 @@ pub enum VerbosityLevel {
 ```
 
 **Step 3: Node.js usage** (identical to your Rust API!)
+
 ```javascript
 // Client code - looks identical to your Rust API!
 const { SuperConfig, VerbosityLevel } = require('superconfig');
@@ -426,6 +457,7 @@ console.log(guardyConfig);
 ### Python FFI Implementation (PyO3)
 
 **Step 1: Create Python FFI wrapper**
+
 ```toml
 # crates/superconfig-python/Cargo.toml
 [package]
@@ -438,12 +470,13 @@ name = "superconfig"
 crate-type = ["cdylib"]
 
 [dependencies]
-superconfig = { path = "../superconfig" }  # Your existing library
+superconfig = { path = "../superconfig" } # Your existing library
 pyo3 = { version = "0.20", features = ["extension-module"] }
 pythonize = "0.20"
 ```
 
 **Step 2: Python FFI bindings**
+
 ```rust
 // crates/superconfig-python/src/lib.rs
 use pyo3::prelude::*;
@@ -500,6 +533,7 @@ fn superconfig(_py: Python, m: &PyModule) -> PyResult<()> {
 ```
 
 **Step 3: Python usage** (identical to your Rust API!)
+
 ```python
 # Client code - identical to your Rust API!
 from superconfig import SuperConfig, VerbosityLevel
@@ -578,10 +612,11 @@ This could be a **product itself** - "Generate multi-language bindings from any 
 **Per-Language Tools (Separate Crates Required):**
 
 - **napi-rs**: Requires separate `crates/superconfig-node/` with `#[napi]` annotations
-- **PyO3**: Requires separate `crates/superconfig-python/` with `#[pyclass]` annotations  
+- **PyO3**: Requires separate `crates/superconfig-python/` with `#[pyclass]` annotations
 - **uniffi**: Closest to the vision - generates Python/Swift/Kotlin/Ruby from single `.udl` file, but no Node.js support
 
 **Current Reality:**
+
 ```
 Your Main Crate
 ├── Manual wrapper crate for Node.js (1-2 days)
@@ -595,6 +630,7 @@ Total: ~1-2 weeks per language
 ### **The Vision (Doesn't Fully Exist Yet)**
 
 **Single-crate multi-language generation:**
+
 ```rust
 // In your main crate: crates/superconfig/src/lib.rs
 #[multi_ffi(node, python, go, ruby)]  // This doesn't exist yet!
@@ -605,6 +641,7 @@ impl SuperConfig {
 ```
 
 **Future with automation:**
+
 ```
 Your Main Crate
 ├── Add #[multi_ffi] annotations (30 minutes)
@@ -627,18 +664,19 @@ The automation tool envisioned doesn't fully exist - this could be a second prod
 ### **Why Separate Crates Currently Exist:**
 
 **Different `crate-type` requirements:**
+
 ```toml
 # For Node.js FFI
 [lib]
-crate-type = ["cdylib"]  # Creates .so/.dll/.dylib
+crate-type = ["cdylib"] # Creates .so/.dll/.dylib
 
-# For Python FFI  
+# For Python FFI
 [lib]
-crate-type = ["cdylib"]  # Creates .so/.dll/.dylib with Python symbols
+crate-type = ["cdylib"] # Creates .so/.dll/.dylib with Python symbols
 
 # For regular Rust library
 [lib]
-crate-type = ["rlib"]    # Creates .rlib for other Rust crates
+crate-type = ["rlib"] # Creates .rlib for other Rust crates
 ```
 
 **You can't have multiple `crate-type` values that conflict** in a single `Cargo.toml`.
@@ -646,18 +684,19 @@ crate-type = ["rlib"]    # Creates .rlib for other Rust crates
 ### **Potential Solutions for Single-Crate Approach:**
 
 #### **Option 1: Multiple Binary Targets in One Crate**
+
 ```toml
 # crates/superconfig/Cargo.toml
 [lib]
 name = "superconfig"
-crate-type = ["rlib", "cdylib"]  # Both library and FFI
+crate-type = ["rlib", "cdylib"] # Both library and FFI
 
 # Multiple binary targets
 [[bin]]
 name = "superconfig-node"
 path = "src/ffi/node.rs"
 
-[[bin]]  
+[[bin]]
 name = "superconfig-python"
 path = "src/ffi/python.rs"
 
@@ -669,6 +708,7 @@ all-ffi = ["node-ffi", "python-ffi"]
 ```
 
 **Directory structure:**
+
 ```
 crates/superconfig/
 ├── src/
@@ -682,6 +722,7 @@ crates/superconfig/
 ```
 
 #### **Option 2: Build Script Automation**
+
 ```rust
 // build.rs in your main crate
 fn main() {
@@ -695,6 +736,7 @@ fn main() {
 ```
 
 #### **Option 3: Procedural Macro Approach**
+
 ```rust
 // In your main lib.rs
 #[multi_ffi_export(targets = ["node", "python", "go"])]
@@ -712,12 +754,13 @@ impl SuperConfig {
 ### **The Challenge: Language-Specific Dependencies**
 
 **Each FFI target needs different dependencies:**
+
 ```toml
 # Node.js needs
 napi = "2"
 napi-derive = "2"
 
-# Python needs  
+# Python needs
 pyo3 = { version = "0.20", features = ["extension-module"] }
 
 # Go needs
@@ -725,6 +768,7 @@ pyo3 = { version = "0.20", features = ["extension-module"] }
 ```
 
 **Cargo can handle this with feature flags:**
+
 ```toml
 [features]
 default = []
@@ -761,6 +805,7 @@ crates/superconfig/
 ```
 
 **Build commands:**
+
 ```bash
 # Build Node.js FFI
 cargo build --features=node --target=cdylib
@@ -780,17 +825,19 @@ cargo build  # (no features = just the rlib)
 **Your intuition is correct!** We don't technically need separate crates. We can use:
 
 1. **Feature flags** to conditionally compile FFI code
-2. **Multiple `[[bin]]` targets** for different outputs  
+2. **Multiple `[[bin]]` targets** for different outputs
 3. **Build scripts** to coordinate everything
 4. **Procedural macros** to generate FFI code automatically
 
 **Benefits of single-crate approach:**
+
 - ✅ **Simpler maintenance** (one Cargo.toml, one version)
 - ✅ **Shared dependencies** and build cache
 - ✅ **Easier to keep APIs in sync**
 - ✅ **Single source of truth**
 
 **Challenges:**
+
 - ⚠️ **More complex Cargo.toml** with many optional dependencies
 - ⚠️ **Feature flag complexity** in CI/CD
 - ⚠️ **Publishing coordination** across multiple package managers
@@ -832,6 +879,7 @@ target/release/superconfig.so        # macOS (Python extension)
 ```
 
 **These binaries get packaged and distributed:**
+
 - **npm**: As platform-specific packages (`superconfig-linux-x64`, etc.)
 - **PyPI**: As wheels (`superconfig-0.1.0-cp39-cp39-linux_x86_64.whl`)
 - **GitHub Releases**: As direct downloads
@@ -854,6 +902,7 @@ dx build --platform mobile    # → Android/iOS app
 ```
 
 **For SuperConfig, it would be:**
+
 ```bash
 cargo build --features=node     # → Node.js native module
 cargo build --features=python   # → Python extension module
@@ -896,7 +945,7 @@ cargo build                     # → Regular Rust library
 **You've identified a real gap in the ecosystem!** The technical pieces exist:
 
 1. ✅ **Cargo feature flags** (mature)
-2. ✅ **Cross-compilation** (mature)  
+2. ✅ **Cross-compilation** (mature)
 3. ✅ **FFI libraries** (napi-rs, PyO3 are mature)
 4. ❌ **Coordinated tooling** (missing!)
 5. ❌ **Documentation/examples** (missing!)
@@ -938,7 +987,7 @@ multi-ffi = "0.1.0"
 
 [features]
 node = ["multi-ffi/node"]
-python = ["multi-ffi/python"]  
+python = ["multi-ffi/python"]
 wasm = ["multi-ffi/wasm"]
 all-ffi = ["node", "python", "wasm"]
 ```
@@ -987,6 +1036,7 @@ impl MyLibrary {
 ```
 
 **Build commands:**
+
 ```bash
 cargo build --features=node     # → Node.js module
 cargo build --features=python   # → Python extension  
@@ -1071,11 +1121,13 @@ cargo multi-ffi publish
 **Two-phase approach:**
 
 #### **Phase 1: SuperConfig Multi-FFI**
+
 - Implement multi-FFI manually for SuperConfig
 - Learn the pain points and best practices
 - Validate market demand
 
 #### **Phase 2: Extract Framework**
+
 - Extract the successful patterns into `multi-ffi` crate
 - Open-source the framework
 - SuperConfig becomes the flagship example
@@ -1083,6 +1135,7 @@ cargo multi-ffi publish
 ### **Business Model**
 
 **Framework options:**
+
 1. **Open Source**: Build community, SuperConfig benefits from being first
 2. **Freemium**: Basic FFI free, advanced features (auto-publishing, etc.) paid
 3. **Enterprise**: Advanced tooling, support, custom integrations
@@ -1118,31 +1171,37 @@ This positions you as both **the solution provider** (SuperConfig) AND **the too
 ## Package Distribution Strategy
 
 **Node.js distribution:**
+
 ```bash
 npm install superconfig  # Contains native binary for your platform
 ```
 
 **Python distribution:**
+
 ```bash
 pip install superconfig  # Contains native binary for your platform
 ```
 
 **Build pipeline handles cross-compilation:**
+
 - Linux x64/ARM64
-- macOS x64/ARM64 
+- macOS x64/ARM64
 - Windows x64/ARM64
 
 ## Effort Assessment Updated
 
 **With existing tools:**
+
 - Node.js FFI: ~1-2 days (napi-rs handles most complexity)
 - Python FFI: ~1-2 days (PyO3 handles most complexity)
 - Build pipeline: ~2-3 days (cross-compilation setup)
 
 **With automation (future product idea):**
+
 - All languages: ~1-2 hours (just add annotations to existing code)
 
 **Performance Comparison:**
+
 ```
 Rust (baseline):           100% performance
 FFI (Node.js/Python):      99% performance  (near-zero overhead)
@@ -1161,12 +1220,14 @@ The key insight is that **native FFI bindings + ecosystem-specific distribution*
 ## Website Technology Analysis
 
 ### Biome's Website (biomejs.org)
+
 - **Technology**: Astro static site generator
 - **Repository**: Separate repo at `biomejs/website`
 - **Deployment**: Likely uses Astro's built-in deployment options
 - **Cloudflare Pages**: ✅ Astro fully supports Cloudflare Pages deployment
 
 ### Moon's Website (moonrepo.dev)
+
 - **Technology**: Docusaurus 3.8.0 (React-based static site generator)
 - **Repository**: Integrated in main repo at `/website`
 - **Features**:
@@ -1182,14 +1243,17 @@ The key insight is that **native FFI bindings + ecosystem-specific distribution*
   - **Deployment branch**: `gh-pages` (GitHub Pages)
 
 ### Moon's Design Excellence
+
 Their elegant design comes from:
+
 1. **Custom Tailwind integration** - Full utility-first CSS framework
 2. **Professional navigation** - Multi-level dropdowns with descriptions
-3. **Interactive components** - React-based interactive elements  
+3. **Interactive components** - React-based interactive elements
 4. **Consistent branding** - Custom CSS themes and color schemes
 5. **Performance optimization** - Static generation with React hydration
 
 ### Cloudflare Pages Compatibility
+
 - **Astro**: ✅ Native support via `@astrojs/cloudflare` adapter
 - **Docusaurus**: ✅ Static builds work perfectly on Cloudflare Pages
 
@@ -1202,6 +1266,7 @@ Based on [Orhun's approach](https://blog.orhun.dev/packaging-rust-for-npm/), we 
 ### **Phase 1: Native Binary NPM Package (2-4 hours setup)**
 
 **Approach**: Ship Rust binaries directly via npm with TypeScript wrapper
+
 - ✅ **Zero FFI complexity** - just package existing CLI binary
 - ✅ **Cross-platform support** - automated via GitHub Actions
 - ✅ **npm/npx compatibility** - works with existing Node.js tooling
@@ -1210,6 +1275,7 @@ Based on [Orhun's approach](https://blog.orhun.dev/packaging-rust-for-npm/), we 
 ### **Implementation Steps:**
 
 #### **1. Create TypeScript Wrapper (30 minutes)**
+
 ```typescript
 // packages/superconfig-npm/src/index.ts
 import { spawn } from 'child_process';
@@ -1258,6 +1324,7 @@ export { superconfig as default };
 ```
 
 #### **2. GitHub Actions for Cross-Compilation (45 minutes)**
+
 ```yaml
 # .github/workflows/npm-release.yml
 name: NPM Release
@@ -1338,6 +1405,7 @@ jobs:
 ```
 
 #### **3. Package.json Setup (15 minutes)**
+
 ```json
 {
   "name": "superconfig",
@@ -1371,6 +1439,7 @@ jobs:
 4. **Validation** - Test market demand before investing in complex FFI
 
 ### **Usage Examples:**
+
 ```bash
 # Install globally
 npm install -g superconfig
@@ -1394,6 +1463,7 @@ Once we validate demand with the binary approach:
 4. **Ecosystem Integration** - Full TypeScript definitions, async support
 
 ### **Timeline:**
+
 ```
 Week 1: Binary npm package (immediate distribution)
 Week 2-4: Market validation and feedback collection  
@@ -1416,6 +1486,7 @@ Month 4+: Full FFI ecosystem with Python, Go support
 ### **What You LOSE with Binary Approach:**
 
 #### **1. No Native Installation/Speed**
+
 ```javascript
 // Binary approach - subprocess overhead
 import { superconfig } from 'superconfig';
@@ -1432,6 +1503,7 @@ config.with_file('config.toml'); // Direct function call - zero overhead
 ```
 
 #### **2. No Fluent API Chaining**
+
 ```javascript
 // Binary approach - CANNOT do this
 const config = new SuperConfig()
@@ -1453,6 +1525,7 @@ const config = new SuperConfig()
 ```
 
 #### **3. No Stateful Operations**
+
 ```javascript
 // Binary approach - CANNOT maintain state
 const config = new SuperConfig();
@@ -1463,7 +1536,7 @@ const result = config.extract();   // ❌ No accumulated state
 
 **vs**
 
-```javascript  
+```javascript
 // FFI approach - MAINTAINS state across calls
 const config = new SuperConfig();
 config.with_file("base.toml");     // ✅ Stored in Rust memory
@@ -1489,13 +1562,13 @@ Total: ~45ms (60x slower!)
 
 ### **API Limitations Summary:**
 
-| Feature | Binary Approach | FFI Approach |
-|---------|----------------|--------------|
-| **Fluent Chaining** | ❌ Impossible | ✅ Identical to Rust |
-| **Stateful Operations** | ❌ Each call isolated | ✅ Maintains state |
-| **Performance** | ❌ 10-50ms per call | ✅ 0.1ms per call |
-| **Memory Efficiency** | ❌ Serialize/deserialize | ✅ Direct memory access |
-| **API Complexity** | ❌ String-based CLI args | ✅ Type-safe function calls |
+| Feature                 | Binary Approach          | FFI Approach                |
+| ----------------------- | ------------------------ | --------------------------- |
+| **Fluent Chaining**     | ❌ Impossible            | ✅ Identical to Rust        |
+| **Stateful Operations** | ❌ Each call isolated    | ✅ Maintains state          |
+| **Performance**         | ❌ 10-50ms per call      | ✅ 0.1ms per call           |
+| **Memory Efficiency**   | ❌ Serialize/deserialize | ✅ Direct memory access     |
+| **API Complexity**      | ❌ String-based CLI args | ✅ Type-safe function calls |
 
 ### **When Binary Approach Makes Sense:**
 
@@ -1506,7 +1579,7 @@ Total: ~45ms (60x slower!)
 ### **When You NEED FFI:**
 
 ✅ **Programmatic Usage**: Building config in application code
-✅ **Performance Critical**: Called frequently in hot paths  
+✅ **Performance Critical**: Called frequently in hot paths\
 ✅ **Stateful Operations**: Multi-step configuration building
 ✅ **API Ergonomics**: Want same experience as native library
 
@@ -1515,6 +1588,7 @@ Total: ~45ms (60x slower!)
 **If you want the full SuperConfig experience in Node.js** (fluent API, performance, stateful operations), you need FFI from day 1.
 
 **Binary approach is only useful for:**
+
 - Quick CLI distribution to npm ecosystem
 - Validating basic market demand
 - Simple one-off operations
@@ -1530,11 +1604,13 @@ Chatmail-core is a Rust library that implements secure email/messaging protocols
 ### **Their FFI Architecture (C-FFI + Language Wrappers)**
 
 #### **1. Core Rust Library**
+
 - Main implementation in `src/` (context.rs, message.rs, chat.rs, etc.)
 - Business logic entirely in Rust
 - No language-specific code in core library
 
 #### **2. C-FFI Layer (`deltachat-ffi/`)**
+
 ```rust
 // deltachat-ffi/src/lib.rs - Traditional C FFI
 #[no_mangle]
@@ -1562,6 +1638,7 @@ pub unsafe extern "C" fn dc_send_text_msg(
 ```
 
 **Generated C Header:**
+
 ```c
 // deltachat.h - Auto-generated from Rust code
 typedef struct _dc_context dc_context_t;
@@ -1572,6 +1649,7 @@ void dc_context_unref(dc_context_t* context);
 ```
 
 #### **3. Python FFI Bindings (CFFI)**
+
 ```python
 # python/src/deltachat/_build.py - CFFI-based bindings
 import cffi
@@ -1592,6 +1670,7 @@ def ffibuilder():
 ```
 
 **Python Wrapper Classes:**
+
 ```python
 # python/src/deltachat/account.py - Pythonic API
 from .capi import ffi, lib
@@ -1622,12 +1701,14 @@ class Account:
 ### **Key Advantages of Chatmail's Approach:**
 
 #### **✅ TRUE Native Speed**
+
 - **Direct C function calls** from Python to Rust
 - **Zero marshaling overhead** - pointers passed directly
 - **Stateful operations** - context maintained in Rust memory
 - **Same performance as calling from C**
 
 #### **✅ Fluent API Preservation**
+
 ```python
 # Works perfectly - state maintained in Rust
 account = Account("db.sqlite")
@@ -1637,19 +1718,21 @@ chat.mark_noticed()                                   # Direct Rust call
 ```
 
 #### **✅ Automatic C Header Generation**
+
 - C headers generated from Rust code
 - No manual synchronization needed
 - Type safety guaranteed
 
 ### **Build Process:**
+
 ```toml
 # deltachat-ffi/Cargo.toml
 [lib]
-crate-type = ["cdylib", "staticlib"]  # Produces .so/.dll/.dylib
+crate-type = ["cdylib", "staticlib"] # Produces .so/.dll/.dylib
 
 [dependencies]
-deltachat = { workspace = true }  # Main Rust library
-libc = "0.2"                     # C interop
+deltachat = { workspace = true } # Main Rust library
+libc = "0.2" # C interop
 ```
 
 ```bash
@@ -1664,21 +1747,21 @@ cargo build --release
 
 ### **Comparison: Chatmail vs Biome vs SuperConfig Needs**
 
-| Aspect | **Chatmail-Core** | **Biome** | **SuperConfig Needs** |
-|--------|-------------------|-----------|------------------------|
-| **Performance** | ✅ Native C FFI speed | ❌ CLI subprocess only | ✅ **MUST have native speed** |
-| **Fluent API** | ✅ Perfect state preservation | ❌ No fluent chaining | ✅ **MUST preserve chaining** |
-| **Language Support** | ✅ Python (CFFI) | ✅ JavaScript only | ✅ **Need Python + Node.js** |
-| **API Complexity** | 🔶 C FFI (moderate) | ✅ Simple CLI wrappers | 🔶 **Willing to invest in FFI** |
-| **Maintenance** | 🔶 Manual C layer | ✅ Single TypeScript wrapper | 🔶 **Can maintain C layer** |
+| Aspect               | **Chatmail-Core**             | **Biome**                    | **SuperConfig Needs**           |
+| -------------------- | ----------------------------- | ---------------------------- | ------------------------------- |
+| **Performance**      | ✅ Native C FFI speed         | ❌ CLI subprocess only       | ✅ **MUST have native speed**   |
+| **Fluent API**       | ✅ Perfect state preservation | ❌ No fluent chaining        | ✅ **MUST preserve chaining**   |
+| **Language Support** | ✅ Python (CFFI)              | ✅ JavaScript only           | ✅ **Need Python + Node.js**    |
+| **API Complexity**   | 🔶 C FFI (moderate)           | ✅ Simple CLI wrappers       | 🔶 **Willing to invest in FFI** |
+| **Maintenance**      | 🔶 Manual C layer             | ✅ Single TypeScript wrapper | 🔶 **Can maintain C layer**     |
 
 ### **Critical Insight: Chatmail Proves FFI Works Perfectly**
 
 Chatmail-core demonstrates that C-FFI approach gives you:
 
 1. **Identical API experience** between Rust and Python
-2. **True native performance** - no subprocess overhead  
-3. **Stateful operations** work perfectly 
+2. **True native performance** - no subprocess overhead
+3. **Stateful operations** work perfectly
 4. **Production-ready stability** (Delta Chat uses this in production)
 
 ### **Recommendation for SuperConfig:**
@@ -1686,12 +1769,14 @@ Chatmail-core demonstrates that C-FFI approach gives you:
 **Use Chatmail's C-FFI approach, not Biome's CLI approach.**
 
 **Why:**
+
 - ✅ **Preserves your elegant fluent API** exactly as in Rust
 - ✅ **Native performance** for configuration operations
 - ✅ **Stateful configuration building** works perfectly
 - ✅ **Proven in production** by Delta Chat ecosystem
 
 **Implementation Steps:**
+
 1. **Create `superconfig-ffi` crate** with C bindings (like chatmail)
 2. **Generate C header** from Rust code (automated)
 3. **Python CFFI bindings** (like chatmail's approach)
@@ -1708,14 +1793,16 @@ I need to correct my earlier statement. Looking at the full directory structure:
 #### **1. Two Different Approaches:**
 
 **A. Traditional C-FFI (Limited Languages):**
-- `deltachat-ffi/` - C FFI bindings  
+
+- `deltachat-ffi/` - C FFI bindings
 - `python/` - Python CFFI wrapper
 - **Languages**: Python + C/C++ only
 
 **B. JSON-RPC Server (Universal Language Support):**
+
 - `deltachat-rpc-server/` - Standalone JSON-RPC server binary
 - `deltachat-rpc-client/` - Python client for JSON-RPC
-- `deltachat-jsonrpc/typescript/` - TypeScript/Node.js client 
+- `deltachat-jsonrpc/typescript/` - TypeScript/Node.js client
 - **Languages**: ANY language that can make JSON-RPC calls
 
 #### **2. The JSON-RPC Approach Enables True Multi-Language:**
@@ -1730,6 +1817,7 @@ fn main() {
 ```
 
 **Node.js Client:**
+
 ```javascript
 // deltachat-jsonrpc/typescript/src/client.ts
 import { spawn } from 'child_process';
@@ -1748,6 +1836,7 @@ class DeltaChatClient {
 ```
 
 **Python Client:**
+
 ```python
 # deltachat-rpc-client/src/deltachat_rpc_client/client.py
 class RpcClient:
@@ -1763,6 +1852,7 @@ class RpcClient:
 ### **Key Insight: JSON-RPC Solves Multi-Language + State**
 
 **How JSON-RPC Maintains State:**
+
 - Single `deltachat-rpc-server` process stays alive
 - All language clients communicate with same server instance
 - Server maintains all Rust objects in memory
@@ -1770,11 +1860,11 @@ class RpcClient:
 
 ### **Performance Comparison Updated:**
 
-| Approach | Languages | Performance | Fluent API | Complexity |
-|----------|-----------|-------------|------------|------------|
-| **C-FFI** | Python, C/C++ | ✅ Native speed | ✅ Perfect | 🔶 Moderate |
-| **JSON-RPC** | **ALL languages** | 🔶 Good (JSON overhead) | ✅ Perfect | ✅ Simple |
-| **CLI subprocess** | All languages | ❌ Terrible | ❌ Broken | ✅ Very simple |
+| Approach           | Languages         | Performance             | Fluent API | Complexity     |
+| ------------------ | ----------------- | ----------------------- | ---------- | -------------- |
+| **C-FFI**          | Python, C/C++     | ✅ Native speed         | ✅ Perfect | 🔶 Moderate    |
+| **JSON-RPC**       | **ALL languages** | 🔶 Good (JSON overhead) | ✅ Perfect | ✅ Simple      |
+| **CLI subprocess** | All languages     | ❌ Terrible             | ❌ Broken  | ✅ Very simple |
 
 ### **The Real Multi-Language Strategy:**
 
@@ -1788,13 +1878,15 @@ class RpcClient:
 **You have three options:**
 
 #### **Option 1: JSON-RPC (Easiest Multi-Language)**
+
 - Create `superconfig-rpc-server` binary
 - JSON-RPC clients for Node.js, Python, Go, etc.
 - ✅ **Universal language support**
-- ✅ **Fluent API preserved** 
+- ✅ **Fluent API preserved**
 - 🔶 **Good performance** (JSON overhead ~5-10%)
 
-#### **Option 2: C-FFI (Maximum Performance)**  
+#### **Option 2: C-FFI (Maximum Performance)**
+
 - Follow chatmail's C-FFI approach
 - Python CFFI + Node.js N-API bindings
 - ✅ **Native performance**
@@ -1802,6 +1894,7 @@ class RpcClient:
 - 🔶 **Limited languages** (manual work per language)
 
 #### **Option 3: Hybrid (Best of Both)**
+
 - C-FFI for Python/Node.js (performance critical)
 - JSON-RPC for Go/Ruby/other languages (broad support)
 - ✅ **Best performance where needed**

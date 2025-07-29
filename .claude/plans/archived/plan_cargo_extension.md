@@ -22,19 +22,19 @@ Native Language Packages (TypeScript, Python, Go, etc.)
 
 After researching Wasmer and the broader WebAssembly binding landscape, here's what already exists:
 
-| Tool | Language Support | Interface Definition | Scope | Limitations |
-|------|------------------|---------------------|-------|-------------|
-| **wasm-bindgen** | JS/TS only | Rust annotations | Rust↔JavaScript | ❌ JavaScript-only<br>❌ Manual setup per project |
-| **wai-bindgen** (Wasmer) | JS, Python, Rust, C (~4 langs) | Manual `.wai` files | Wasmer ecosystem | ❌ Limited languages<br>❌ Requires interface files<br>❌ Wasmer-specific |
-| **wit-bindgen** (W3C) | Experimental | `.wit` files | Component Model | ❌ Still experimental<br>❌ Complex setup<br>❌ Not production-ready |
-| **Our cargo-bindgen** | **15+ languages** | **Automatic from Rust** | **ANY Rust codebase** | ✅ **Universal application** |
+| Tool                     | Language Support               | Interface Definition    | Scope                 | Limitations                                                               |
+| ------------------------ | ------------------------------ | ----------------------- | --------------------- | ------------------------------------------------------------------------- |
+| **wasm-bindgen**         | JS/TS only                     | Rust annotations        | Rust↔JavaScript       | ❌ JavaScript-only<br>❌ Manual setup per project                         |
+| **wai-bindgen** (Wasmer) | JS, Python, Rust, C (~4 langs) | Manual `.wai` files     | Wasmer ecosystem      | ❌ Limited languages<br>❌ Requires interface files<br>❌ Wasmer-specific |
+| **wit-bindgen** (W3C)    | Experimental                   | `.wit` files            | Component Model       | ❌ Still experimental<br>❌ Complex setup<br>❌ Not production-ready      |
+| **Our cargo-bindgen**    | **15+ languages**              | **Automatic from Rust** | **ANY Rust codebase** | ✅ **Universal application**                                              |
 
 ### What Gap We're Filling
 
 **We're NOT reinventing the wheel - we're building the missing universal piece:**
 
 1. **Automatic Interface Extraction**: Existing tools require manual `.wai`/`.wit` files
-2. **Universal Language Coverage**: 15+ languages vs existing 4-6  
+2. **Universal Language Coverage**: 15+ languages vs existing 4-6
 3. **Zero Configuration**: Works on any Rust codebase without setup
 4. **Template-Driven Architecture**: Extensible vs hardcoded generators
 5. **Native Package Distribution**: Publishes to npm, PyPI, etc. directly
@@ -43,15 +43,16 @@ After researching Wasmer and the broader WebAssembly binding landscape, here's w
 
 ### Comprehensive Option Analysis
 
-| Option | Performance | Data Access | Complexity | Ecosystem Fit | Maintenance | Verdict |
-|--------|-------------|-------------|------------|---------------|-------------|---------|
-| **1. Modify Cargo Core** (`cargo build --target=typescript`) | ⚡ Fast | 🔍 Full | 🔴 Very High | ❌ Breaking | 🔴 Upstream dependency | ❌ **Not Feasible** |
-| **2. Standalone + subprocess** (`cargo metadata`) | 🐌 Slow | 📄 JSON only | 🟡 Medium | ⚠️ Non-standard | 🟡 Medium | ❌ **Poor Performance** |
-| **3. Extism/XTP Approach** (Rust→WASM→XTP→Bindings) | 🟡 Medium | 🔍 Full | 🔴 Very High | ⚠️ Complex stack | 🔴 Multi-layer | ❌ **Over-engineered** |
-| **4. Direct WASM/WASI** (Manual per language) | 🟡 Medium | 🔍 Full | 🔴 High | ⚠️ Manual work | 🔴 Per-language | ❌ **Too Much Work** |
-| **5. Cargo Subcommand** (Direct library access) | ⚡ Fast | 🔍 Full | 🟢 Low | ✅ Standard | 🟢 Single tool | ✅ **CHOSEN** |
+| Option                                                       | Performance | Data Access  | Complexity   | Ecosystem Fit   | Maintenance            | Verdict                 |
+| ------------------------------------------------------------ | ----------- | ------------ | ------------ | --------------- | ---------------------- | ----------------------- |
+| **1. Modify Cargo Core** (`cargo build --target=typescript`) | ⚡ Fast     | 🔍 Full      | 🔴 Very High | ❌ Breaking     | 🔴 Upstream dependency | ❌ **Not Feasible**     |
+| **2. Standalone + subprocess** (`cargo metadata`)            | 🐌 Slow     | 📄 JSON only | 🟡 Medium    | ⚠️ Non-standard  | 🟡 Medium              | ❌ **Poor Performance** |
+| **3. Extism/XTP Approach** (Rust→WASM→XTP→Bindings)          | 🟡 Medium   | 🔍 Full      | 🔴 Very High | ⚠️ Complex stack | 🔴 Multi-layer         | ❌ **Over-engineered**  |
+| **4. Direct WASM/WASI** (Manual per language)                | 🟡 Medium   | 🔍 Full      | 🔴 High      | ⚠️ Manual work   | 🔴 Per-language        | ❌ **Too Much Work**    |
+| **5. Cargo Subcommand** (Direct library access)              | ⚡ Fast     | 🔍 Full      | 🟢 Low       | ✅ Standard     | 🟢 Single tool         | ✅ **CHOSEN**           |
 
 **Key Decision Factors:**
+
 - **Performance**: Direct library access eliminates subprocess overhead
 - **Data Access**: Full Cargo internals vs limited JSON metadata
 - **Ecosystem Fit**: `cargo bindgen` follows established Rust patterns
@@ -61,7 +62,7 @@ After researching Wasmer and the broader WebAssembly binding landscape, here's w
 ### Key Advantages of Chosen Approach
 
 1. **Performance**: Direct Cargo library access vs subprocess overhead
-2. **Rich Data**: Full workspace analysis, not just JSON metadata  
+2. **Rich Data**: Full workspace analysis, not just JSON metadata
 3. **Ecosystem Integration**: Users expect `cargo bindgen` syntax
 4. **Universal Applicability**: Works on ANY Rust codebase with pub functions
 5. **One-Time Templates**: Build 15+ language templates once, use everywhere
@@ -496,6 +497,7 @@ fn analyze_target_public_api(
 ## Usage Examples
 
 ### Basic Usage
+
 ```bash
 # Install the tool
 cargo install cargo-bindgen
@@ -512,6 +514,7 @@ cargo bindgen --targets typescript --output my-bindings/
 ```
 
 ### Real-World Examples
+
 ```bash
 # Works on SuperConfig
 cd /path/to/superconfig
@@ -528,6 +531,7 @@ cargo bindgen --targets all
 ```
 
 ### Generated Output Structure
+
 ```
 bindings/
 ├── typescript/
@@ -546,22 +550,26 @@ bindings/
 ## Why This Approach Wins
 
 ### Performance Benefits
+
 - **10x Faster**: Direct Cargo library access vs subprocess calls
 - **Rich Data**: Full Cargo internals vs limited JSON metadata
 - **No Parsing Overhead**: Native Rust types vs JSON deserialization
 
 ### Universal Applicability
+
 - **Works on ANY Rust codebase**: Not limited to specific patterns
 - **Zero Configuration**: Automatically discovers public APIs
 - **Template-Driven**: Add new languages by creating templates
 
 ### Ecosystem Integration
+
 - **Standard Installation**: `cargo install cargo-bindgen`
 - **Familiar CLI**: `cargo bindgen` follows Rust conventions
 - **Workspace Aware**: Handles complex multi-package projects
 - **Feature Support**: Understands conditional compilation
 
 ### Genuine Innovation
+
 - **First Universal Tool**: Convert any Rust library to 15+ languages
 - **One-Time Template Work**: Build templates once, use everywhere
 - **No Middleware**: Direct code generation, no XTP/WASM complexity
@@ -579,7 +587,7 @@ bindings/
 After analyzing all approaches (Extism, XTP, direct WASM, standalone tools), **Cargo subcommand with direct library access** is definitively the best because:
 
 - **Maximum Performance**: No subprocess or middleware overhead
-- **Ecosystem Fit**: Follows established Rust tooling patterns  
+- **Ecosystem Fit**: Follows established Rust tooling patterns
 - **Universal Application**: Works on any Rust project with pub functions
 - **Simplified Architecture**: Direct generation, no complex middleware
 - **Innovation Potential**: First tool to universally convert Rust APIs
@@ -591,16 +599,19 @@ This approach will create a genuinely useful tool that the entire Rust ecosystem
 ### Why Separate Repositories Is Superior
 
 **✅ Clear Separation of Concerns:**
+
 - **cargo-bindgen**: Universal tool for the entire Rust ecosystem
-- **superconfig**: Specific library that uses the universal tool  
+- **superconfig**: Specific library that uses the universal tool
 - No mixing of project-specific code with universal tooling
 
 **✅ Independent Development Cycles:**
+
 - cargo-bindgen can be versioned and released independently
 - SuperConfig evolves without affecting the tool
 - Different contributor teams can work on each repo
 
 **✅ Universal Tool Distribution:**
+
 ```bash
 # Install universal tool once
 cargo install cargo-bindgen
@@ -744,6 +755,7 @@ superconfig/                  # Your existing repository
 ### Development Workflow
 
 **1. Universal Tool Development:**
+
 ```bash
 # Develop the universal tool
 cd cargo-bindgen
@@ -756,6 +768,7 @@ cargo run -- examples/simple-calculator --targets typescript,python
 ```
 
 **2. SuperConfig Development:**
+
 ```bash
 # Install the tool (from published version or local)
 cargo install cargo-bindgen
@@ -774,21 +787,25 @@ cd packages/python && python -m pytest
 ### Why This Architecture Wins
 
 **✅ Universal Applicability:**
+
 - cargo-bindgen works on ANY Rust project
 - Not tied to SuperConfig or any specific library
 - Can be adopted by the entire Rust ecosystem
 
 **✅ Independent Evolution:**
-- Tool versioning separate from library versioning  
+
+- Tool versioning separate from library versioning
 - SuperConfig can upgrade tool versions independently
 - New languages can be added without affecting existing projects
 
 **✅ Community Contribution:**
+
 - Contributors can add new language templates
 - Tool improvements benefit everyone
 - Clear contribution guidelines for universal tool vs specific projects
 
 **✅ Clean Distribution:**
+
 - `cargo install cargo-bindgen` - universal tool
 - Language packages published to npm, PyPI, etc.
 - No confusion between tool and generated packages
@@ -814,6 +831,7 @@ graph TD
 ### Release Strategy
 
 **1. WASM Artifact Distribution:**
+
 ```bash
 # Build and publish WASM binary
 cargo build --target=wasm32-wasi --release
@@ -821,12 +839,14 @@ gh release create v1.0.0 target/wasm32-wasi/release/superconfig.wasm
 ```
 
 **2. Language Package Generation:**
+
 ```bash
 # Generate all language bindings
 cargo bindgen --targets typescript,python,go,java
 ```
 
 **3. Automated Publishing:**
+
 ```yaml
 # CI workflow
 - name: Generate bindings
@@ -845,12 +865,14 @@ cargo bindgen --targets typescript,python,go,java
 ### Git Management Strategy
 
 **What Gets Checked In:**
+
 - ✅ Source code (`crates/`, `templates/`)
 - ✅ Generated packages (`packages/`) for immediate usability
 - ❌ WASM artifacts (`wasm/` in .gitignore) - generated by CI
 - ❌ Build artifacts (`target/` in .gitignore)
 
 **Why Check In Generated Code:**
+
 - Contributors can immediately test language bindings
 - Version control tracks binding changes alongside Rust changes
 - Simpler development workflow (no need to run generation locally)

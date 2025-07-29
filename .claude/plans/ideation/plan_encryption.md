@@ -183,7 +183,7 @@ log_level = "info"
 database_url = "ENC[alice:RSA_encrypted_AES_key1,bob:RSA_encrypted_AES_key2:AES_encrypted_data]"
 api_key = "ENC[alice:different_AES_key1,deployment:different_AES_key2:different_AES_data]"
 features = "ENC[alice:array_AES_key1,bob:array_AES_key2:encrypted_json_array]"
-log_level = "info"  # Not encrypted - not sensitive
+log_level = "info" # Not encrypted - not sensitive
 ```
 
 ### Array Merging with Encryption
@@ -209,7 +209,7 @@ features_remove = "ENC[alice:key5,bob:key6:encrypted_removals]"
 [database]
 # Production database configuration
 url = "ENC[alice:key1,deployment:key2:encrypted_connection_string]"
-timeout = 30  # seconds
+timeout = 30 # seconds
 
 # API Configuration
 [api]

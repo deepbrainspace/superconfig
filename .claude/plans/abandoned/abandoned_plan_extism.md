@@ -482,7 +482,7 @@ superconfig-release/
 
 Each language gets its own package:
 
-- **NPM**: `@superconfig/extism` 
+- **NPM**: `@superconfig/extism`
 - **Cargo**: `superconfig-extism`
 - **PyPI**: `superconfig-extism`
 - **Go Module**: `github.com/superconfig/extism-go`

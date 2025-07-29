@@ -1,7 +1,7 @@
 # Custom Multi-FFI Macro Design
 
-**Created**: July 28, 2025  
-**Status**: Architecture Design  
+**Created**: July 28, 2025\
+**Status**: Architecture Design\
 **Goal**: Eliminate signature duplication across PyO3, napi-rs, and UniFFI
 
 ## 🎯 Problem Statement
@@ -157,6 +157,7 @@ impl SuperConfig {
 ## 🏗️ Macro Implementation Strategy
 
 ### Phase 1: Parse Attributes
+
 ```rust
 // Parse the target languages
 #[multi_ffi(nodejs, python, uniffi)]
@@ -164,6 +165,7 @@ impl SuperConfig {
 ```
 
 ### Phase 2: Generate FFI Wrappers
+
 For each target language, generate appropriate wrapper:
 
 ```rust
@@ -176,6 +178,7 @@ match target {
 ```
 
 ### Phase 3: Handle Type Conversions
+
 The macro needs to handle different type requirements:
 
 ```rust
@@ -193,6 +196,7 @@ pub fn uniffi_with_file(self: Arc<Self>, path: String) -> Arc<Self>
 ```
 
 ### Phase 4: Error Handling Conversion
+
 ```rust
 // Original return type
 Result<String, String>
@@ -210,24 +214,29 @@ Result<String, String> // Direct mapping
 ## 📋 Implementation Roadmap
 
 ### Step 1: Basic Proc Macro (2-3 hours)
+
 - Parse `#[multi_ffi(targets)]` attribute
 - Generate basic wrapper functions
 - Handle simple types (String, i32, bool)
 
 ### Step 2: Constructor Support (1 hour)
+
 - Handle `#[constructor]` attribute
 - Generate appropriate constructor wrappers per language
 
 ### Step 3: Error Handling (1-2 hours)
+
 - Convert Result types to target-specific error types
 - Handle Option types appropriately
 
 ### Step 4: Complex Types (2-3 hours)
+
 - Support custom structs and enums
 - Handle Arc wrapping for UniFFI
 - Support generic parameters
 
 ### Step 5: Testing & Documentation (1 hour)
+
 - Create comprehensive test suite
 - Write usage documentation
 - Performance benchmarks
@@ -244,7 +253,7 @@ Result<String, String> // Direct mapping
 
 ```toml
 [dependencies]
-multi-ffi = "0.1"  # Our custom macro crate
+multi-ffi = "0.1" # Our custom macro crate
 pyo3 = { version = "0.20", optional = true }
 napi = { version = "2", optional = true }
 napi-derive = { version = "2", optional = true }
@@ -252,7 +261,7 @@ uniffi = { version = "0.25", optional = true }
 
 [features]
 nodejs = ["napi", "napi-derive", "multi-ffi/nodejs"]
-python = ["pyo3", "multi-ffi/python"]  
+python = ["pyo3", "multi-ffi/python"]
 uniffi = ["dep:uniffi", "multi-ffi/uniffi"]
 ```
 

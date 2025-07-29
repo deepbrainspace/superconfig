@@ -145,6 +145,7 @@ tasks:
 ## Development Commands
 
 ### Rust Development (Crate-Level)
+
 ```bash
 # Rust crate development and testing
 moon run superconfig-ffi:test        # Unit tests for Rust FFI wrapper
@@ -153,6 +154,7 @@ moon run superconfig-ffi:format      # Format checking
 ```
 
 ### Language-Specific Development
+
 ```bash
 # Check Rust compilation with specific features
 moon run superconfig/python:check   # cargo check --features python
@@ -171,6 +173,7 @@ moon run superconfig/wasm:test      # npm test on WASM bindings
 ```
 
 ### Publishing
+
 ```bash
 # Publish individual packages
 moon run superconfig/python:publish  # twine upload → PyPI
@@ -179,6 +182,7 @@ moon run superconfig/wasm:publish    # npm publish → npm (as superconfig-wasm)
 ```
 
 ### Workspace Orchestration
+
 ```bash
 # High-level commands that coordinate multiple projects
 moon run test-all      # Test Rust crate + all language bindings
@@ -191,12 +195,14 @@ moon run publish-all   # Publish all packages to registries
 ### Two-Level Testing Approach
 
 **Level 1: Rust Unit Tests** (`superconfig-ffi:test`)
+
 - Tests the Rust FFI wrapper logic
 - Validates JSON parameter conversions
 - Tests feature flag compilation
 - Runs in `crates/superconfig-ffi/`
 
 **Level 2: Language Integration Tests** (`superconfig/*/test`)
+
 - Tests actual generated bindings work correctly
 - Validates APIs from user perspective
 - Tests cross-language data marshaling
@@ -292,9 +298,10 @@ When `moon run publish-all` executes:
 
 - **Separation of Concerns**: Rust testing vs language integration testing
 - **Dependency Management**: Moon ensures correct execution order
-- **Parallel Execution**: Independent language builds run concurrently  
+- **Parallel Execution**: Independent language builds run concurrently
 - **Fail Fast**: If any test fails, publishing stops
 - **Monorepo Scalability**: Clean naming prevents conflicts with other FFI crates
 
 ---
-*See [`project-structure.md`](./project-structure.md) for directory organization and [`architecture.md`](./architecture.md) for technical architecture*
+
+_See [`project-structure.md`](./project-structure.md) for directory organization and [`architecture.md`](./architecture.md) for technical architecture_

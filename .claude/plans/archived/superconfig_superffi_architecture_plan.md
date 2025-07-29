@@ -1,13 +1,14 @@
 # SuperConfig SuperFFI Architecture Plan
 
-**Status**: Phase 1 Complete, Phase 2 Ready  
-**Priority**: High  
-**Estimated Time**: 1-2 days remaining (Phase 1: ✅ DONE in 3 hours, Phase 2-4: 1-2 days)  
-**Dependencies**: Core SuperConfig stable API  
+**Status**: Phase 1 Complete, Phase 2 Ready\
+**Priority**: High\
+**Estimated Time**: 1-2 days remaining (Phase 1: ✅ DONE in 3 hours, Phase 2-4: 1-2 days)\
+**Dependencies**: Core SuperConfig stable API
 
 ## Current Progress
 
 ✅ **Phase 1 Complete - SuperFFI Macro Foundation**
+
 - SuperFFI procedural macro implemented with comprehensive rustdocs
 - Feature flags for python, nodejs, wasm, all targets
 - Generates PyO3, NAPI-RS, and wasm-bindgen annotations automatically
@@ -15,13 +16,15 @@
 - PR merged and CI passing
 
 🔄 **Next Phase - SuperConfig FFI Wrapper**
+
 - Create `superconfig-ffi` crate that uses SuperFFI macro
 - Implement JSON wrapper API around core SuperConfig
-- Set up bindings/ folder structure with packaging configs  
+- Set up bindings/ folder structure with packaging configs
 
 ## Executive Summary
 
 This plan outlines the implementation of a dual-layer architecture for SuperConfig multi-language support:
+
 1. **Core `superconfig` crate**: Maintains native Rust API with zero FFI overhead
 2. **New `superconfig-ffi` crate**: Provides JSON-based wrapper optimized for FFI
 3. **New `superffi` macro crate**: Generates Python, Node.js, and WASM bindings automatically
@@ -29,6 +32,7 @@ This plan outlines the implementation of a dual-layer architecture for SuperConf
 This approach preserves Rust performance while optimizing FFI user experience and simplifying multi-language binding generation.
 
 **Key Architecture Benefits:**
+
 - **Single source of truth**: Write each method once, generates native APIs for all enabled languages
 - **Feature flag flexibility**: Independently build Python-only, Node.js-only, or both
 - **Native language ergonomics**: Users get clean, language-appropriate APIs (no JSON manipulation)
@@ -38,17 +42,18 @@ This approach preserves Rust performance while optimizing FFI user experience an
 ## Architecture Overview
 
 Three-layer architecture with clean separation of concerns:
+
 1. **Core `superconfig`**: Native Rust API (unchanged, zero FFI overhead)
-2. **`superconfig-ffi`**: JSON wrapper using SuperFFI macro (FFI-compatible)  
+2. **`superconfig-ffi`**: JSON wrapper using SuperFFI macro (FFI-compatible)
 3. **`superffi`**: Reusable macro generator (produces PyO3/NAPI/wasm-bindgen bindings)
 
 ## Performance Benefits
 
-| User Type | Current | With This Plan | Impact |
-|-----------|---------|----------------|---------|
-| **Rust** | Native types (optimal) | Native types (unchanged) | **No regression** |
-| **Python** | Complex PyO3 marshaling | Simple JSON parsing | **Major improvement** |
-| **Node.js** | Complex napi-rs marshaling | Simple JSON parsing | **Major improvement** |
+| User Type   | Current                    | With This Plan           | Impact                |
+| ----------- | -------------------------- | ------------------------ | --------------------- |
+| **Rust**    | Native types (optimal)     | Native types (unchanged) | **No regression**     |
+| **Python**  | Complex PyO3 marshaling    | Simple JSON parsing      | **Major improvement** |
+| **Node.js** | Complex napi-rs marshaling | Simple JSON parsing      | **Major improvement** |
 
 ## Project Structure (Moon Monorepo)
 
@@ -100,6 +105,7 @@ superconfig/                    # Moon workspace root
 ## What Goes in Git vs Generated
 
 ### ✅ **Source Code (Git Tracked)**
+
 - All Rust source code (`crates/`)
 - All packaging configuration (`bindings/`)
 - Moon task definitions (`moon.yml` files)
@@ -107,6 +113,7 @@ superconfig/                    # Moon workspace root
 - Documentation and examples
 
 ### ❌ **Build Artifacts (Gitignored)**
+
 - `target/` - Rust compilation outputs
 - Native binaries: `.so` (Python), `.node` (Node.js), `.wasm` (WASM)
 - `bindings/python/dist/` - Built Python wheels (.whl)
@@ -152,18 +159,21 @@ superconfig/                    # Moon workspace root
 To build the packages, developers need these tools installed:
 
 #### **Python (PyO3) Distribution**
+
 - **Tool**: `maturin` (Python packaging tool for Rust extensions)
 - **Install**: `pip install maturin`
 - **What it does**: Compiles `superconfig-ffi` Rust code → `superconfig.so` → packages into `.whl`
 - **Command**: `maturin build --release`
 
-#### **Node.js (NAPI) Distribution**  
+#### **Node.js (NAPI) Distribution**
+
 - **Tool**: `@napi-rs/cli` (Node.js native addon build tool)
 - **Install**: `npm install -g @napi-rs/cli`
 - **What it does**: Compiles `superconfig-ffi` Rust code → `superconfig.node` → packages into `.tgz`
 - **Command**: `napi build --platform --release`
 
 #### **WebAssembly Distribution**
+
 - **Tool**: `wasm-pack` (WebAssembly build tool)
 - **Install**: `cargo install wasm-pack`
 - **What it does**: Compiles `superconfig-ffi` Rust code → `superconfig.wasm` + JS bindings → packages into `.tgz`
@@ -316,11 +326,11 @@ jobs:
    moon run superconfig-ffi:build-python    # Compile Rust → .so
    moon run python:package                  # maturin build → .whl  
    moon run python:publish                  # twine upload → PyPI
-   
+
    moon run superconfig-ffi:build-nodejs    # Compile Rust → .node
    moon run nodejs:package                  # napi build → .tgz
    moon run nodejs:publish                  # npm publish → npm
-   
+
    moon run superconfig-ffi:build-wasm      # Compile Rust → .wasm
    moon run wasm:package                    # webpack → .tgz
    moon run wasm:publish                    # npm publish → npm
@@ -333,6 +343,7 @@ jobs:
    ```
 
 **Key Points:**
+
 - **Git only contains source code** - no binaries or built packages
 - **Moon coordinates everything** - developers just push code and tag releases
 - **All build artifacts are ephemeral** - generated during CI/CD, then discarded
@@ -343,6 +354,7 @@ jobs:
 ### Phase 1: SuperFFI Macro Foundation (Days 1-2)
 
 #### 1.1 Create `superffi` Crate with Feature Flags
+
 ```toml
 # crates/superffi/Cargo.toml
 [package]
@@ -354,7 +366,7 @@ proc-macro = true
 
 [dependencies]
 proc-macro2 = "1.0"
-quote = "1.0" 
+quote = "1.0"
 syn = "2.0"
 pyo3 = { version = "0.20", optional = true }
 napi = { version = "2.0", optional = true }
@@ -372,6 +384,7 @@ all = ["python", "nodejs", "wasm"]
 ```
 
 #### 1.2 Implement Single Macro with Conditional Generation
+
 ```rust
 // crates/superffi/src/lib.rs
 use proc_macro::TokenStream;
@@ -395,6 +408,7 @@ pub fn superffi(_args: TokenStream, input: TokenStream) -> TokenStream {
 ```
 
 #### 1.3 JSON Parameter Handling
+
 ```rust
 // Automatic conversion from serde_json::Value to native types
 pub fn handle_json_param(value: &serde_json::Value, expected_type: &str) -> TokenStream {
@@ -411,6 +425,7 @@ pub fn handle_json_param(value: &serde_json::Value, expected_type: &str) -> Toke
 ### Phase 2: SuperConfig FFI Wrapper (Days 3-4)
 
 #### 2.1 Create `superconfig-ffi` Crate with Feature Flags
+
 ```toml
 # crates/superconfig-ffi/Cargo.toml
 [package]
@@ -431,10 +446,11 @@ wasm = ["superffi/wasm"]
 all = ["python", "nodejs", "wasm"]
 
 [lib]
-crate-type = ["cdylib", "rlib"]  # cdylib needed for WASM
+crate-type = ["cdylib", "rlib"] # cdylib needed for WASM
 ```
 
 #### 2.2 Implement Core Wrapper Structure
+
 ```rust
 // crates/superconfig-ffi/src/lib.rs
 use superconfig::SuperConfig as CoreSuperConfig;
@@ -455,6 +471,7 @@ impl SuperConfig {
 ```
 
 #### 2.3 Single Implementation with Native Language APIs (68% of API)
+
 ```rust
 #[superffi]
 impl SuperConfig {
@@ -480,6 +497,7 @@ impl SuperConfig {
 ```
 
 #### 2.4 Complex Method Mappings with Multiple Parameters (21% of API)
+
 ```rust
 #[superffi]
 impl SuperConfig {
@@ -540,12 +558,13 @@ fn create_search_strategy(config: &Value) -> Result<SearchStrategy, String> {
 ### Phase 3: Complex Type Handling (Days 5-6)
 
 #### 3.1 Wildcard Provider JSON Schema
+
 ```json
 {
   "pattern": "*.toml",
   "search": {
     "type": "recursive",
-    "root": "./config", 
+    "root": "./config",
     "max_depth": 3
   },
   "merge_order": {
@@ -556,6 +575,7 @@ fn create_search_strategy(config: &Value) -> Result<SearchStrategy, String> {
 ```
 
 #### 3.2 Figment Method Exposure
+
 ```rust
 #[superffi]
 impl SuperConfig {
@@ -581,6 +601,7 @@ impl SuperConfig {
 ### Phase 4: Build & Publishing Integration with Feature Flags (Day 4)
 
 #### 4.3 GitHub Actions with Moon Integration
+
 ```yaml
 # .github/workflows/multi-ffi-release.yml
 name: Multi-FFI Release
@@ -635,6 +656,7 @@ jobs:
 ```
 
 #### 4.2 Python Package Structure
+
 ```python
 # bindings/python/setup.py (generated by multi-ffi)
 from setuptools import setup
@@ -655,7 +677,8 @@ setup(
 )
 ```
 
-#### 4.3 Node.js Package Structure  
+#### 4.3 Node.js Package Structure
+
 ```json
 {
   "name": "superconfig",
@@ -673,6 +696,7 @@ setup(
 ## API Usage Examples
 
 ### Rust (Unchanged)
+
 ```rust
 use superconfig::SuperConfig;
 
@@ -683,6 +707,7 @@ let config = SuperConfig::new()
 ```
 
 ### Python (Generated Native API)
+
 ```python
 from superconfig import SuperConfig
 
@@ -693,6 +718,7 @@ config = SuperConfig.new() \
 ```
 
 ### Node.js (Generated Native API)
+
 ```javascript
 const SuperConfig = require('superconfig');
 
@@ -707,6 +733,7 @@ const config = new SuperConfig()
 ## Testing Strategy
 
 ### Unit Tests
+
 ```rust
 // crates/superconfig-ffi/tests/integration.rs
 #[test]
@@ -731,6 +758,7 @@ fn test_complex_wildcard_config() {
 ```
 
 ### Cross-Language Integration Tests
+
 ```python
 # tests/python/test_integration.py
 def test_superconfig_parity():
@@ -742,16 +770,19 @@ def test_superconfig_parity():
 ## Migration Strategy
 
 ### Phase 1: Parallel Development
+
 - Core `superconfig` continues unchanged
 - New `superconfig-ffi` developed alongside
 - No breaking changes to existing users
 
 ### Phase 2: FFI Release
+
 - Release `superconfig-ffi` v1.0
 - Publish Python and Node.js packages
 - Documentation and examples
 
 ### Phase 3: Community Adoption
+
 - Promote FFI packages to language communities
 - Gather feedback and iterate
 - Maintain both core and FFI versions
@@ -759,16 +790,19 @@ def test_superconfig_parity():
 ## Success Metrics
 
 ### Performance Targets
+
 - **Rust**: No performance regression (0% overhead)
 - **Python**: 50%+ improvement over complex PyO3 marshaling
 - **Node.js**: 50%+ improvement over complex napi-rs marshaling
 
 ### Coverage Targets
+
 - **Simple methods**: 100% coverage (68% of API)
-- **Complex methods**: 90% coverage (21% of API) 
+- **Complex methods**: 90% coverage (21% of API)
 - **Debug/introspection**: 80% coverage (11% of API)
 
 ### Adoption Targets
+
 - Python package: 1000+ downloads/month within 6 months
 - Node.js package: 500+ downloads/month within 6 months
 - Documentation: Complete API reference for all languages
@@ -776,11 +810,13 @@ def test_superconfig_parity():
 ## Risk Mitigation
 
 ### Technical Risks
+
 - **Macro complexity**: Start simple, iterate based on usage
 - **Type conversion errors**: Comprehensive error handling and testing
 - **Platform compatibility**: Use GitHub Actions matrix builds
 
-### Maintenance Risks  
+### Maintenance Risks
+
 - **API drift**: Automated tests to ensure FFI wrapper stays in sync
 - **Documentation lag**: Generate docs from code where possible
 - **Community support**: Clear contribution guidelines and responsive issue handling
@@ -788,19 +824,22 @@ def test_superconfig_parity():
 ## Implementation Timeline
 
 ### **Realistic Time Breakdown with AI Assistant**
+
 - **✅ Day 1 (3 hours)**: SuperFFI macro crate COMPLETE - proc-macro infrastructure, PyO3/napi-rs/WASM bindings, comprehensive docs, CI passing
 - **Day 2 (4-6 hours)**: SuperConfig-ffi wrapper - all method mappings, JSON parameter handling
-- **Day 3 (3-4 hours)**: Complex types + Figment integration - Wildcard provider, JSON schemas  
+- **Day 3 (3-4 hours)**: Complex types + Figment integration - Wildcard provider, JSON schemas
 - **Day 4 (2-3 hours)**: Build system, CI/CD, and documentation - GitHub Actions, package configs, bindings/ structure
 
 ### **Why AI Makes This Faster**
+
 - **Pattern recognition**: Converting 68% of simple methods mechanically
-- **Boilerplate generation**: Proc-macros, build configs, package files  
+- **Boilerplate generation**: Proc-macros, build configs, package files
 - **Comprehensive coverage**: Handling all edge cases systematically
 - **Error handling**: Generating robust error messages and validation
 - **Documentation**: Auto-generating examples and API docs
 
 ### **Potential Time Extensions**
+
 - **Testing edge cases**: Real-world integration testing (+1-2 days)
 - **Platform-specific builds**: Cross-compilation quirks (+1 day)
 - **Performance optimization**: Fine-tuning JSON overhead (+1 day)
@@ -808,7 +847,7 @@ def test_superconfig_parity():
 ## Next Steps
 
 1. **Create SuperFFI crate foundation** (Days 1-2)
-2. **Implement superconfig-ffi wrapper** (Days 3-4)  
+2. **Implement superconfig-ffi wrapper** (Days 3-4)
 3. **Complex type handling** (Days 5-6)
 4. **Build system integration** (Day 7)
 5. **Testing and iteration** (ongoing)

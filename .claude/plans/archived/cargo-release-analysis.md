@@ -7,11 +7,13 @@ After examining the cargo-release codebase, I've identified its architecture, ke
 ## 1. Main Entry Point and CLI Structure
 
 **Entry Point**: `/src/bin/cargo-release.rs`
+
 - Uses `clap` for command-line parsing with a clean enum-based command structure
 - Main workflow: `Command::Release(ReleaseOpt)` with optional step subcommands
 - Supports individual step execution (version, commit, publish, etc.)
 
 **CLI Architecture**:
+
 ```rust
 Command::Release(ReleaseOpt) {
     release: ReleaseStep,     // Main release workflow
@@ -22,12 +24,14 @@ Command::Release(ReleaseOpt) {
 ## 2. Core Modules and Responsibilities
 
 ### `/src/config.rs` - Configuration Management
+
 - **Purpose**: Handles all configuration loading and parsing
 - **Key Features**: Supports TOML config files, CLI arguments, and workspace/package-level configs
 - **Integration Point**: Add new config fields for conventional commits and multi-language support
 - **Extensibility**: Well-designed with `ConfigArgs` trait and update mechanisms
 
 ### `/src/steps/` - Release Step Orchestration
+
 - **`mod.rs`**: Common verification functions and shared step logic
 - **`release.rs`**: Main release orchestrator - coordinates all release steps
 - **`version.rs`**: Version bumping logic and dependency updates
@@ -35,6 +39,7 @@ Command::Release(ReleaseOpt) {
 - **`changes.rs`**: **CRITICAL** - Already has conventional commit parsing!
 
 ### `/src/ops/` - Low-level Operations
+
 - **`git.rs`**: Git operations (commit, tag, push, status checking)
 - **`version.rs`**: Version manipulation and bumping logic
 - **`cargo.rs`**: Cargo-specific operations (publish, version updates)
@@ -44,6 +49,7 @@ Command::Release(ReleaseOpt) {
 **Located in**: `/src/steps/mod.rs` and `/src/ops/version.rs`
 
 **Current Implementation**:
+
 ```rust
 pub enum BumpLevel {
     Major,    // Breaking changes
@@ -55,6 +61,7 @@ pub enum BumpLevel {
 ```
 
 **Key Function**:
+
 ```rust
 impl BumpLevel {
     pub fn bump_version(
@@ -70,6 +77,7 @@ impl BumpLevel {
 **Located in**: `/src/ops/git.rs`
 
 **Key Functions**:
+
 - `commit_all()` - Creates commits with optional signing
 - `changed_files()` - Gets files changed since a tag
 - `find_last_tag()` - Finds the most recent matching tag
@@ -82,6 +90,7 @@ impl BumpLevel {
 **Located in**: `/src/steps/changes.rs`
 
 **Already Implemented**:
+
 ```rust
 impl PackageCommit {
     fn conventional_status(&self) -> Option<Option<CommitStatus>> {
@@ -103,6 +112,7 @@ impl PackageCommit {
 ```
 
 **Already suggests version bumps**:
+
 ```rust
 let suggested = match max_status {
     CommitStatus::Breaking => Some("major"),
@@ -117,6 +127,7 @@ let suggested = match max_status {
 **Located in**: `/src/steps/plan.rs`
 
 **Architecture**:
+
 ```rust
 pub struct PackageRelease {
     pub meta: cargo_metadata::Package,
@@ -128,6 +139,7 @@ pub struct PackageRelease {
 ```
 
 **Key Functions**:
+
 - `load()` - Discovers packages in workspace
 - `plan()` - Plans version bumps and dependency updates
 - Uses `cargo_metadata` for workspace introspection
@@ -135,12 +147,14 @@ pub struct PackageRelease {
 ## 7. Command-Line Interface Analysis
 
 **Current Arguments**:
+
 - `level_or_version: TargetVersion` - Manual version specification
 - `--execute` - Actually perform release (dry-run by default)
 - `--prev-tag-name` - Override previous tag detection
 - `--metadata` - Add semver metadata
 
 **Extension Points**:
+
 - Add `--auto-version` flag for conventional commit analysis
 - Add `--changelog` flag for changelog generation
 - Add language-specific configuration options
@@ -148,10 +162,12 @@ pub struct PackageRelease {
 ## 8. Existing Hooks and Extension Points
 
 **Pre-release Hooks**: `/src/steps/hook.rs`
+
 - Supports custom commands before release
 - Could be extended for multi-language operations
 
 **Template System**: `/src/ops/replace.rs`
+
 - Used for commit messages and file replacements
 - Could be extended for changelog templates
 
@@ -160,11 +176,13 @@ pub struct PackageRelease {
 **Current State**: Rust-only via `cargo_metadata`
 
 **Extension Strategy**:
+
 1. **Package Discovery**: Extend `/src/steps/plan.rs` to detect non-Rust packages
 2. **Version Management**: Create language-specific version handlers
 3. **Publishing**: Add language-specific publish operations
 
 **Suggested New Modules**:
+
 ```
 /src/languages/
 ├── mod.rs          # Language detection and registry
@@ -179,11 +197,13 @@ pub struct PackageRelease {
 ### A. Conventional Commit Analysis Enhancement
 
 **Target Files**:
+
 - `/src/steps/changes.rs` - Extend existing analysis
 - `/src/steps/version.rs` - Add auto-version detection
 - `/src/config.rs` - Add configuration options
 
 **Implementation Strategy**:
+
 ```rust
 // In version.rs
 pub fn suggest_version_from_commits(
@@ -198,11 +218,13 @@ pub fn suggest_version_from_commits(
 ### B. Enhanced Changelog Generation
 
 **Target Files**:
+
 - Create `/src/steps/changelog.rs`
 - Extend `/src/config.rs` for changelog configuration
 - Extend `/src/steps/release.rs` to include changelog step
 
 **Architecture**:
+
 ```rust
 pub struct ChangelogStep {
     pub template: String,
@@ -215,11 +237,13 @@ pub struct ChangelogStep {
 ### C. Multi-Language Support
 
 **Target Files**:
+
 - Create `/src/languages/` module tree
 - Extend `/src/steps/plan.rs` for multi-language package discovery
 - Extend `/src/config.rs` for language-specific configuration
 
 **Integration Point**:
+
 ```rust
 // In plan.rs
 pub trait LanguageSupport {
@@ -233,24 +257,28 @@ pub trait LanguageSupport {
 ## 11. Recommended Implementation Order
 
 ### Phase 1: Enhanced Conventional Commit Analysis
+
 1. Extend existing `/src/steps/changes.rs` functionality
 2. Add auto-version suggestion to `/src/steps/version.rs`
 3. Add `--auto-version` CLI flag
 4. Add configuration options for commit type mappings
 
-### Phase 2: Enhanced Changelog Generation  
+### Phase 2: Enhanced Changelog Generation
+
 1. Create `/src/steps/changelog.rs`
 2. Add changelog templates and configuration
 3. Integrate with existing commit analysis
 4. Add `--changelog` CLI options
 
 ### Phase 3: Multi-Language Support Foundation
+
 1. Create `/src/languages/` module architecture
 2. Refactor existing Rust logic into `languages::rust`
 3. Create language detection system
 4. Add Node.js support as proof-of-concept
 
 ### Phase 4: Extended Multi-Language Support
+
 1. Add Python support
 2. Add Go support
 3. Add unified configuration system
@@ -268,16 +296,19 @@ pub trait LanguageSupport {
 ## 13. Key Files for Modification
 
 **High Priority**:
+
 - `/src/steps/changes.rs` - Extend conventional commit analysis
-- `/src/steps/version.rs` - Add auto-version suggestion  
+- `/src/steps/version.rs` - Add auto-version suggestion
 - `/src/config.rs` - Add new configuration options
 - `/src/steps/release.rs` - Integrate new features
 
 **Medium Priority**:
+
 - `/src/steps/plan.rs` - Multi-language package discovery
 - `/src/ops/git.rs` - Enhanced commit history analysis
 
 **New Files Needed**:
+
 - `/src/steps/changelog.rs` - Changelog generation
 - `/src/languages/mod.rs` - Multi-language support foundation
 

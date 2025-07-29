@@ -1,11 +1,12 @@
 # UniFFI vs Custom Macro Evaluation
 
-**Date**: July 28, 2025  
+**Date**: July 28, 2025\
 **Research Question**: Should we extend UniFFI or build our own multi-FFI macro?
 
 ## 🔍 UniFFI Analysis
 
 ### ✅ What UniFFI Does Well
+
 - **Mature & Production-Ready**: Used by Mozilla in Firefox
 - **Comprehensive Type System**: Handles complex Rust types automatically
 - **Template-Based Generation**: Uses Askama templates for code generation
@@ -15,21 +16,25 @@
 ### ❌ UniFFI Limitations for Our Use Case
 
 **1. No Native Node.js Support**
+
 - Only has React Native bindings (via uniffi-bindgen-react-native)
 - React Native ≠ Node.js server environments
 - Would need to write Node.js binding from scratch
 
 **2. Performance Overhead**
+
 - Uses dynamic FFI with RustBuffer serialization
 - All data goes through serialize/deserialize cycle
 - Estimated 200-400% overhead vs direct FFI (napi-rs/PyO3)
 
 **3. Arc<T> Everywhere**
+
 - All objects wrapped in Arc for thread safety
 - API becomes `config.with_file()` → `Arc<Config>.with_file() -> Arc<Config>`
 - Less ergonomic than native Rust patterns
 
 **4. WebIDL Constraints**
+
 - Interface definition limited by WebIDL specification
 - Can't express all Rust patterns naturally
 - Generic methods require type-specific variants
@@ -37,6 +42,7 @@
 ## 🏗️ Adding Node.js to UniFFI
 
 ### What's Required
+
 Looking at existing language bindings in `/uniffi_bindgen/src/bindings/`:
 
 1. **Create `/uniffi_bindgen/src/bindings/nodejs/` directory**
@@ -46,6 +52,7 @@ Looking at existing language bindings in `/uniffi_bindgen/src/bindings/`:
 5. **Integration with napi-rs** for native performance
 
 ### Estimated Effort: 15-20 hours
+
 - Study existing Python bindings implementation
 - Create JavaScript/TypeScript templates
 - Implement napi-rs integration
@@ -54,32 +61,37 @@ Looking at existing language bindings in `/uniffi_bindgen/src/bindings/`:
 
 ## 📊 Comparison Matrix
 
-| Aspect | Custom Multi-FFI Macro | Extending UniFFI |
-|--------|------------------------|------------------|
-| **Development Time** | 8-12 hours | 15-20 hours |
-| **Node.js Performance** | ⚡ Native (napi-rs) | ⚡ Native (napi-rs) |
-| **Python Performance** | ⚡ Native (PyO3) | 🔥 Overhead (RustBuffer) |
-| **Type System** | Limited to basic types | Full Rust type support |
-| **Maintenance** | Our responsibility | Mozilla maintains |
-| **Ecosystem** | Just us initially | Mature ecosystem |
-| **API Ergonomics** | Native Rust patterns | Arc<T> everywhere |
-| **Control** | Full control | Subject to Mozilla decisions |
+| Aspect                  | Custom Multi-FFI Macro | Extending UniFFI             |
+| ----------------------- | ---------------------- | ---------------------------- |
+| **Development Time**    | 8-12 hours             | 15-20 hours                  |
+| **Node.js Performance** | ⚡ Native (napi-rs)    | ⚡ Native (napi-rs)          |
+| **Python Performance**  | ⚡ Native (PyO3)       | 🔥 Overhead (RustBuffer)     |
+| **Type System**         | Limited to basic types | Full Rust type support       |
+| **Maintenance**         | Our responsibility     | Mozilla maintains            |
+| **Ecosystem**           | Just us initially      | Mature ecosystem             |
+| **API Ergonomics**      | Native Rust patterns   | Arc<T> everywhere            |
+| **Control**             | Full control           | Subject to Mozilla decisions |
 
 ## 🎯 Key Insights
 
 ### UniFFI's Python vs PyO3 Performance
+
 Based on architecture analysis:
+
 - **UniFFI Python**: Uses RustBuffer serialization (~2000-5000ns overhead)
 - **PyO3 Direct**: Direct memory access (~700-1000ns)
 - **Performance gap**: 200-300% slower for small operations
 
 ### Node.js Gap is Real
+
 - UniFFI has React Native bindings, NOT Node.js server bindings
 - Would require building Node.js support from scratch
 - No existing implementation to learn from
 
 ### Architecture Complexity
+
 UniFFI is significantly more complex:
+
 - 7 crates in the workspace
 - Askama templating system
 - Complex type conversion pipeline
@@ -97,10 +109,12 @@ UniFFI is significantly more complex:
 4. **Scope is different** - we need basic type support, not full Rust type system
 
 **UniFFI solves a different problem:**
+
 - Mozilla needs comprehensive type system for complex Firefox components
 - We need fast, simple config operations with ergonomic APIs
 
 **Our macro solves a focused problem:**
+
 - Zero-duplication interface definitions
 - Maximum performance for primary languages (Node.js, Python)
 - Native ergonomics with minimal overhead
@@ -108,13 +122,15 @@ UniFFI is significantly more complex:
 ## 🎯 Recommendation: Build Custom Macro
 
 **Reasons:**
+
 1. **Faster to market** - 8-12 hours vs 15-20 hours + PR review months
-2. **Better performance** - Direct FFI vs RustBuffer overhead  
+2. **Better performance** - Direct FFI vs RustBuffer overhead
 3. **Perfect fit** - Designed exactly for our use case
 4. **Full control** - No dependency on Mozilla roadmap
 5. **Reusable** - Other projects with similar needs can benefit
 
 **Mitigations for "wheel reinvention":**
+
 - Open source the macro immediately
 - Document it as "lightweight alternative to UniFFI"
 - Position as "performance-focused multi-FFI for simple types"

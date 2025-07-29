@@ -24,12 +24,14 @@ Releases are triggered manually through GitHub Actions with built-in approval ga
 ### Release Workflow Steps
 
 #### 1. Preparation Phase
+
 - Extracts current version from `Cargo.toml`
 - Calculates new version based on selected bump level
 - Checks if the new version already exists on crates.io
 - Validates release conditions
 
 #### 2. Build and Test Phase
+
 - Runs complete test suite with `cargo test --all-features`
 - Performs code formatting checks with `cargo fmt`
 - Runs clippy lints with `cargo clippy --all-targets --all-features`
@@ -37,6 +39,7 @@ Releases are triggered manually through GitHub Actions with built-in approval ga
 - Performs security audit with `cargo audit`
 
 #### 3. Release Phase (Environment: `release`)
+
 - **Requires manual approval** for production releases
 - Updates version in `Cargo.toml` and `Cargo.lock`
 - Generates changelog from git commits
@@ -45,6 +48,7 @@ Releases are triggered manually through GitHub Actions with built-in approval ga
 - Creates GitHub release with generated changelog
 
 #### 4. Notification Phase
+
 - Provides release summary in GitHub Actions UI
 - Shows version change, dry run status, and final result
 
@@ -103,20 +107,24 @@ While not automated yet, following conventional commit format helps with changel
 ### Troubleshooting
 
 **Release fails with "Version already exists"**:
+
 - Check if the version was already published to crates.io
 - Use different version level or wait for next release cycle
 - Use `force_publish: true` only if certain the version should be overridden
 
 **Tests fail during release**:
+
 - Fix the failing tests on the main branch first
 - Never skip tests or use force flags
 - Re-run the release workflow after fixes are merged
 
 **Approval required but no reviewers**:
+
 - Set up the `release` environment with required reviewers
 - Or temporarily remove environment protection for testing
 
 **Cargo publish fails**:
+
 - Verify `CARGO_REGISTRY_TOKEN` is set correctly
 - Check crates.io status and rate limits
 - Ensure all dependencies are published and available

@@ -1,7 +1,7 @@
 # WasmBridge vs SuperWASM - Naming Decision
 
-**Created**: July 27, 2025  
-**Author**: Claude Opus 4  
+**Created**: July 27, 2025\
+**Author**: Claude Opus 4\
 **Status**: Naming Strategy
 **Purpose**: Decide on WASM tool naming and repository strategy
 
@@ -12,6 +12,7 @@ You're absolutely right - if it's in the SuperConfig monorepo, how would it get 
 ### Options for Repository Structure:
 
 #### Option 1: Separate GitHub Repo (If going standalone)
+
 ```
 github.com/deepbrainspace/superconfig     (Main monorepo)
 github.com/deepbrainspace/wasmbridge      (Separate repo)
@@ -19,6 +20,7 @@ github.com/deepbrainspace/supercli        (Separate repo)
 ```
 
 #### Option 2: Keep in Monorepo (RECOMMENDED)
+
 ```
 github.com/deepbrainspace/superconfig
 ├── crates/superconfig/      ← Published to crates.io
@@ -27,6 +29,7 @@ github.com/deepbrainspace/superconfig
 ```
 
 **Why monorepo is still better**:
+
 - Unified development and testing
 - Share dependencies and CI/CD
 - Can still publish to crates.io independently
@@ -34,30 +37,37 @@ github.com/deepbrainspace/superconfig
 
 ## 🏷️ Naming Analysis: WasmBridge vs SuperWASM
 
-### "WasmBridge" 
+### "WasmBridge"
+
 **Pros**:
+
 - ✅ Descriptive - clearly says what it does
 - ✅ Professional/neutral - not tied to Super* brand
 - ✅ Could stand alone if needed
 - ✅ Good SEO (wasm + bridge are searchable)
 
 **Cons**:
+
 - ❌ No brand connection to SuperConfig
 - ❌ Generic sounding
 
 ### "SuperWASM"
+
 **Pros**:
+
 - ✅ Brand consistency with SuperConfig
 - ✅ Memorable and short
 - ✅ Domain available (superwasm.dev)
 - ✅ Clear "family" connection
 
 **Cons**:
+
 - ❌ Less descriptive of function
 - ❌ Might oversell (is it really "super"?)
 - ❌ Locks into Super* branding
 
 ### Other Options Considered:
+
 - **"WasmLink"** - Too similar to existing tools
 - **"RustBridge"** - Too Rust-specific
 - **"UniversalWASM"** - Too grandiose
@@ -76,20 +86,25 @@ github.com/deepbrainspace/superconfig
 ### Implementation Strategy:
 
 #### Phase 1: Part of SuperConfig Story
+
 - Package name: `wasmbridge` on crates.io
 - Docs at: superconfig.dev/wasmbridge
 - Positioned as: "The technology behind SuperConfig's universal language support"
 - Tagline: "Bridge your Rust code to any language"
 
 #### Phase 2: Measure Success (3-6 months)
+
 Success metrics:
+
 - Crates.io downloads
 - Community asking for standalone features
 - Other projects wanting to use it
 - Blog posts about it specifically
 
 #### Phase 3: Potential Spinoff (If justified)
+
 Only if:
+
 - 10K+ monthly downloads on crates.io
 - Clear demand for standalone tool
 - Community contributions coming in
@@ -101,10 +116,10 @@ Only if:
 # /Cargo.toml (workspace root)
 [workspace]
 members = [
-    "crates/superconfig",
-    "crates/wasmbridge",  
-    "crates/supercli",
-    "crates/superconfig-cli",
+  "crates/superconfig",
+  "crates/wasmbridge",
+  "crates/supercli",
+  "crates/superconfig-cli",
 ]
 
 # Each can be published independently:
@@ -116,12 +131,14 @@ members = [
 ## 🎬 Marketing Approach
 
 ### The Story Arc:
+
 1. **Launch**: "SuperConfig - Universal config management"
 2. **Week 3**: "Powered by WasmBridge - our open source WASM tooling"
 3. **Month 2**: "WasmBridge - Bridge any Rust library to any language"
 4. **Future**: Potential standalone product if demand exists
 
 ### Messaging Examples:
+
 > "SuperConfig achieves universal language support through WasmBridge"
 
 > "WasmBridge: Open source tooling for Rust→WASM→Everything"
@@ -131,6 +148,7 @@ members = [
 ## 💡 The Real Insight
 
 **Don't optimize for GitHub stars** - optimize for:
+
 1. **Crates.io downloads** (actual usage)
 2. **npm downloads** (for bindings)
 3. **Revenue** (enterprise adoption)
@@ -144,7 +162,8 @@ members = [
 4. **Measure by**: Downloads and usage, not stars
 5. **Spin off**: Only if market demands it
 
-**Domain strategy**: 
+**Domain strategy**:
+
 - Don't buy wasmbridge.dev yet
 - superconfig.dev/wasmbridge is perfect for now
 - Revisit if it needs standalone identity
@@ -152,6 +171,7 @@ members = [
 ## 💡 Why WasmBridge is the Right Choice
 
 You convinced me! WasmBridge is:
+
 - **Honest**: It bridges Rust to other languages via WASM
 - **Professional**: Sounds like a tool developers would trust
 - **Searchable**: Great for SEO and discoverability

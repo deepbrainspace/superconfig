@@ -5,7 +5,7 @@
 ## Features
 
 - **Python bindings** via PyO3
-- **Node.js bindings** via NAPI-RS  
+- **Node.js bindings** via NAPI-RS
 - **WebAssembly bindings** via wasm-bindgen (browser) and WASI (server-side)
 - **Zero-cost abstractions** - only generates code for enabled features
 - **Simple annotation** - just add `#[superffi]` to your items
@@ -18,8 +18,9 @@ superffi = { version = "0.1", features = ["python", "nodejs", "wasm"] }
 ```
 
 **Features:**
+
 - `python` - PyO3 bindings for Python
-- `nodejs` - NAPI bindings for Node.js  
+- `nodejs` - NAPI bindings for Node.js
 - `wasm` - wasm-bindgen bindings for WebAssembly (browser + WASI)
 - `all` - All target languages
 
@@ -61,13 +62,15 @@ pub fn fibonacci(n: u32) -> u64 {
 ## Usage
 
 Apply `#[superffi]` to:
+
 - **Structs** → generates class/object bindings
-- **Impl blocks** → generates method bindings  
+- **Impl blocks** → generates method bindings
 - **Functions** → generates standalone function bindings
 
 ## Language Usage Examples
 
 ### Python
+
 ```python
 import your_library
 
@@ -78,6 +81,7 @@ print(your_library.fibonacci(10))  # 55
 ```
 
 ### Node.js
+
 ```javascript
 const lib = require('./target/release/your_library.node');
 
@@ -88,6 +92,7 @@ console.log(lib.fibonacci(10)); // 55
 ```
 
 ### WebAssembly (Browser + WASI)
+
 ```javascript
 import init, { Calculator, fibonacci } from './pkg/your_library.js';
 
@@ -177,6 +182,7 @@ pyo3 = { version = "0.25", features = ["extension-module"] }
 ```
 
 Build command:
+
 ```bash
 maturin develop  # For development
 maturin build --release  # For production
@@ -198,6 +204,7 @@ Add to your `package.json`:
 ```
 
 Build command:
+
 ```bash
 napi build --platform --release
 ```
@@ -205,6 +212,7 @@ napi build --platform --release
 ### For WebAssembly
 
 Build command:
+
 ```bash
 wasm-pack build --target web --out-dir pkg
 ```
@@ -212,7 +220,7 @@ wasm-pack build --target web --out-dir pkg
 ## ⚠️ Limitations
 
 - **Async functions**: Not currently supported across all target languages
-- **Complex generics**: May not translate directly to all target languages  
+- **Complex generics**: May not translate directly to all target languages
 - **Advanced lifetimes**: Rust-specific lifetime annotations may not be supported
 - **Trait objects**: Not directly supported; use concrete types instead
 - **Custom derives**: May conflict with generated bindings
@@ -220,18 +228,21 @@ wasm-pack build --target web --out-dir pkg
 ## 🛠️ Supported Types
 
 ### Primitive Types
+
 - `bool`, `i8`, `i16`, `i32`, `i64`, `isize`
-- `u8`, `u16`, `u32`, `u64`, `usize`  
+- `u8`, `u16`, `u32`, `u64`, `usize`
 - `f32`, `f64`
 - `char`
 
 ### Standard Library Types
+
 - `String`
 - `Vec<T>` (where T is supported)
 - `Option<T>` (where T is supported)
 - `HashMap<K, V>` (limited support)
 
 ### Custom Types
+
 - Structs annotated with `#[superffi]`
 - Enums (limited support, varies by target language)
 
@@ -249,12 +260,14 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 ### Testing
 
 Run the test suite:
+
 ```bash
 cargo test
 cargo test --all-features
 ```
 
 Test with specific features:
+
 ```bash
 cargo test --features python
 cargo test --features nodejs  
@@ -273,7 +286,7 @@ at your option.
 ## 🙏 Acknowledgments
 
 - [PyO3](https://github.com/PyO3/pyo3) for Python FFI
-- [NAPI-RS](https://github.com/napi-rs/napi-rs) for Node.js FFI  
+- [NAPI-RS](https://github.com/napi-rs/napi-rs) for Node.js FFI
 - [wasm-bindgen](https://github.com/rustwasm/wasm-bindgen) for WebAssembly FFI
 - The Rust community for excellent procedural macro resources
 

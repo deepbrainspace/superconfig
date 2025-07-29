@@ -19,6 +19,7 @@ cargo run --example guardy_usage -- -vvv   # Trace mode (full introspection)
 ```
 
 **Example Output (Debug mode `-vv`):**
+
 ```
 === Guardy Configuration Loading ===
 Verbosity level: debug
@@ -48,7 +49,7 @@ Log level: info
 
 - **Silent (0)**: No debug output - production mode
 - **Info (-v)**: Basic loading progress - shows what's happening
-- **Debug (-vv)**: Detailed steps with success/failure - troubleshooting mode  
+- **Debug (-vv)**: Detailed steps with success/failure - troubleshooting mode
 - **Trace (-vvv)**: Full introspection with actual values - deep debugging
 
 ### Testing with Environment Variables
@@ -117,12 +118,14 @@ myapp -vvv
 ### Automatic Sensitive Data Masking
 
 Environment variables containing these keywords are automatically masked in trace output:
+
 - `password`
-- `secret` 
+- `secret`
 - `token`
 - `key`
 
 Example:
+
 ```bash
 export MYAPP_DATABASE_PASSWORD="secret123"
 export MYAPP_API_TOKEN="abc123" 
@@ -151,6 +154,7 @@ To add a new example:
 5. Include practical use cases that solve real problems
 
 Examples should be:
+
 - **Practical**: Solve real-world configuration problems
 - **Educational**: Show best practices and common patterns
 - **Testable**: Include clear instructions for running and testing
