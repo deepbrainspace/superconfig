@@ -37,15 +37,10 @@ This approach preserves Rust performance while optimizing FFI user experience an
 
 ## Architecture Overview
 
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   superconfig   │    │ superconfig-ffi  │    │    superffi     │
-│                 │    │                  │    │                 │
-│ Native Rust API │◄───│ JSON Wrapper API │◄───│ Macro Generator │
-│ High Performance│    │ FFI Compatible   │    │ Py + Node + WASM│
-│ Zero FFI Cost   │    │ serde_json::Value│    │ Auto Bindings   │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-```
+Three-layer architecture with clean separation of concerns:
+1. **Core `superconfig`**: Native Rust API (unchanged, zero FFI overhead)
+2. **`superconfig-ffi`**: JSON wrapper using SuperFFI macro (FFI-compatible)  
+3. **`superffi`**: Reusable macro generator (produces PyO3/NAPI/wasm-bindgen bindings)
 
 ## Performance Benefits
 
@@ -583,154 +578,7 @@ impl SuperConfig {
 }
 ```
 
-### Phase 4: Build & Publishing Integration with Feature Flags (Day 7)
-
-#### 4.1 Unified Moon Task Configuration
-```yaml
-# Workspace-level moon.yml
-tasks:
-  build-all:
-    command: 'moon run superconfig-ffi:package-all'
-    
-  publish-all:
-    command: 'moon run superconfig-ffi:publish-all'
-
-# crates/superffi/moon.yml
-language: 'rust'
-type: 'library'
-
-tasks:
-  build:
-    command: 'cargo build'
-    inputs: ['@globs(sources)', 'Cargo.toml']
-    
-  test:
-    command: 'cargo test'
-    inputs: ['@globs(sources)', '@globs(tests)']
-    
-  lint:
-    command: 'cargo clippy -- -D warnings'
-    inputs: ['@globs(sources)', '@globs(tests)']
-    
-  format:
-    command: 'cargo fmt --check'
-    inputs: ['@globs(sources)', '@globs(tests)']
-
-# crates/superconfig-ffi/moon.yml
-language: 'rust'
-type: 'library'
-
-tasks:
-  # Rust FFI builds
-  build-python:
-    command: 'cargo build --features python'
-    inputs: ['@globs(sources)', 'Cargo.toml']
-    deps: ['superffi:build']
-    
-  build-nodejs:
-    command: 'cargo build --features nodejs'
-    inputs: ['@globs(sources)', 'Cargo.toml']
-    deps: ['superffi:build']
-    
-  build-wasm:
-    command: 'wasm-pack build --target bundler --features wasm'
-    inputs: ['@globs(sources)', 'Cargo.toml']
-    outputs: ['pkg/']
-    deps: ['superffi:build']
-    
-  build-all:
-    command: 'cargo build --features all'
-    inputs: ['@globs(sources)', 'Cargo.toml']
-    deps: ['superffi:build']
-    
-  # Python packaging (inside superconfig-ffi)
-  package-python:
-    command: 'cd python && python -m build'
-    inputs: ['python/**/*', '../../target/release/*superconfig*']
-    outputs: ['python/dist/']
-    deps: ['build-python']
-    
-  # Node.js server packaging (inside superconfig-ffi)  
-  package-nodejs:
-    command: 'cd nodejs && npm run build'
-    inputs: ['nodejs/**/*', '../../target/release/*superconfig*']
-    outputs: ['nodejs/lib/']
-    deps: ['build-nodejs']
-    
-  # WASM browser packaging (inside superconfig-ffi)
-  package-wasm:
-    command: 'cd wasm && npm run build'
-    inputs: ['wasm/**/*', 'pkg/**/*']
-    outputs: ['wasm/dist/']
-    deps: ['build-wasm']
-    
-  # Publishing
-  publish-python:
-    command: 'cd python && python -m twine upload dist/*'
-    deps: ['package-python']
-    
-  publish-nodejs:
-    command: 'cd nodejs && npm publish'  # Published as "superconfig.js"
-    deps: ['package-nodejs']
-    
-  publish-wasm:
-    command: 'cd wasm && npm publish'    # Published as "superconfig-wasm"
-    deps: ['package-wasm']
-    
-  # Testing
-  test-python:
-    command: 'cd python && python -m pytest'
-    deps: ['package-python']
-    
-  test-nodejs:
-    command: 'cd nodejs && npm test'
-    deps: ['package-nodejs']
-    
-  test-wasm:
-    command: 'cd wasm && npm test'
-    deps: ['package-wasm']
-    
-  # Combined tasks
-  package-all:
-    deps: ['package-python', 'package-nodejs', 'package-wasm']
-    
-  test-all:
-    deps: ['test-python', 'test-nodejs', 'test-wasm']
-    
-  publish-all:
-    deps: ['publish-python', 'publish-nodejs', 'publish-wasm']
-```
-
-#### 4.2 Simplified Development Commands
-```bash
-# Build specific targets with Moon
-moon run superconfig-ffi:build-python
-moon run superconfig-ffi:build-nodejs  
-moon run superconfig-ffi:build-all
-
-# Development tasks for individual crates
-moon run superffi:build
-moon run superffi:test
-moon run superffi:lint
-
-moon run superconfig-ffi:test
-moon run superconfig-ffi:lint
-
-# Package and test specific languages
-moon run python:build
-moon run nodejs:build
-
-# Test language bindings
-moon run python:test
-moon run nodejs:test
-
-# Publish to package registries
-moon run python:publish
-moon run nodejs:publish
-
-# Full release workflow
-moon run release-all
-```
+### Phase 4: Build & Publishing Integration with Feature Flags (Day 4)
 
 #### 4.3 GitHub Actions with Moon Integration
 ```yaml
