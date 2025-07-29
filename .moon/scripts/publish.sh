@@ -4,11 +4,13 @@ set -e
 
 PROJECT_NAME="$1"
 OVERRIDE_VERSION="$2"
+NO_CONFIRM="$3"
 
 if [ -z "$PROJECT_NAME" ]; then
-    echo "❌ Usage: $0 <project-name> [version-override]"
+    echo "❌ Usage: $0 <project-name> [version-override] [--yes]"
     echo "   Example: $0 superffi"
     echo "   Example: $0 superffi 0.2.0"
+    echo "   Example: $0 superffi 0.2.0 --yes"
     exit 1
 fi
 
@@ -26,15 +28,30 @@ fi
 
 echo "📦 Package: $PROJECT_NAME"
 echo "🏷️  Version: $VERSION"
-echo ""
 
-# Confirmation prompt
-read -p "🤔 Do you want to release $PROJECT_NAME v$VERSION? (y/N): " -n 1 -r
-echo ""
-
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "❌ Release cancelled"
+# Check if version already exists on crates.io
+echo "🔍 Checking if version already exists on crates.io..."
+if curl -s "https://crates.io/api/v1/crates/$PROJECT_NAME" | jq -e ".versions[] | select(.num == \"$VERSION\")" > /dev/null 2>&1; then
+    echo "⚠️  WARNING: Version $VERSION is already published on crates.io"
+    echo "   You can:"
+    echo "   1. Use version override: .moon/scripts/publish.sh $PROJECT_NAME <new-version>"
+    echo "   2. Update version in Cargo.toml and try again"
     exit 1
+fi
+echo "✅ Version $VERSION is available for publishing"
+echo ""
+
+# Confirmation prompt (skip if --yes flag provided)
+if [ "$NO_CONFIRM" != "--yes" ]; then
+    read -p "🤔 Do you want to release $PROJECT_NAME v$VERSION? (y/N): " -n 1 -r
+    echo ""
+    
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "❌ Release cancelled"
+        exit 1
+    fi
+else
+    echo "🚀 Auto-confirming release (--yes flag provided)"
 fi
 
 echo "🚀 Releasing $PROJECT_NAME v$VERSION"

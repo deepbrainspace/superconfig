@@ -85,7 +85,14 @@ tasks:
 
   # Full release workflow with tagging
   publish:
-    command: "../../.moon/scripts/publish.sh $project"
+    command: "../../.moon/scripts/publish.sh $project $VERSION"
+    inputs: ["@globs(sources)", "@globs(configs)"]
+    options:
+      cache: false
+
+  # Auto-publish without confirmation
+  publish-auto:
+    command: "../../.moon/scripts/publish.sh $project $VERSION --yes"
     inputs: ["@globs(sources)", "@globs(configs)"]
     options:
       cache: false
