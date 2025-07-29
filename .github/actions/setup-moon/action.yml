@@ -5,7 +5,7 @@ inputs:
   moon-version:
     description: 'Moon version to install'
     required: false
-    default: '1.38.6'
+    default: '1.39.3'
   proto-version:
     description: 'Proto version to install'
     required: false

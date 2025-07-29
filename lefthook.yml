@@ -42,7 +42,7 @@ pre-commit:
     # Comprehensive formatting with dprint (Rust-based, fast)
     dprint-fmt:
       glob: "*.{md,yml,yaml,json,toml}"
-      run: dprint fmt {staged_files}
+      run: dprint fmt {staged_files} --allow-no-files
       stage_fixed: true
       skip:
         - merge
