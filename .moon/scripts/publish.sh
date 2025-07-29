@@ -57,13 +57,13 @@ fi
 echo "🚀 Releasing $PROJECT_NAME v$VERSION"
 
 
-
 cd "$(git rev-parse --show-toplevel)"
-if ! git diff-index --quiet HEAD -- 2>/dev/null; then
+if output="$(git status --porcelain)" && [ -n "$output" ]; then
     echo "❌ Git repository has uncommitted changes:"
-    git status --short
+    echo "$output"
     exit 1
 fi
+echo "✅ Git working directory is clean"
 
 echo "📦 Running pre-release checks..."
 
