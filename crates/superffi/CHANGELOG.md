@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2025-07-29
+
+### Added
+
+- docs.rs configuration for comprehensive documentation builds
+- Crate-specific README badges for better discoverability
+- Workspace overview table in main README
+
+### Changed
+
+- Documentation now builds with all features enabled on docs.rs
+- Enhanced README structure with proper badge organization
+
+### Fixed
+
+- docs.rs documentation generation for all feature combinations
+- Missing documentation links on crates.io
+
 ## [0.1.1] - 2025-07-29
 
 ### Added
