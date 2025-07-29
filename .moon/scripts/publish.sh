@@ -77,6 +77,22 @@ echo "🧪 Running dry run..."
 cd "crates/$PROJECT_NAME"
 cargo publish --dry-run
 
+# Second confirmation after dry run (skip if --yes flag provided)
+if [ "$NO_CONFIRM" != "--yes" ]; then
+    echo ""
+    echo "📋 Dry run completed. Review the output above."
+    read -p "🤔 Proceed with actual publish and tagging? (y/N): " -n 1 -r
+    echo ""
+    
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "❌ Publish cancelled after dry run"
+        exit 1
+    fi
+    echo "✅ Proceeding with publish..."
+else
+    echo "🚀 Auto-proceeding (--yes flag provided)"
+fi
+
 echo "📝 Creating git tag..."
 cd ../..
 git tag "$PROJECT_NAME-v$VERSION"
