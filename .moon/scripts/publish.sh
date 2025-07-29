@@ -56,11 +56,13 @@ fi
 
 echo "🚀 Releasing $PROJECT_NAME v$VERSION"
 
-# Check git status
-if ! git diff-index --quiet HEAD --; then
-    echo "❌ Git repository has uncommitted changes. Please commit or stash them first."
+
+if ! git diff-index --quiet HEAD -- 2>/dev/null; then
+    echo "❌ Git repository has uncommitted changes:"
+    git status --short
     exit 1
 fi
+
 
 echo "📦 Running pre-release checks..."
 
