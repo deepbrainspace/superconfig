@@ -5,9 +5,10 @@
 //!
 //! ## Features
 //!
-//! - **Python bindings** via PyO3 (feature: `python`)
-//! - **Node.js bindings** via NAPI (feature: `nodejs`)
-//! - **WebAssembly bindings** via wasm-bindgen (feature: `wasm`)
+//! - **Python bindings** via PyO3 (feature: `python`) - preserves `snake_case`
+//! - **Node.js bindings** via NAPI (feature: `nodejs`) - automatic `camelCase` conversion
+//! - **WebAssembly bindings** via wasm-bindgen (feature: `wasm`) - automatic `camelCase` conversion
+//! - **Automatic naming conventions** for consistent JavaScript APIs
 //! - **Zero-cost abstractions** - only generates code for enabled features
 //! - **Simple annotation** - just add `#[superffi]` to your items
 //!
@@ -53,6 +54,18 @@
 //! - **Impl blocks** - Generates method bindings for the target languages
 //! - **Functions** - Generates standalone function bindings
 //!
+//! ## Automatic Naming Conventions
+//!
+//! SuperFFI automatically converts function names to match target language conventions:
+//!
+//! | Rust Function | Python | Node.js | WebAssembly |
+//! |---------------|--------|---------|-------------|
+//! | `get_info()` | `get_info()` | `getInfo()` | `getInfo()` |
+//! | `set_debug()` | `set_debug()` | `setDebug()` | `setDebug()` |
+//! | `with_file()` | `with_file()` | `withFile()` | `withFile()` |
+//!
+//! This ensures APIs feel natural in each target language while maintaining consistency.
+//!
 //! ## Feature Flags
 //!
 //! Enable only the target languages you need:
@@ -79,6 +92,9 @@ use syn::{Ident, ImplItem};
 ///
 /// This macro can be applied to structs, impl blocks, and functions to automatically generate
 /// bindings for Python (PyO3), Node.js (NAPI), and WebAssembly (wasm-bindgen) based on enabled features.
+///
+/// **Naming Conventions:** SuperFFI automatically converts `snake_case` function names to `camelCase`
+/// for JavaScript targets (Node.js and WebAssembly), while preserving `snake_case` for Python.
 ///
 /// ## Usage
 ///
@@ -115,6 +131,13 @@ use syn::{Ident, ImplItem};
 ///     a + b
 /// }
 /// ```
+///
+/// ## Naming Convention Examples
+///
+/// For the Rust function `pub fn get_user_info()`, SuperFFI generates:
+/// - **Python**: `get_user_info()` (preserved snake_case)
+/// - **Node.js**: `getUserInfo()` (NAPI converts automatically)
+/// - **WebAssembly**: `getUserInfo()` (SuperFFI converts manually)
 ///
 /// ## Generated Bindings
 ///

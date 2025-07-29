@@ -4,9 +4,10 @@
 
 ## Features
 
-- **Python bindings** via PyO3
-- **Node.js bindings** via NAPI-RS
-- **WebAssembly bindings** via wasm-bindgen (browser) and WASI (server-side)
+- **Python bindings** via PyO3 (preserves `snake_case` naming)
+- **Node.js bindings** via NAPI-RS (automatic `camelCase` conversion)
+- **WebAssembly bindings** via wasm-bindgen (automatic `camelCase` conversion)
+- **Automatic naming conversion** for consistent JavaScript APIs
 - **Zero-cost abstractions** - only generates code for enabled features
 - **Simple annotation** - just add `#[superffi]` to your items
 
@@ -87,7 +88,7 @@ const lib = require('./target/release/your_library.node');
 
 const calc = new lib.Calculator(10.0);
 calc.add(5.0);
-console.log(calc.getValue()); // 15.0
+console.log(calc.getValue()); // 15.0 (NAPI converts get_value → getValue)
 console.log(lib.fibonacci(10)); // 55
 ```
 
@@ -99,7 +100,7 @@ import init, { Calculator, fibonacci } from './pkg/your_library.js';
 await init();
 const calc = new Calculator(10.0);
 calc.add(5.0);
-console.log(calc.get_value()); // 15.0
+console.log(calc.getValue()); // 15.0 (SuperFFI converts get_value → getValue)
 console.log(fibonacci(10)); // 55
 ```
 
@@ -134,7 +135,7 @@ const lib = require('./target/release/your_rust_library.node');
 const calc = new lib.Calculator(10.0);
 calc.add(5.0);
 calc.multiply(2.0);
-console.log(calc.getValue()); // Output: 30.0
+console.log(calc.getValue()); // Output: 30.0 (get_value → getValue)
 
 // Use standalone functions
 const result = lib.fibonacci(10);
@@ -155,7 +156,7 @@ async function run() {
     const calc = new Calculator(10.0);
     calc.add(5.0);
     calc.multiply(2.0);
-    console.log(calc.get_value()); // Output: 30.0
+    console.log(calc.getValue()); // Output: 30.0 (get_value → getValue)
     
     // Use standalone functions
     const result = fibonacci(10);
@@ -164,6 +165,23 @@ async function run() {
 
 run();
 ```
+
+## 🔄 Automatic Naming Convention
+
+SuperFFI automatically handles naming conventions for different target languages:
+
+| Rust Function    | Python           | Node.js         | WebAssembly     |
+| ---------------- | ---------------- | --------------- | --------------- |
+| `get_value()`    | `get_value()`    | `getValue()`    | `getValue()`    |
+| `set_debug()`    | `set_debug()`    | `setDebug()`    | `setDebug()`    |
+| `with_file()`    | `with_file()`    | `withFile()`    | `withFile()`    |
+| `extract_json()` | `extract_json()` | `extractJson()` | `extractJson()` |
+
+- **Python**: Preserves `snake_case` (Pythonic)
+- **Node.js**: NAPI automatically converts to `camelCase`
+- **WebAssembly**: SuperFFI converts to `camelCase` for JavaScript consistency
+
+This ensures your APIs feel natural in each target language while maintaining consistent functionality.
 
 ## 🏗️ Build Configuration
 
