@@ -1,0 +1,100 @@
+# Lefthook configuration for SuperConfig monorepo
+# Fast git hooks using Moon build system with conditional execution
+
+pre-commit:
+  parallel: true
+  commands:
+    # Rust formatting using Moon tasks
+    rust-fmt:
+      glob: "*.rs"
+      run: moon run :fmt
+      stage_fixed: true
+
+    rust-clippy:
+      glob: "*.rs"
+      run: moon run :clippy
+
+    # Python formatting and linting - only changed files
+    python-fmt:
+      glob: "*.py"
+      run: python -m black {staged_files}
+      stage_fixed: true
+      skip:
+        - merge
+        - rebase
+
+    python-lint:
+      glob: "*.py"
+      run: python -m ruff check {staged_files}
+      skip:
+        - merge
+        - rebase
+
+    # Node.js/JavaScript formatting - only changed files
+    js-fmt:
+      glob: "*.{js,jsx,ts,tsx,json}"
+      run: npx prettier --write {staged_files}
+      stage_fixed: true
+      skip:
+        - merge
+        - rebase
+
+    # Markdown and YAML formatting - only changed files
+    docs-fmt:
+      glob: "*.{md,yml,yaml}"
+      run: npx prettier --write {staged_files}
+      stage_fixed: true
+      skip:
+        - merge
+        - rebase
+
+    # Check for common issues
+    trailing-whitespace:
+      run: |
+        git diff --cached --name-only | xargs -I {} sh -c 'test -f "{}" && sed -i "s/[[:space:]]*$//" "{}"'
+      stage_fixed: true
+      skip:
+        - merge
+        - rebase
+
+pre-push:
+  parallel: true
+  commands:
+    # Check for unstaged changes
+    check-clean-working-tree:
+      run: |
+        if ! git diff --quiet; then
+          echo "✗ You have unstaged changes. Please commit or stash them before pushing:"
+          git diff --name-only
+          exit 1
+        fi
+
+    # Optional: Run tests only for affected projects (comment out if too slow)
+    # rust-test:
+    #   glob: "*.rs"
+    #   run: moon run --affected :test
+
+    # Ensure clean formatting using Moon
+    rust-fmt-check:
+      glob: "*.rs"
+      run: moon run :fmt-check
+
+    # Check for outdated dependencies
+    rust-outdated:
+      glob: "*.rs"
+      run: moon run --affected :outdated
+
+commit-msg:
+  commands:
+    # Validate conventional commits directly
+    conventional-commit:
+      run: |
+        if ! grep -qE "^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?: .{1,50}" "{1}"; then
+          echo "✗ Commit message must follow conventional commits format:"
+          echo "   type(scope): description"
+          echo "   Example: feat(superffi): add naming conversion for WASM"
+          exit 1
+        fi
+      skip:
+        - merge
+        - rebase
