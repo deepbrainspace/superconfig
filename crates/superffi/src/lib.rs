@@ -73,7 +73,7 @@ use quote::quote;
 use syn::{Item, ItemFn, ItemImpl, ItemStruct, parse_macro_input};
 
 #[cfg(feature = "wasm")]
-use syn::{ImplItem, Ident};
+use syn::{Ident, ImplItem};
 
 /// A procedural macro that generates FFI bindings for multiple target languages.
 ///
@@ -225,7 +225,7 @@ pub fn superffi(_args: TokenStream, input: TokenStream) -> TokenStream {
 #[cfg(feature = "wasm")]
 fn convert_to_camel_case(snake_name: &str) -> String {
     let parts: Vec<&str> = snake_name.split('_').filter(|s| !s.is_empty()).collect();
-    
+
     // Handle empty or single word case
     if parts.is_empty() {
         return String::new();
@@ -233,14 +233,14 @@ fn convert_to_camel_case(snake_name: &str) -> String {
     if parts.len() == 1 {
         return parts[0].to_string();
     }
-    
+
     let mut result = String::new();
-    
+
     // First non-empty part stays lowercase
     if let Some(first) = parts.first() {
         result.push_str(first);
     }
-    
+
     // Subsequent parts get capitalized
     for part in parts.iter().skip(1) {
         let mut chars = part.chars();
@@ -249,7 +249,7 @@ fn convert_to_camel_case(snake_name: &str) -> String {
             result.extend(chars);
         }
     }
-    
+
     result
 }
 
@@ -407,11 +407,11 @@ fn generate_impl_bindings(item_impl: ItemImpl) -> TokenStream {
                 let block = &method.block;
                 let attrs = &method.attrs;
                 let vis = &method.vis;
-                
+
                 // Create new signature with camelCase name
                 let mut new_sig = sig.clone();
                 new_sig.ident = camel_name;
-                
+
                 quote! {
                     #(#attrs)*
                     #[wasm_bindgen::prelude::wasm_bindgen]
@@ -421,7 +421,7 @@ fn generate_impl_bindings(item_impl: ItemImpl) -> TokenStream {
                 quote! { #item }
             }
         });
-        
+
         output.extend(quote! {
             #[wasm_bindgen::prelude::wasm_bindgen]
             impl #struct_type {
@@ -491,7 +491,7 @@ fn generate_fn_bindings(item_fn: ItemFn) -> TokenStream {
         let camel_name = create_camel_case_ident(original_name);
         let mut wasm_fn = item_fn.clone();
         wasm_fn.sig.ident = camel_name;
-        
+
         output.extend(quote! {
             #[wasm_bindgen::prelude::wasm_bindgen]
             #wasm_fn
