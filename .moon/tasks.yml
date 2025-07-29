@@ -83,7 +83,16 @@ tasks:
     inputs: ["@globs(sources)", "@globs(configs)"]
     deps: ["build-release", "test", "clippy", "fmt-check"]
 
+  # Full release workflow with tagging
   publish:
-    command: "cargo publish"
+    command: "../../.moon/scripts/publish.sh $project $VERSION"
     inputs: ["@globs(sources)", "@globs(configs)"]
-    deps: ["build-release", "test", "clippy", "fmt-check"]
+    options:
+      cache: false
+
+  # Auto-publish without confirmation
+  publish-auto:
+    command: "../../.moon/scripts/publish.sh $project $VERSION --yes"
+    inputs: ["@globs(sources)", "@globs(configs)"]
+    options:
+      cache: false
