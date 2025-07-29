@@ -1,5 +1,9 @@
 # SuperFFI - Multi-Language FFI Binding Generator
 
+[![Crates.io](https://img.shields.io/crates/v/superffi)](https://crates.io/crates/superffi)
+[![Documentation](https://docs.rs/superffi/badge.svg)](https://docs.rs/superffi)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/deepbrainspace/superconfig)
+
 **SuperFFI** is a procedural macro that automatically generates FFI bindings for multiple target languages from your Rust code. Write once, run everywhere.
 
 ## Features

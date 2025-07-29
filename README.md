@@ -2,8 +2,13 @@
 
 Advanced configuration management with hierarchical cascading, intelligent array merging, smart format detection, and performance optimizations.
 
-[![Crates.io](https://img.shields.io/crates/v/superconfig)](https://crates.io/crates/superconfig)
-[![Documentation](https://docs.rs/superconfig/badge.svg)](https://docs.rs/superconfig)
+## Crates in this Workspace
+
+| Crate           | Version                                                                                           | Docs                                                                                   | Description                                                               |
+| --------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| **SuperConfig** | [![Crates.io](https://img.shields.io/crates/v/superconfig)](https://crates.io/crates/superconfig) | [![Documentation](https://docs.rs/superconfig/badge.svg)](https://docs.rs/superconfig) | Advanced configuration management with hierarchical cascading             |
+| **SuperFFI**    | [![Crates.io](https://img.shields.io/crates/v/superffi)](https://crates.io/crates/superffi)       | [![Documentation](https://docs.rs/superffi/badge.svg)](https://docs.rs/superffi)       | Multi-language FFI binding generator for Python, Node.js, and WebAssembly |
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Built on [Figment's](https://github.com/SergioBenitez/Figment) foundation, SuperConfig adds advanced features while maintaining 100% compatibility.

@@ -56,11 +56,14 @@ fi
 
 echo "🚀 Releasing $PROJECT_NAME v$VERSION"
 
-# Check git status
-if ! git diff-index --quiet HEAD --; then
-    echo "❌ Git repository has uncommitted changes. Please commit or stash them first."
+
+cd "$(git rev-parse --show-toplevel)"
+if output="$(git status --porcelain)" && [ -n "$output" ]; then
+    echo "❌ Git repository has uncommitted changes:"
+    echo "$output"
     exit 1
 fi
+echo "✅ Git working directory is clean"
 
 echo "📦 Running pre-release checks..."
 
@@ -73,6 +76,22 @@ moon run "$PROJECT_NAME:fmt-check"
 echo "🧪 Running dry run..."
 cd "crates/$PROJECT_NAME"
 cargo publish --dry-run
+
+# Second confirmation after dry run (skip if --yes flag provided)
+if [ "$NO_CONFIRM" != "--yes" ]; then
+    echo ""
+    echo "📋 Dry run completed. Review the output above."
+    read -p "🤔 Proceed with actual publish and tagging? (y/N): " -n 1 -r
+    echo ""
+    
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "❌ Publish cancelled after dry run"
+        exit 1
+    fi
+    echo "✅ Proceeding with publish..."
+else
+    echo "🚀 Auto-proceeding (--yes flag provided)"
+fi
 
 echo "📝 Creating git tag..."
 cd ../..
