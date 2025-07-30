@@ -1,16 +1,16 @@
 [package]
 name = "superconfig"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Nayeem Syed <hello@superconfig.dev>"]
 categories = ["config", "development-tools"]
 documentation = "https://docs.rs/superconfig"
 edition = "2024"
 homepage = "https://superconfig.dev"
-keywords = ["config", "configuration", "figment", "settings", "env"]
+keywords = ["config", "configuration", "settings", "env", "performance"]
 license = "MIT"
 readme = "../../README.md"
 repository = "https://github.com/deepbrainspace/superconfig"
-description = "Advanced configuration management built on Figment with hierarchical loading, array merging, and smart format detection"
+description = "High-performance configuration management with handle-based registry, zero-copy access, and multi-language support"
 
 [package.metadata.docs.rs]
 all-features = true
@@ -24,50 +24,52 @@ default = ["core"]
 core = []
 providers = ["core"]
 
-# Future features (when we implement them)
-# cli = ["core", "clap"]
-# mcp = ["core", "tokio"]
-# api = ["core", "axum", "tokio", "tower"]
-# database = ["core", "sqlx", "tokio"]
-# remote = ["core", "reqwest", "tokio"]
-# vault = ["core", "vaultrs", "tokio"]
-# wasm = ["core", "wasm-bindgen"]
+# Optional performance features
+hot_reload = ["tokio", "notify"]
+parallel = ["rayon"]
+simd = ["simd-json"]
+profiling = ["tracing"]
+extended_formats = ["toml", "serde_yml"]
 
 # Convenience feature for everything
-all = ["providers"]
+all = ["providers", "hot_reload", "parallel", "simd", "profiling", "extended_formats"]
 
 [dependencies]
-# Core dependencies (always included)
-dirs = "6.0"
-figment = { version = "0.10.19", features = ["json", "toml", "yaml", "env"] }
-lazy_static = "1.4"
-serde = { version = "1.0", features = ["derive"] }
-serde_yml = "0.0.12"
-toml = "0.8"
-
-# Optional core dependencies (used by features)
-anyhow = "1.0"
+# Core performance dependencies (always included)
+dashmap = "7.0.0-rc2"
+dirs = "6.0.0"
 globset = "0.4.16"
-serde_json = "1.0"
-walkdir = "2.5"
+memmap2 = "0.9.5"
+parking_lot = "0.12.4"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = { version = "1.0.133", features = ["raw_value"] }
+thiserror = "2.0.12"
 
-# Future optional dependencies (when we implement them)
-# clap = { version = "4", optional = true, features = ["derive"] }
-# tokio = { version = "1", optional = true, features = ["full"] }
-# axum = { version = "0.8", optional = true }
-# tower = { version = "0.5", optional = true }
-# sqlx = { version = "0.8", optional = true, features = ["runtime-tokio", "postgres", "sqlite"] }
-# reqwest = { version = "0.12", optional = true, features = ["json"] }
-# vaultrs = { version = "0.7", optional = true }
-# wasm-bindgen = { version = "0.2", optional = true }
+# Optional performance dependencies
+notify = { version = "6.1.1", optional = true }
+rayon = { version = "1.10.0", optional = true }
+simd-json = { version = "0.14.3", optional = true }
+tokio = { version = "1.47.0", features = ["full"], optional = true }
+tracing = { version = "0.1.41", optional = true }
 
-[lints.clippy]
-# Allow large error types to maintain 100% Figment compatibility.
-# Figment's Error type is 208+ bytes, but changing to Box<Error> would break API compatibility.
-# Users expect seamless integration between SuperConfig traits and standard Figment methods.
-result_large_err = "allow"
+# Optional format parsing dependencies
+serde_yml = { version = "0.0.12", optional = true }
+toml = { version = "0.8.19", optional = true }
 
 [dev-dependencies]
-serde = { version = "1.0", features = ["derive"] }
+criterion = { version = "0.5.1", features = ["html_reports"] }
 serial_test = "3.2.0"
-tempfile = "3.10"
+tempfile = "3.15.0"
+tokio-test = "0.4.4"
+
+# Benchmarks will be added as we implement each phase
+# [[bench]]
+# name = "registry_bench"
+# harness = false
+
+[lints.clippy]
+# Performance-focused lints (with proper priorities)
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+# Allow large error types for rich error context
+result_large_err = "allow"
