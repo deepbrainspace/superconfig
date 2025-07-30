@@ -685,6 +685,176 @@ describe('SuperConfig WebAssembly Integration', () => {
 
 ## Cross-Language Consistency Tests
 
+### Cross-Language Integration Tests (Opus Feedback)
+
+**Location**: `tests/cross_language_integration.py`\
+**Purpose**: Verify identical behavior across Python, Node.js, and WASM
+
+```python
+#!/usr/bin/env python3
+"""
+Cross-language integration tests to ensure identical results.
+Tests the same configuration scenarios across all language bindings.
+"""
+
+import subprocess
+import json
+import tempfile
+import os
+from pathlib import Path
+
+class CrossLanguageIntegrationTest:
+    def __init__(self):
+        self.test_config_dir = tempfile.mkdtemp()
+        self.create_test_configs()
+    
+    def create_test_configs(self):
+        """Create test configuration files for all languages to use."""
+        # Base configuration
+        base_config = {
+            "database": {
+                "host": "localhost",
+                "port": 5432,
+                "name": "testdb"
+            },
+            "features": {
+                "auth_enabled": True,
+                "cache_ttl": 3600
+            }
+        }
+        
+        base_path = Path(self.test_config_dir) / "base.json"
+        with open(base_path, 'w') as f:
+            json.dump(base_config, f)
+        
+        # Environment-specific configuration
+        env_config = {
+            "database": {
+                "host": "prod.example.com",
+                "ssl": True
+            },
+            "features": {
+                "debug_mode": False
+            }
+        }
+        
+        env_path = Path(self.test_config_dir) / "production.json"
+        with open(env_path, 'w') as f:
+            json.dump(env_config, f)
+    
+    def test_python_config_loading(self):
+        """Test configuration loading in Python."""
+        python_code = f"""
+import sys
+sys.path.append('bindings/python')
+from superconfig import SuperConfig
+
+config = SuperConfig.new()
+config = config.with_file('{self.test_config_dir}/base.json')
+config = config.with_file('{self.test_config_dir}/production.json')
+
+result = config.extract_json()
+print(json.dumps(result, sort_keys=True))
+"""
+        
+        result = subprocess.run(['python', '-c', python_code], 
+                              capture_output=True, text=True)
+        if result.returncode != 0:
+            raise Exception(f"Python test failed: {result.stderr}")
+        
+        return json.loads(result.stdout)
+    
+    def test_nodejs_config_loading(self):
+        """Test configuration loading in Node.js."""
+        nodejs_code = f"""
+const {{ SuperConfig }} = require('./bindings/nodejs/index');
+
+const config = SuperConfig.new()
+    .withFile('{self.test_config_dir}/base.json')
+    .withFile('{self.test_config_dir}/production.json');
+
+const result = config.extractJson();
+console.log(JSON.stringify(result, null, 0));
+"""
+        
+        result = subprocess.run(['node', '-e', nodejs_code], 
+                              capture_output=True, text=True)
+        if result.returncode != 0:
+            raise Exception(f"Node.js test failed: {result.stderr}")
+        
+        return json.loads(result.stdout)
+    
+    def test_cross_language_parity(self):
+        """Test that Python and Node.js produce identical results."""
+        python_result = self.test_python_config_loading()
+        nodejs_result = self.test_nodejs_config_loading()
+        
+        # Deep comparison of results
+        if python_result != nodejs_result:
+            print("❌ Cross-language parity FAILED")
+            print(f"Python result: {json.dumps(python_result, sort_keys=True, indent=2)}")
+            print(f"Node.js result: {json.dumps(nodejs_result, sort_keys=True, indent=2)}")
+            return False
+        
+        print("✅ Cross-language parity PASSED")
+        print(f"Both languages produced identical result with {len(python_result)} keys")
+        return True
+    
+    def test_error_consistency(self):
+        """Test that error messages are consistent across languages."""
+        # Test file not found error
+        python_error = self.get_python_error("nonexistent.json")
+        nodejs_error = self.get_nodejs_error("nonexistent.json")
+        
+        # Both should contain "SuperConfig" and file path
+        assert "SuperConfig" in python_error
+        assert "SuperConfig" in nodejs_error
+        assert "nonexistent.json" in python_error
+        assert "nonexistent.json" in nodejs_error
+        
+        print("✅ Error message consistency PASSED")
+    
+    def get_python_error(self, filename):
+        """Get error message from Python binding."""
+        python_code = f"""
+import sys
+sys.path.append('bindings/python')
+from superconfig import SuperConfig
+
+try:
+    config = SuperConfig.new().with_file('{filename}')
+except Exception as e:
+    print(str(e))
+"""
+        result = subprocess.run(['python', '-c', python_code], 
+                              capture_output=True, text=True)
+        return result.stdout.strip()
+    
+    def get_nodejs_error(self, filename):
+        """Get error message from Node.js binding."""
+        nodejs_code = f"""
+const {{ SuperConfig }} = require('./bindings/nodejs/index');
+
+try {{
+    const config = SuperConfig.new().withFile('{filename}');
+}} catch (error) {{
+    console.log(error.message);
+}}
+"""
+        result = subprocess.run(['node', '-e', nodejs_code], 
+                              capture_output=True, text=True)
+        return result.stdout.strip()
+
+if __name__ == "__main__":
+    tester = CrossLanguageIntegrationTest()
+    
+    success = True
+    success &= tester.test_cross_language_parity()
+    success &= tester.test_error_consistency()
+    
+    exit(0 if success else 1)
+```
+
 ### API Consistency Verification
 
 **Location**: `tests/cross_language_consistency.py` (Python script that coordinates tests)

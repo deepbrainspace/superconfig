@@ -18,7 +18,8 @@
       "mcp__brave-search__brave_web_search",
       "mcp__search-serper__deep-research",
       "mcp__search-serper__serper-google-search",
-      "mcp__Bright_Data__web_data_github_repository_file"
+      "mcp__Bright_Data__web_data_github_repository_file",
+      "mcp__sequentialthinking__sequentialthinking_tools"
     ],
     "deny": []
   }

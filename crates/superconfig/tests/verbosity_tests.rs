@@ -1,7 +1,7 @@
 //! Integration tests for SuperConfig verbosity functionality
 
 use serde::{Deserialize, Serialize};
-use superconfig::{SuperConfig, VerbosityLevel};
+use superconfig::{SuperConfig, verbosity};
 
 #[derive(Debug, Deserialize, Serialize, Default)]
 struct TestConfig {
@@ -47,12 +47,11 @@ level = "info"
 "#;
 
 #[test]
-fn test_verbosity_level_from_cli_args() {
-    assert_eq!(VerbosityLevel::from_cli_args(0), VerbosityLevel::Silent);
-    assert_eq!(VerbosityLevel::from_cli_args(1), VerbosityLevel::Info);
-    assert_eq!(VerbosityLevel::from_cli_args(2), VerbosityLevel::Debug);
-    assert_eq!(VerbosityLevel::from_cli_args(3), VerbosityLevel::Trace);
-    assert_eq!(VerbosityLevel::from_cli_args(5), VerbosityLevel::Trace); // Caps at Trace
+fn test_verbosity_constants() {
+    assert_eq!(verbosity::SILENT, 0);
+    assert_eq!(verbosity::INFO, 1);
+    assert_eq!(verbosity::DEBUG, 2);
+    assert_eq!(verbosity::TRACE, 3);
 }
 
 #[test]
@@ -61,19 +60,19 @@ fn test_verbosity_builder_methods() {
         .with_info_verbosity()
         .with_defaults_string(DEFAULT_CONFIG);
 
-    assert_eq!(config.verbosity(), VerbosityLevel::Info);
+    assert_eq!(config.verbosity(), verbosity::INFO);
 
     let config = SuperConfig::new()
         .with_debug_verbosity()
         .with_defaults_string(DEFAULT_CONFIG);
 
-    assert_eq!(config.verbosity(), VerbosityLevel::Debug);
+    assert_eq!(config.verbosity(), verbosity::DEBUG);
 
     let config = SuperConfig::new()
         .with_trace_verbosity()
         .with_defaults_string(DEFAULT_CONFIG);
 
-    assert_eq!(config.verbosity(), VerbosityLevel::Trace);
+    assert_eq!(config.verbosity(), verbosity::TRACE);
 }
 
 #[test]
@@ -171,7 +170,7 @@ fn test_verbosity_with_environment_variables() {
 #[test]
 fn test_silent_verbosity_produces_no_output() {
     let config = SuperConfig::new()
-        .with_verbosity(VerbosityLevel::Silent)
+        .with_verbosity(verbosity::SILENT)
         .with_defaults_string(DEFAULT_CONFIG);
 
     let _result: TestConfig = config

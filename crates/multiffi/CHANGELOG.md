@@ -1,13 +1,53 @@
 # Changelog
 
-All notable changes to SuperFFI will be documented in this file.
+All notable changes to MultiFFI will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [0.1.2] - 2025-07-29
+## [0.2.0] - 2025-07-30
+
+### Changed
+
+- **BREAKING**: Renamed crate from `superffi` to `multiffi`
+- **BREAKING**: Renamed macro from `#[superffi]` to `#[multiffi]`
+- **BREAKING**: Package name changed from `superffi` to `multiffi`
+- Updated version to 0.2.0 to reflect the breaking rename from SuperFFI
+
+### Migration Guide
+
+To migrate from SuperFFI to MultiFFI:
+
+1. Update your `Cargo.toml`:
+   ```toml
+   # Before
+   superffi = { version = "0.1", features = ["python", "nodejs", "wasm"] }
+
+   # After
+   multiffi = { version = "0.1", features = ["python", "nodejs", "wasm"] }
+   ```
+
+2. Update your imports:
+   ```rust
+   // Before
+   use superffi::superffi;
+
+   // After
+   use multiffi::multiffi;
+   ```
+
+3. Update your macro usage:
+   ```rust
+   // Before
+   #[superffi]
+
+   // After
+   #[multiffi]
+   ```
+
+## [0.1.2] - 2025-07-29 (SuperFFI - Legacy)
 
 ### Added
 
@@ -50,7 +90,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Initial SuperFFI procedural macro implementation
+- Initial MultiFFI procedural macro implementation
 - Support for Python bindings via PyO3 (`#[pyo3::pyclass]`, `#[pyo3::pymethods]`)
 - Support for Node.js bindings via NAPI (`#[napi::napi]`)
 - Support for WebAssembly bindings via wasm-bindgen (`#[wasm_bindgen]`)

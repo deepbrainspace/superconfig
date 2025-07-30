@@ -4,7 +4,8 @@
 //! available as extension traits. Now they're native SuperConfig methods.
 
 use crate::SuperConfig;
-use crate::verbosity::{DebugCollector, VerbosityLevel};
+use crate::verbosity;
+use crate::verbosity::DebugCollector;
 use figment::providers::Serialized;
 
 impl SuperConfig {
@@ -15,16 +16,16 @@ impl SuperConfig {
     ///
     /// # Examples
     /// ```rust,no_run
-    /// use superconfig::{SuperConfig, VerbosityLevel};
+    /// use superconfig::{SuperConfig, verbosity};
     ///
     /// let config = SuperConfig::new()
-    ///     .with_verbosity(VerbosityLevel::Debug)  // -vv level debugging
+    ///     .with_verbosity(verbosity::DEBUG)  // -vv level debugging
     ///     .with_file("config.toml");
     /// ```
-    pub fn with_verbosity(mut self, level: VerbosityLevel) -> Self {
+    pub fn with_verbosity(mut self, level: u8) -> Self {
         self.verbosity = level;
         self.debug(
-            VerbosityLevel::Info,
+            verbosity::INFO,
             "verbosity",
             &format!("Set verbosity level to: {level}"),
         );
@@ -44,7 +45,7 @@ impl SuperConfig {
     ///     .with_file("config.toml");
     /// ```
     pub fn with_info_verbosity(self) -> Self {
-        self.with_verbosity(VerbosityLevel::Info)
+        self.with_verbosity(verbosity::INFO)
     }
 
     /// Enable detailed step-by-step information (equivalent to -vv)
@@ -60,7 +61,7 @@ impl SuperConfig {
     ///     .with_hierarchical_config("myapp");
     /// ```
     pub fn with_debug_verbosity(self) -> Self {
-        self.with_verbosity(VerbosityLevel::Debug)
+        self.with_verbosity(verbosity::DEBUG)
     }
 
     /// Enable full introspection with configuration values (equivalent to -vvv)
@@ -76,7 +77,7 @@ impl SuperConfig {
     ///     .with_env("APP_");
     /// ```
     pub fn with_trace_verbosity(self) -> Self {
-        self.with_verbosity(VerbosityLevel::Trace)
+        self.with_verbosity(verbosity::TRACE)
     }
 
     /// Add a configuration file with smart format detection
@@ -97,7 +98,7 @@ impl SuperConfig {
         let step = self.next_step();
 
         self.debug_step(
-            VerbosityLevel::Info,
+            verbosity::INFO,
             "file",
             step,
             &format!("Loading configuration file: {path_str}"),
@@ -106,7 +107,7 @@ impl SuperConfig {
         // Check if file exists for debug output
         if path.as_ref().exists() {
             self.debug_step_result(
-                VerbosityLevel::Debug,
+                verbosity::DEBUG,
                 "file",
                 step,
                 &format!("File found: {path_str}"),
@@ -114,7 +115,7 @@ impl SuperConfig {
             );
         } else {
             self.debug_step_result(
-                VerbosityLevel::Debug,
+                verbosity::DEBUG,
                 "file",
                 step,
                 &format!("File not found: {path_str}"),
@@ -123,7 +124,7 @@ impl SuperConfig {
         }
 
         // Add trace-level content inspection
-        if self.verbosity >= VerbosityLevel::Trace && path.as_ref().exists() {
+        if self.verbosity >= verbosity::TRACE && path.as_ref().exists() {
             if let Ok(content) = std::fs::read_to_string(&path) {
                 let preview = if content.len() > 200 {
                     format!("{}... ({} chars total)", &content[..200], content.len())
@@ -131,7 +132,7 @@ impl SuperConfig {
                     content
                 };
                 self.debug(
-                    VerbosityLevel::Trace,
+                    verbosity::TRACE,
                     "file",
                     &format!("File content preview: {preview}"),
                 );
@@ -159,7 +160,7 @@ impl SuperConfig {
         let step = self.next_step();
 
         self.debug_step(
-            VerbosityLevel::Info,
+            verbosity::INFO,
             "env",
             step,
             &format!("Loading environment variables with prefix: {prefix_str}"),
@@ -172,7 +173,7 @@ impl SuperConfig {
 
         if env_vars.is_empty() {
             self.debug_step_result(
-                VerbosityLevel::Debug,
+                verbosity::DEBUG,
                 "env",
                 step,
                 &format!("No environment variables found with prefix: {prefix_str}"),
@@ -180,7 +181,7 @@ impl SuperConfig {
             );
         } else {
             self.debug_step_result(
-                VerbosityLevel::Debug,
+                verbosity::DEBUG,
                 "env",
                 step,
                 &format!(
@@ -191,7 +192,7 @@ impl SuperConfig {
             );
 
             // Show individual env vars at trace level
-            if self.verbosity >= VerbosityLevel::Trace {
+            if self.verbosity >= verbosity::TRACE {
                 for (key, value) in &env_vars {
                     // Mask sensitive values (anything with 'password', 'secret', 'token', 'key' in name)
                     let display_value = if key.to_lowercase().contains("password")
@@ -203,11 +204,7 @@ impl SuperConfig {
                     } else {
                         value.clone()
                     };
-                    self.debug(
-                        VerbosityLevel::Trace,
-                        "env",
-                        &format!("  {key}={display_value}"),
-                    );
+                    self.debug(verbosity::TRACE, "env", &format!("  {key}={display_value}"));
                 }
             }
         }
@@ -232,14 +229,14 @@ impl SuperConfig {
         let step = self.next_step();
 
         self.debug_step(
-            VerbosityLevel::Info,
+            verbosity::INFO,
             "hierarchical",
             step,
             &format!("Loading hierarchical config for: {base_name_str}"),
         );
 
         // Show the discovery paths at debug level
-        if self.verbosity >= VerbosityLevel::Debug {
+        if self.verbosity >= verbosity::DEBUG {
             let potential_paths = vec![
                 format!("/etc/{base_name_str}/config.toml"),
                 format!("/etc/{base_name_str}.toml"),
@@ -256,14 +253,14 @@ impl SuperConfig {
             ];
 
             self.debug(
-                VerbosityLevel::Debug,
+                verbosity::DEBUG,
                 "hierarchical",
                 "Checking hierarchical config paths:",
             );
             for path in &potential_paths {
                 let exists = std::path::Path::new(path).exists();
                 self.debug_result(
-                    VerbosityLevel::Debug,
+                    verbosity::DEBUG,
                     "hierarchical",
                     &format!("  - {path}"),
                     exists,
@@ -335,30 +332,30 @@ impl SuperConfig {
         let step = self.next_step();
 
         self.debug_step(
-            VerbosityLevel::Info,
+            verbosity::INFO,
             "defaults",
             step,
             "Loading embedded default configuration",
         );
 
-        if self.verbosity >= VerbosityLevel::Debug {
+        if self.verbosity >= verbosity::DEBUG {
             let lines = content.lines().count();
             let chars = content.len();
             self.debug(
-                VerbosityLevel::Debug,
+                verbosity::DEBUG,
                 "defaults",
                 &format!("Embedded config: {lines} lines, {chars} characters"),
             );
         }
 
-        if self.verbosity >= VerbosityLevel::Trace {
+        if self.verbosity >= verbosity::TRACE {
             let preview = if content.len() > 300 {
                 format!("{}... ({} chars total)", &content[..300], content.len())
             } else {
                 content.to_string()
             };
             self.debug(
-                VerbosityLevel::Trace,
+                verbosity::TRACE,
                 "defaults",
                 &format!("Default config content:\n{preview}"),
             );
@@ -393,18 +390,18 @@ impl SuperConfig {
 
         if let Some(cli_values) = cli_opt {
             self.debug_step(
-                VerbosityLevel::Info,
+                verbosity::INFO,
                 "cli",
                 step,
                 "Loading CLI argument overrides",
             );
 
             // Try to serialize to JSON for debug inspection
-            if self.verbosity >= VerbosityLevel::Trace {
+            if self.verbosity >= verbosity::TRACE {
                 if let Ok(json_value) = serde_json::to_value(&cli_values) {
                     if let Ok(pretty_json) = serde_json::to_string_pretty(&json_value) {
                         self.debug(
-                            VerbosityLevel::Trace,
+                            verbosity::TRACE,
                             "cli",
                             &format!("CLI overrides:\n{pretty_json}"),
                         );
@@ -417,7 +414,7 @@ impl SuperConfig {
             )))
         } else {
             self.debug_step_result(
-                VerbosityLevel::Debug,
+                verbosity::DEBUG,
                 "cli",
                 step,
                 "No CLI arguments provided",
@@ -467,7 +464,7 @@ impl SuperConfig {
         let step = self.next_step();
 
         self.debug_step(
-            VerbosityLevel::Info,
+            verbosity::INFO,
             "env",
             step,
             &format!("Loading environment variables with prefix: {prefix_str} (ignore empty)"),
@@ -480,7 +477,7 @@ impl SuperConfig {
 
         if env_vars.is_empty() {
             self.debug_step_result(
-                VerbosityLevel::Debug,
+                verbosity::DEBUG,
                 "env",
                 step,
                 &format!("No environment variables found with prefix: {prefix_str}"),
@@ -488,7 +485,7 @@ impl SuperConfig {
             );
         } else {
             self.debug_step_result(
-                VerbosityLevel::Debug,
+                verbosity::DEBUG,
                 "env",
                 step,
                 &format!(
@@ -499,7 +496,7 @@ impl SuperConfig {
             );
 
             // Show individual env vars at trace level
-            if self.verbosity >= VerbosityLevel::Trace {
+            if self.verbosity >= verbosity::TRACE {
                 for (key, value) in &env_vars {
                     // Mask sensitive values (anything with 'password', 'secret', 'token', 'key' in name)
                     let display_value = if key.to_lowercase().contains("password")
@@ -511,11 +508,7 @@ impl SuperConfig {
                     } else {
                         value.clone()
                     };
-                    self.debug(
-                        VerbosityLevel::Trace,
-                        "env",
-                        &format!("  {key}={display_value}"),
-                    );
+                    self.debug(verbosity::TRACE, "env", &format!("  {key}={display_value}"));
                 }
             }
         }

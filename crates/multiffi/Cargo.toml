@@ -1,6 +1,6 @@
 [package]
-name = "superffi"
-version = "0.1.2"
+name = "multiffi"
+version = "0.2.0"
 categories = ["development-tools", "api-bindings"]
 edition = "2024" # Using the latest stable edition
 keywords = ["ffi", "macro", "python", "nodejs", "wasm"]

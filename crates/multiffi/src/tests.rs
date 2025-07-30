@@ -1,4 +1,4 @@
-//! Tests for SuperFFI naming conversion and macro functionality.
+//! Tests for MultiFFI naming conversion and macro functionality.
 
 // Naming conversion tests are only relevant when WASM feature is enabled
 #[cfg(feature = "wasm")]

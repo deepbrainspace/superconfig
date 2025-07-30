@@ -1,10 +1,10 @@
-# SuperFFI - Multi-Language FFI Binding Generator
+# MultiFFI - Multi-Language FFI Binding Generator
 
-[![Crates.io](https://img.shields.io/crates/v/superffi)](https://crates.io/crates/superffi)
-[![Documentation](https://docs.rs/superffi/badge.svg)](https://docs.rs/superffi)
+[![Crates.io](https://img.shields.io/crates/v/multiffi)](https://crates.io/crates/multiffi)
+[![Documentation](https://docs.rs/multiffi/badge.svg)](https://docs.rs/multiffi)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/deepbrainspace/superconfig)
 
-**SuperFFI** is a procedural macro that automatically generates FFI bindings for multiple target languages from your Rust code. Write once, run everywhere.
+**MultiFFI** is a procedural macro that automatically generates FFI bindings for multiple target languages from your Rust code. Write once, run everywhere.
 
 ## Features
 
@@ -13,13 +13,13 @@
 - **WebAssembly bindings** via wasm-bindgen (automatic `camelCase` conversion)
 - **Automatic naming conversion** for consistent JavaScript APIs
 - **Zero-cost abstractions** - only generates code for enabled features
-- **Simple annotation** - just add `#[superffi]` to your items
+- **Simple annotation** - just add `#[multiffi]` to your items
 
 ## Installation
 
 ```toml
 [dependencies]
-superffi = { version = "0.1", features = ["python", "nodejs", "wasm"] }
+multiffi = { version = "0.1", features = ["python", "nodejs", "wasm"] }
 ```
 
 **Features:**
@@ -32,14 +32,14 @@ superffi = { version = "0.1", features = ["python", "nodejs", "wasm"] }
 ## Quick Start
 
 ```rust
-use superffi::superffi;
+use multiffi::multiffi;
 
-#[superffi]
+#[multiffi]
 pub struct Calculator {
     pub value: f64,
 }
 
-#[superffi]
+#[multiffi]
 impl Calculator {
     pub fn new(initial_value: f64) -> Self {
         Self { value: initial_value }
@@ -54,7 +54,7 @@ impl Calculator {
     }
 }
 
-#[superffi]
+#[multiffi]
 pub fn fibonacci(n: u32) -> u64 {
     match n {
         0 => 0,
@@ -66,7 +66,7 @@ pub fn fibonacci(n: u32) -> u64 {
 
 ## Usage
 
-Apply `#[superffi]` to:
+Apply `#[multiffi]` to:
 
 - **Structs** → generates class/object bindings
 - **Impl blocks** → generates method bindings
@@ -104,7 +104,7 @@ import init, { Calculator, fibonacci } from './pkg/your_library.js';
 await init();
 const calc = new Calculator(10.0);
 calc.add(5.0);
-console.log(calc.getValue()); // 15.0 (SuperFFI converts get_value → getValue)
+console.log(calc.getValue()); // 15.0 (MultiFFI converts get_value → getValue)
 console.log(fibonacci(10)); // 55
 ```
 
@@ -172,7 +172,7 @@ run();
 
 ## 🔄 Automatic Naming Convention
 
-SuperFFI automatically handles naming conventions for different target languages:
+MultiFFI automatically handles naming conventions for different target languages:
 
 | Rust Function    | Python           | Node.js         | WebAssembly     |
 | ---------------- | ---------------- | --------------- | --------------- |
@@ -183,7 +183,7 @@ SuperFFI automatically handles naming conventions for different target languages
 
 - **Python**: Preserves `snake_case` (Pythonic)
 - **Node.js**: NAPI automatically converts to `camelCase`
-- **WebAssembly**: SuperFFI converts to `camelCase` for JavaScript consistency
+- **WebAssembly**: MultiFFI converts to `camelCase` for JavaScript consistency
 
 This ensures your APIs feel natural in each target language while maintaining consistent functionality.
 
@@ -199,7 +199,7 @@ name = "your_rust_library"
 crate-type = ["cdylib"]
 
 [dependencies]
-superffi = { version = "0.1", features = ["python"] }
+multiffi = { version = "0.1", features = ["python"] }
 pyo3 = { version = "0.25", features = ["extension-module"] }
 ```
 
@@ -265,7 +265,7 @@ wasm-pack build --target web --out-dir pkg
 
 ### Custom Types
 
-- Structs annotated with `#[superffi]`
+- Structs annotated with `#[multiffi]`
 - Enums (limited support, varies by target language)
 
 ## 🤝 Contributing

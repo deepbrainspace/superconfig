@@ -7,7 +7,7 @@
 //! cargo run --example guardy_usage -- -vvv   # Trace mode
 
 use serde::{Deserialize, Serialize};
-use superconfig::{SuperConfig, VerbosityLevel};
+use superconfig::{SuperConfig, verbosity};
 
 #[derive(Debug, Deserialize, Serialize, Default)]
 struct GuardyConfig {
@@ -71,10 +71,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or(0);
 
     println!("=== Guardy Configuration Loading ===");
-    println!(
-        "Verbosity level: {}",
-        VerbosityLevel::from_cli_args(verbosity_count)
-    );
+    println!("Verbosity level: {}", verbosity_count.min(verbosity::TRACE));
     println!();
 
     // CLI overrides (normally parsed by clap)
@@ -83,7 +80,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // This is how your guardy client would use SuperConfig with verbosity
     let config = SuperConfig::new()
-        .with_verbosity(VerbosityLevel::from_cli_args(verbosity_count)) // Set based on -v, -vv, -vvv
+        .with_verbosity(verbosity_count.min(verbosity::TRACE)) // Set based on -v, -vv, -vvv
         .with_defaults_string(DEFAULT_CONFIG) // 1. Defaults (lowest)
         .with_hierarchical_config("guardy") // 2. Hierarchical: system→user→project
         .with_env_ignore_empty("GUARDY_") // 3. Environment variables (with empty filtering)
