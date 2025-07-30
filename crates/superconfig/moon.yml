@@ -18,44 +18,7 @@ fileGroups:
 
 # Project-specific tasks (inherits common tasks from .moon/tasks.yml)
 tasks:
-  # Documentation tasks with custom theme
-  doc:
-    command: 'cargo doc --no-deps --all-features'
-    inputs: ['@globs(sources)', '@globs(configs)']
-    env:
-      RUSTDOCFLAGS: '--default-theme ayu'
-    
-  doc-open:
-    command: 'cargo doc --no-deps --all-features --open'
-    deps: ['doc']
-    env:
-      RUSTDOCFLAGS: '--default-theme ayu'
-    options:
-      cache: false
-
-  # Benchmarking tasks
-  bench:
-    command: 'cargo bench --all-features'
-    inputs: ['@globs(sources)', '@globs(benches)', '@globs(configs)']
-    options:
-      cache: false
-
-  bench-baseline:
-    command: 'cargo bench --all-features -- --save-baseline main'
-    inputs: ['@globs(sources)', '@globs(benches)', '@globs(configs)']
-    options:
-      cache: false
-      
-  # Publishing tasks (actual publishing handled by GitHub Actions)
+  # Project-specific publishing with dependencies
   publish-dry:
     command: 'cargo publish --dry-run --allow-dirty'
     deps: ['build', 'test', 'clippy', 'fmt-check']
-
-  # Feature testing
-  test-no-default:
-    command: 'cargo test --no-default-features'
-    inputs: ['@globs(sources)', '@globs(tests)', '@globs(configs)']
-    
-  test-all-features:
-    command: 'cargo test --all-features'
-    inputs: ['@globs(sources)', '@globs(tests)', '@globs(configs)']

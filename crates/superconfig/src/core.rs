@@ -244,7 +244,7 @@ impl ConfigRegistry {
     /// # Performance Notes
     ///
     /// - Field access: `config.database.host` (zero cost)
-    /// - Method calls: `config.validate()` (zero cost)  
+    /// - Method calls: `config.validate()` (zero cost)
     /// - Passing to functions: `process(config)` (~1ns to move Arc)
     /// - Multiple reads share the same underlying data efficiently
     pub fn read<T: 'static>(&self, handle: &ConfigHandle<T>) -> Result<Arc<T>, RegistryError> {
@@ -405,5 +405,343 @@ impl ConfigRegistry {
 impl Default for ConfigRegistry {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde::{Deserialize, Serialize};
+    use std::sync::atomic::{AtomicU32, Ordering};
+    use std::thread;
+
+    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+    struct TestConfig {
+        host: String,
+        port: u16,
+        timeout_ms: u32,
+    }
+
+    #[derive(Debug, Clone, PartialEq)]
+    struct SimpleConfig {
+        value: i32,
+    }
+
+    #[test]
+    fn test_create_and_read() {
+        let registry = ConfigRegistry::new();
+        let config = TestConfig {
+            host: "localhost".to_string(),
+            port: 8080,
+            timeout_ms: 5000,
+        };
+
+        let handle = registry.create(config.clone()).unwrap();
+        let retrieved = registry.read(&handle).unwrap();
+
+        assert_eq!(*retrieved, config);
+        assert_eq!(handle.id(), 1);
+    }
+
+    #[test]
+    fn test_update() {
+        let registry = ConfigRegistry::new();
+        let original = TestConfig {
+            host: "localhost".to_string(),
+            port: 8080,
+            timeout_ms: 5000,
+        };
+        let updated = TestConfig {
+            host: "remote".to_string(),
+            port: 9090,
+            timeout_ms: 10000,
+        };
+
+        let handle = registry.create(original).unwrap();
+
+        // Keep a reference to the old data
+        let old_data = registry.read(&handle).unwrap();
+
+        registry.update(&handle, updated.clone()).unwrap();
+        let new_data = registry.read(&handle).unwrap();
+
+        // New data should be updated
+        assert_eq!(*new_data, updated);
+
+        // Old Arc reference should still point to original data
+        assert_eq!(old_data.host, "localhost");
+        assert_eq!(old_data.port, 8080);
+    }
+
+    #[test]
+    fn test_delete() {
+        let registry = ConfigRegistry::new();
+        let config = TestConfig {
+            host: "localhost".to_string(),
+            port: 8080,
+            timeout_ms: 5000,
+        };
+
+        let handle = registry.create(config.clone()).unwrap();
+        let deleted = registry.delete(&handle).unwrap();
+
+        assert_eq!(*deleted, config);
+
+        // Handle should no longer exist
+        assert!(!registry.contains_handle(&handle));
+        assert!(registry.read(&handle).is_err());
+    }
+
+    #[test]
+    fn test_handle_not_found() {
+        let registry = ConfigRegistry::new();
+        let fake_handle = ConfigHandle::<TestConfig>::new(999);
+
+        let result = registry.read(&fake_handle);
+        assert!(matches!(
+            result,
+            Err(RegistryError::HandleNotFound { handle_id: 999 })
+        ));
+    }
+
+    #[test]
+    fn test_wrong_type() {
+        let registry = ConfigRegistry::new();
+        let config = TestConfig {
+            host: "localhost".to_string(),
+            port: 8080,
+            timeout_ms: 5000,
+        };
+
+        let handle = registry.create(config).unwrap();
+
+        // Try to read as wrong type by manually creating handle with wrong type
+        let wrong_handle = ConfigHandle::<SimpleConfig>::new(handle.id());
+        let result = registry.read(&wrong_handle);
+
+        assert!(
+            matches!(result, Err(RegistryError::WrongType { handle_id, .. }) if handle_id == handle.id())
+        );
+    }
+
+    #[test]
+    fn test_statistics() {
+        let registry = ConfigRegistry::new();
+        let config1 = TestConfig {
+            host: "localhost".to_string(),
+            port: 8080,
+            timeout_ms: 5000,
+        };
+        let config2 = SimpleConfig { value: 42 };
+
+        // Initial stats
+        let stats = registry.stats();
+        assert_eq!(stats.total_handles, 0);
+        assert_eq!(stats.total_creates, 0);
+        assert_eq!(stats.total_reads, 0);
+
+        // Create operations
+        let handle1 = registry.create(config1).unwrap();
+        let handle2 = registry.create(config2).unwrap();
+
+        let stats = registry.stats();
+        assert_eq!(stats.total_handles, 2);
+        assert_eq!(stats.total_creates, 2);
+        assert!(stats.memory_usage_bytes > 0);
+
+        // Read operations
+        let _data1 = registry.read(&handle1).unwrap();
+        let _data2 = registry.read(&handle2).unwrap();
+
+        let stats = registry.stats();
+        assert_eq!(stats.total_reads, 2);
+
+        // Update operation
+        registry
+            .update(
+                &handle1,
+                TestConfig {
+                    host: "updated".to_string(),
+                    port: 9090,
+                    timeout_ms: 6000,
+                },
+            )
+            .unwrap();
+
+        let stats = registry.stats();
+        assert_eq!(stats.total_updates, 1);
+
+        // Delete operation
+        registry.delete(&handle2).unwrap();
+
+        let stats = registry.stats();
+        assert_eq!(stats.total_handles, 1);
+        assert_eq!(stats.total_deletes, 1);
+    }
+
+    #[test]
+    fn test_concurrent_access() {
+        let registry = Arc::new(ConfigRegistry::new());
+        let counter = Arc::new(AtomicU32::new(0));
+        let num_threads = 10;
+        let operations_per_thread = 100;
+
+        let mut handles = vec![];
+
+        // Spawn threads for concurrent operations
+        for _ in 0..num_threads {
+            let registry_clone = Arc::clone(&registry);
+            let counter_clone = Arc::clone(&counter);
+
+            let handle = thread::spawn(move || {
+                for i in 0..operations_per_thread {
+                    let config = SimpleConfig {
+                        value: counter_clone.fetch_add(1, Ordering::Relaxed) as i32,
+                    };
+
+                    let handle = registry_clone.create(config).unwrap();
+                    let _data = registry_clone.read(&handle).unwrap();
+
+                    if i % 2 == 0 {
+                        registry_clone
+                            .update(&handle, SimpleConfig { value: -1 })
+                            .unwrap();
+                    }
+
+                    if i % 3 == 0 {
+                        let _deleted = registry_clone.delete(&handle).unwrap();
+                    }
+                }
+            });
+            handles.push(handle);
+        }
+
+        // Wait for all threads to complete
+        for handle in handles {
+            handle.join().unwrap();
+        }
+
+        let stats = registry.stats();
+        assert_eq!(
+            stats.total_creates,
+            (num_threads * operations_per_thread) as u64
+        );
+        assert!(stats.total_reads >= (num_threads * operations_per_thread) as u64);
+    }
+
+    #[test]
+    fn test_handle_serialization() {
+        let registry = ConfigRegistry::new();
+        let config = TestConfig {
+            host: "localhost".to_string(),
+            port: 8080,
+            timeout_ms: 5000,
+        };
+
+        let handle = registry.create(config).unwrap();
+
+        // Serialize handle
+        let serialized = serde_json::to_string(&handle).unwrap();
+
+        // Deserialize handle
+        let deserialized: ConfigHandle<TestConfig> = serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(handle.id(), deserialized.id());
+
+        // Should be able to use deserialized handle
+        let _data = registry.read(&deserialized).unwrap();
+    }
+
+    #[test]
+    fn test_global_registry() {
+        let config = SimpleConfig { value: 123 };
+
+        let handle = global_registry().create(config.clone()).unwrap();
+        let retrieved = global_registry().read(&handle).unwrap();
+
+        assert_eq!(*retrieved, config);
+    }
+
+    #[test]
+    fn test_arc_sharing() {
+        let registry = ConfigRegistry::new();
+        let config = TestConfig {
+            host: "localhost".to_string(),
+            port: 8080,
+            timeout_ms: 5000,
+        };
+
+        let handle = registry.create(config).unwrap();
+
+        // Multiple reads should return the same underlying data
+        let arc1 = registry.read(&handle).unwrap();
+        let arc2 = registry.read(&handle).unwrap();
+
+        // They should be the same Arc (same pointer)
+        assert!(Arc::ptr_eq(&arc1, &arc2));
+
+        // Verify we can access data through both
+        assert_eq!(arc1.host, "localhost");
+        assert_eq!(arc2.port, 8080);
+    }
+
+    #[test]
+    fn test_memory_cleanup() {
+        let registry = ConfigRegistry::new();
+        let config = TestConfig {
+            host: "localhost".to_string(),
+            port: 8080,
+            timeout_ms: 5000,
+        };
+
+        let handle = registry.create(config).unwrap();
+        let initial_memory = registry.stats().memory_usage_bytes;
+
+        // Delete should reduce memory usage
+        let _deleted = registry.delete(&handle).unwrap();
+        let final_memory = registry.stats().memory_usage_bytes;
+
+        assert!(final_memory < initial_memory);
+    }
+
+    #[test]
+    fn test_clear_registry() {
+        let registry = ConfigRegistry::new();
+
+        // Add some entries
+        let _handle1 = registry.create(SimpleConfig { value: 1 }).unwrap();
+        let _handle2 = registry.create(SimpleConfig { value: 2 }).unwrap();
+
+        assert_eq!(registry.len(), 2);
+        assert!(!registry.is_empty());
+
+        // Clear registry
+        registry.clear();
+
+        assert_eq!(registry.len(), 0);
+        assert!(registry.is_empty());
+
+        let stats = registry.stats();
+        assert_eq!(stats.total_handles, 0);
+        assert_eq!(stats.memory_usage_bytes, 0);
+    }
+
+    #[test]
+    fn test_handle_id_generation() {
+        let registry = ConfigRegistry::new();
+
+        let handle1 = registry.create(SimpleConfig { value: 1 }).unwrap();
+        let handle2 = registry.create(SimpleConfig { value: 2 }).unwrap();
+        let handle3 = registry.create(SimpleConfig { value: 3 }).unwrap();
+
+        // IDs should be sequential and unique
+        assert_eq!(handle1.id(), 1);
+        assert_eq!(handle2.id(), 2);
+        assert_eq!(handle3.id(), 3);
+
+        // Delete one and create another - should get next ID
+        registry.delete(&handle2).unwrap();
+        let handle4 = registry.create(SimpleConfig { value: 4 }).unwrap();
+        assert_eq!(handle4.id(), 4);
     }
 }

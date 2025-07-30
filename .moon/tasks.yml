@@ -49,10 +49,12 @@ tasks:
     options:
       cache: false
 
-  # Documentation
+  # Documentation with custom theme
   doc:
     command: "cargo doc --no-deps --all-features"
     inputs: ["@globs(sources)", "@globs(configs)"]
+    env:
+      RUSTDOCFLAGS: "--default-theme ayu"
 
   # Standard build and test tasks
   build:
@@ -70,6 +72,33 @@ tasks:
   check:
     command: "cargo check --all-features"
     inputs: ["@globs(sources)", "@globs(configs)"]
+
+  # Performance benchmarking
+  bench:
+    command: "cargo bench --all-features"
+    inputs: ["@globs(sources)", "benches/**/*", "@globs(configs)"]
+    options:
+      cache: false
+
+  bench-baseline:
+    command: "cargo bench --all-features -- --save-baseline main"
+    inputs: ["@globs(sources)", "benches/**/*", "@globs(configs)"]
+    options:
+      cache: false
+
+  # Feature testing variations
+  test-no-default:
+    command: "cargo test --no-default-features"
+    inputs: ["@globs(sources)", "@globs(tests)", "@globs(configs)"]
+    
+  # Documentation with browser opening
+  doc-open:
+    command: "cargo doc --no-deps --all-features --open"
+    deps: ["doc"]
+    env:
+      RUSTDOCFLAGS: "--default-theme ayu"
+    options:
+      cache: false
 
   # Git commit validation
   commit-msg-check:

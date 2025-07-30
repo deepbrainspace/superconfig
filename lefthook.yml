@@ -17,6 +17,7 @@ pre-commit:
     # Python formatting and linting - only changed files
     python-fmt:
       glob: "*.py"
+      exclude: "crates-archive/**/*"
       run: python -m black {staged_files}
       stage_fixed: true
       skip:
@@ -25,6 +26,7 @@ pre-commit:
 
     python-lint:
       glob: "*.py"
+      exclude: "crates-archive/**/*"
       run: python -m ruff check {staged_files}
       skip:
         - merge
