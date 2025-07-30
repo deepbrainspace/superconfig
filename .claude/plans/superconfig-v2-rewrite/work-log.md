@@ -1,5 +1,37 @@
 # SuperConfig V2 Work Log
 
+## LLM Session Instructions
+
+### Initial Setup Instructions (from user)
+
+> please go through in detail the plan documentation in .claude/plans/superconfig* (specially the v2 rewrite). i already moved the existing superconfig version (v1) to crates-archive folder. you can use that for reference for the base structure, but lets start off making the v2 implementation of superconfig (v0.2.0) using the spec provided in v2-rewrite. we want to work in smaller increments where you first present me the plan and thinking behind what you plan to do, then go ahead and do it once approved, then you add tests in an organized industry standard proper way to check what you added works, then you show me the results of that and give me instructions to test it, then once i test and confirm you move on with the next smaller chunk. you need to make a work-log file in the v2-rewrite plan directory to keep track of the work you are doing and start checking things off as we ar collectively progressing through the work. if you are unsure or need clarification please ask me first instead of guessing or trying to take shortcuts. if you encounter problems, explain me what the problem is and how you intend to fix it, then get my approval before proceeding to fix it. is that clear and are you ready to start like this?
+
+### Key Follow-up Instructions
+
+1. **Directory Structure**:
+   > first you need to create the directory structure and copy over any existing setups that are present in the archived version that could be useful here (eg moon configuration, crate configurations etc.) also you need to always make sure you are using the latest version by running crate outdated to ensure you are on the latst version.
+
+2. **Independent Crates**:
+   > wait! we dont need workspace, we want to run them independantly, so put independant cargo.toml file in crates/superconfig
+
+3. **Version Requirements**:
+   > versions are outdated here! please look at the archived version to get an idea of the latest version. eg we are not in 2021, we have a stable 2024 currently. you need to ensure you are using the latst version of everything else also
+
+4. **CRUD Operations Naming**:
+   > ok lets call CRUD operations functions by the acronyms create, read, update, delete. also can you always ensure clippy passes before you proceed.
+
+5. **SuperDB Optimizations Decision**:
+   > After reviewing document 15-superdb-optimizations-integration.md, decision made to proceed with standard V2 implementation first for maximum compatibility across all platforms (x86, ARM, WASM, embedded). SuperDB optimizations will be added later as optional Phase 7 with feature flags.
+
+### Development Approach
+
+- Work in smaller increments with user approval at each stage
+- Present plan → get approval → implement → add tests → show results → get confirmation → move to next chunk
+- Ask for clarification instead of guessing or taking shortcuts
+- Explain problems and get approval before fixing
+- Always ensure clippy passes before proceeding
+- Keep this work-log updated with progress
+
 ## Project Overview
 
 - **Goal**: Complete ground-up rewrite of SuperConfig V2 using specifications from v2-rewrite plan
