@@ -21,6 +21,7 @@ enum JsonDirection {
 /// Arguments for the generate_json_helper macro
 struct JsonHelperArgs {
     directions: Vec<JsonDirection>,
+    handle_mode: bool,
 }
 
 impl Parse for JsonHelperArgs {
@@ -28,26 +29,28 @@ impl Parse for JsonHelperArgs {
         if input.is_empty() {
             return Ok(JsonHelperArgs {
                 directions: vec![JsonDirection::Auto],
+                handle_mode: false,
             });
         }
 
         let mut directions = Vec::new();
+        let mut handle_mode = false;
 
         loop {
             let ident: Ident = input.parse()?;
-            let direction = match ident.to_string().as_str() {
-                "in" | "incoming" => JsonDirection::Incoming,
-                "out" | "outgoing" => JsonDirection::Outgoing,
-                "auto" => JsonDirection::Auto,
-                "bidirectional" => JsonDirection::Both, // Legacy support
+            match ident.to_string().as_str() {
+                "in" | "incoming" => directions.push(JsonDirection::Incoming),
+                "out" | "outgoing" => directions.push(JsonDirection::Outgoing),
+                "auto" => directions.push(JsonDirection::Auto),
+                "bidirectional" => directions.push(JsonDirection::Both), // Legacy support
+                "handle_mode" => handle_mode = true,
                 _ => {
                     return Err(syn::Error::new_spanned(
                         ident,
-                        "Expected 'in', 'out', 'incoming', 'outgoing', 'auto', or 'bidirectional'",
+                        "Expected 'in', 'out', 'incoming', 'outgoing', 'auto', 'bidirectional', or 'handle_mode'",
                     ));
                 }
             };
-            directions.push(direction);
 
             if input.is_empty() {
                 break;
@@ -68,7 +71,10 @@ impl Parse for JsonHelperArgs {
             directions = vec![JsonDirection::Both];
         }
 
-        Ok(JsonHelperArgs { directions })
+        Ok(JsonHelperArgs {
+            directions,
+            handle_mode,
+        })
     }
 }
 
@@ -160,6 +166,7 @@ pub fn generate_json_helper_impl(args: TokenStream, input: TokenStream) -> Token
 
     // Check if using auto-detection
     let is_auto_mode = args.directions.contains(&JsonDirection::Auto);
+    let handle_mode = args.handle_mode;
 
     // Determine which directions to generate
     let directions = if is_auto_mode {
@@ -334,49 +341,115 @@ pub fn generate_json_helper_impl(args: TokenStream, input: TokenStream) -> Token
         // Generate _as_json method (outgoing) if needed
         if directions.contains(&JsonDirection::Outgoing) {
             let json_out_name = format_ident!("{}_as_json", fn_name);
-            // Check if the method returns Result or not
-            let method_call = match &input_fn.sig.output {
-                ReturnType::Default => {
-                    quote! {
-                        let result = self.#fn_name(#(#param_names),*);
-                        match serde_json::to_value(&result) {
-                            Ok(serialized) => serde_json::to_string(&serde_json::json!({
-                                "success": true,
-                                "data": serialized
-                            })).unwrap(),
-                            Err(_) => serde_json::to_string(&serde_json::json!({
-                                "success": true
-                            })).unwrap(),
+
+            // Handle mode: only return success/error, don't serialize result
+            let method_call = if handle_mode {
+                match &input_fn.sig.output {
+                    ReturnType::Default => {
+                        quote! {
+                            let _result = self.#fn_name(#(#param_names),*);
+                            serde_json::to_string(&serde_json::json!({"success": true})).unwrap()
                         }
                     }
-                }
-                ReturnType::Type(_, ty) => {
-                    match ty.as_ref() {
-                        Type::Path(type_path) => {
-                            if let Some(segment) = type_path.path.segments.last() {
-                                if segment.ident == "Result" {
-                                    // Result type - handle Ok/Err
-                                    quote! {
-                                        match self.#fn_name(#(#param_names),*) {
-                                            Ok(result) => {
-                                                match serde_json::to_value(&result) {
-                                                    Ok(serialized) => serde_json::to_string(&serde_json::json!({
-                                                        "success": true,
-                                                        "data": serialized
-                                                    })).unwrap(),
-                                                    Err(_) => serde_json::to_string(&serde_json::json!({
-                                                        "success": true
-                                                    })).unwrap(),
-                                                }
-                                            },
-                                            Err(e) => serde_json::to_string(&serde_json::json!({
-                                                "success": false,
-                                                "error": e.to_string()
-                                            })).unwrap(),
+                    ReturnType::Type(_, ty) => {
+                        match ty.as_ref() {
+                            Type::Path(type_path) => {
+                                if let Some(segment) = type_path.path.segments.last() {
+                                    if segment.ident == "Result" {
+                                        // Result type - handle Ok/Err
+                                        quote! {
+                                            match self.#fn_name(#(#param_names),*) {
+                                                Ok(_) => serde_json::to_string(&serde_json::json!({"success": true})).unwrap(),
+                                                Err(e) => serde_json::to_string(&serde_json::json!({
+                                                    "success": false,
+                                                    "error": e.to_string()
+                                                })).unwrap(),
+                                            }
+                                        }
+                                    } else {
+                                        // Non-Result type
+                                        quote! {
+                                            let _result = self.#fn_name(#(#param_names),*);
+                                            serde_json::to_string(&serde_json::json!({"success": true})).unwrap()
                                         }
                                     }
                                 } else {
-                                    // Non-Result type - direct serialization
+                                    // Fallback for non-Result
+                                    quote! {
+                                        let _result = self.#fn_name(#(#param_names),*);
+                                        serde_json::to_string(&serde_json::json!({"success": true})).unwrap()
+                                    }
+                                }
+                            }
+                            _ => {
+                                // Fallback for non-Result
+                                quote! {
+                                    let _result = self.#fn_name(#(#param_names),*);
+                                    serde_json::to_string(&serde_json::json!({"success": true})).unwrap()
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Normal mode: serialize the actual result
+                match &input_fn.sig.output {
+                    ReturnType::Default => {
+                        quote! {
+                            let result = self.#fn_name(#(#param_names),*);
+                            match serde_json::to_value(&result) {
+                                Ok(serialized) => serde_json::to_string(&serde_json::json!({
+                                    "success": true,
+                                    "data": serialized
+                                })).unwrap(),
+                                Err(_) => serde_json::to_string(&serde_json::json!({
+                                    "success": true
+                                })).unwrap(),
+                            }
+                        }
+                    }
+                    ReturnType::Type(_, ty) => {
+                        match ty.as_ref() {
+                            Type::Path(type_path) => {
+                                if let Some(segment) = type_path.path.segments.last() {
+                                    if segment.ident == "Result" {
+                                        // Result type - handle Ok/Err
+                                        quote! {
+                                            match self.#fn_name(#(#param_names),*) {
+                                                Ok(result) => {
+                                                    match serde_json::to_value(&result) {
+                                                        Ok(serialized) => serde_json::to_string(&serde_json::json!({
+                                                            "success": true,
+                                                            "data": serialized
+                                                        })).unwrap(),
+                                                        Err(_) => serde_json::to_string(&serde_json::json!({
+                                                            "success": true
+                                                        })).unwrap(),
+                                                    }
+                                                },
+                                                Err(e) => serde_json::to_string(&serde_json::json!({
+                                                    "success": false,
+                                                    "error": e.to_string()
+                                                })).unwrap(),
+                                            }
+                                        }
+                                    } else {
+                                        // Non-Result type - direct serialization
+                                        quote! {
+                                            let result = self.#fn_name(#(#param_names),*);
+                                            match serde_json::to_value(&result) {
+                                                Ok(serialized) => serde_json::to_string(&serde_json::json!({
+                                                    "success": true,
+                                                    "data": serialized
+                                                })).unwrap(),
+                                                Err(_) => serde_json::to_string(&serde_json::json!({
+                                                    "success": true
+                                                })).unwrap(),
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // Fallback for non-Result
                                     quote! {
                                         let result = self.#fn_name(#(#param_names),*);
                                         match serde_json::to_value(&result) {
@@ -390,7 +463,8 @@ pub fn generate_json_helper_impl(args: TokenStream, input: TokenStream) -> Token
                                         }
                                     }
                                 }
-                            } else {
+                            }
+                            _ => {
                                 // Fallback for non-Result
                                 quote! {
                                     let result = self.#fn_name(#(#param_names),*);
@@ -406,26 +480,23 @@ pub fn generate_json_helper_impl(args: TokenStream, input: TokenStream) -> Token
                                 }
                             }
                         }
-                        _ => {
-                            // Fallback for non-Result
-                            quote! {
-                                let result = self.#fn_name(#(#param_names),*);
-                                match serde_json::to_value(&result) {
-                                    Ok(serialized) => serde_json::to_string(&serde_json::json!({
-                                        "success": true,
-                                        "data": serialized
-                                    })).unwrap(),
-                                    Err(_) => serde_json::to_string(&serde_json::json!({
-                                        "success": true
-                                    })).unwrap(),
-                                }
-                            }
-                        }
                     }
-                }
+                } // Close the else block
+            };
+
+            let base_method_name = fn_name.to_string();
+            let doc_content = if handle_mode {
+                format!(
+                    "JSON wrapper for `{base_method_name}` method (handle-based architecture)\n\nReturns simple success/error JSON responses optimized for handle-based FFI clients:\n- Success: `{{\"success\": true}}`\n- Error: `{{\"success\": false, \"error\": \"message\"}}`\n\nThis method does not serialize the actual result data, making it suitable for\nhandle-based architectures where clients only need to know if the operation succeeded."
+                )
+            } else {
+                format!(
+                    "JSON wrapper for `{base_method_name}` method (FFI compatibility)\n\nReturns detailed JSON responses with serialized result data:\n- Success: `{{\"success\": true, \"data\": <serialized_result>}}`\n- Error: `{{\"success\": false, \"error\": \"message\"}}`\n\nThis method serializes the actual result data for clients that need the full response."
+                )
             };
 
             generated_methods.push(quote! {
+                #[doc = #doc_content]
                 #vis fn #json_out_name(#params) -> String {
                     #method_call
                 }
