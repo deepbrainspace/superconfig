@@ -50,6 +50,25 @@ pub enum RegistryError {
     FlagError(#[from] FlagError),
 }
 
+/// Error type for fluent API error collection patterns
+#[derive(Error, Debug, Clone)]
+pub enum FluentError {
+    /// Registry operation failed
+    #[error("Registry error: {0}")]
+    Registry(#[from] RegistryError),
+
+    /// Flag operation failed
+    #[error("Flag error: {0}")]
+    Flag(#[from] FlagError),
+
+    /// Generic error with message
+    #[error("Fluent API error: {message}")]
+    Generic {
+        /// Error message
+        message: String,
+    },
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

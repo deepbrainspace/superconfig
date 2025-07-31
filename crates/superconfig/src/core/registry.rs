@@ -12,7 +12,7 @@ use std::{
 };
 
 use super::{
-    errors::{HandleId, RegistryError},
+    errors::{FluentError, HandleId, RegistryError},
     handle::ConfigHandle,
     stats::RegistryStats,
 };
@@ -108,6 +108,9 @@ pub struct ConfigRegistry {
     runtime_flags: Arc<parking_lot::RwLock<u64>>,
     /// Verbosity level - mutable at runtime
     verbosity: Arc<parking_lot::RwLock<u8>>,
+    /// Collected errors from try_* methods for permissive error handling
+    #[allow(dead_code)] // Used by fluent API patterns (future implementation)
+    collected_errors: Arc<parking_lot::RwLock<Vec<FluentError>>>,
 }
 
 impl ConfigRegistry {
@@ -148,6 +151,7 @@ impl ConfigRegistry {
             startup_flags,
             runtime_flags: Arc::new(parking_lot::RwLock::new(0)),
             verbosity: Arc::new(parking_lot::RwLock::new(verbosity::NONE)),
+            collected_errors: Arc::new(parking_lot::RwLock::new(Vec::new())),
         }
     }
 

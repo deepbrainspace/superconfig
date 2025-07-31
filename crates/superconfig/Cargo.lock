@@ -1111,12 +1111,23 @@ dependencies = [
  "serde_yml",
  "serial_test",
  "simd-json",
+ "superconfig-macros",
  "tempfile",
  "thiserror",
  "tokio",
  "tokio-test",
  "toml",
  "tracing",
+]
+
+[[package]]
+name = "superconfig-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "serde_json",
+ "syn",
 ]
 
 [[package]]
