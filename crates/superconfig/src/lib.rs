@@ -27,6 +27,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 // Module exports will be added as we implement each phase
 // Phase 1: Core registry system
+pub mod config_flags;
 pub mod core;
 
 // Future phases (commented out until implemented)
@@ -37,4 +38,5 @@ pub mod core;
 // pub mod features;    // Phase 5: Advanced features
 
 // Re-exports for convenience
+pub use config_flags::*;
 pub use core::*;

@@ -25,8 +25,183 @@ pub struct ConfigRegistry {
     /// Registry-wide statistics and metadata
     stats: Arc<RwLock<RegistryStats>>,
     
-    /// Cleanup scheduler for expired handles
-    cleanup_scheduler: Arc<CleanupScheduler>,
+    /// Configuration flags set at registry creation
+    startup_flags: ConfigFlags,
+    
+    /// Runtime flags that can be modified after creation
+    runtime_flags: AtomicU64,
+}
+
+impl ConfigRegistry {
+    /// Create registry with default settings
+    pub fn new() -> Self {
+        Self::custom(ConfigFlags::NONE)
+    }
+    
+    /// Create registry with custom configuration flags
+    pub fn custom(flags: ConfigFlags) -> Self {
+        let (startup_flags, runtime_flags) = flags.split_startup_runtime();
+        
+        Self {
+            configs: Self::create_optimized_storage(startup_flags),
+            next_id: AtomicU64::new(1),
+            stats: Self::create_stats_collector(startup_flags),
+            startup_flags,
+            runtime_flags: AtomicU64::new(runtime_flags.0),
+        }
+    }
+    
+    /// Enable runtime flags (non-startup flags only)
+    pub fn enable_runtime_flags(&self, flags: ConfigFlags) -> Result<(), RegistryError> {
+        if flags.is_startup_only() {
+            Err(RegistryError::ImmutableStartupFlag { flags })
+        } else {
+            self.runtime_flags.fetch_or(flags.0, Ordering::Relaxed);
+            Ok(())
+        }
+    }
+    
+    /// Disable runtime flags
+    pub fn disable_runtime_flags(&self, flags: ConfigFlags) -> Result<(), RegistryError> {
+        if flags.is_startup_only() {
+            Err(RegistryError::ImmutableStartupFlag { flags })
+        } else {
+            self.runtime_flags.fetch_and(!flags.0, Ordering::Relaxed);
+            Ok(())
+        }
+    }
+}
+
+/// Configuration flags for registry behavior control
+/// Uses u64 for universal FFI compatibility (JavaScript, WASM, Python, C/C++, Go, Java, C#, Swift, Kotlin)
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ConfigFlags(pub u64);
+
+impl ConfigFlags {
+    /// No flags enabled (default)
+    pub const NONE: ConfigFlags = ConfigFlags(0);
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // STARTUP FLAGS (bits 0-15) - Immutable after registry creation
+    // These flags affect internal data structures and cannot be changed at runtime
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    /// Enable SuperDB optimizations (multi-level cache, SIMD operations)
+    /// STARTUP ONLY: Affects internal storage structure
+    pub const STARTUP_SUPERDB: ConfigFlags = ConfigFlags(0b0000_0001);
+    
+    /// Pre-allocate thread pool for parallel operations
+    /// STARTUP ONLY: Thread pool cannot be created/destroyed at runtime
+    pub const STARTUP_THREAD_POOL: ConfigFlags = ConfigFlags(0b0000_0010);
+    
+    /// Optimize memory layout for cache efficiency
+    /// STARTUP ONLY: Memory layout cannot be changed after allocation
+    pub const STARTUP_MEMORY_LAYOUT: ConfigFlags = ConfigFlags(0b0000_0100);
+    
+    /// Enable advanced statistics collection with detailed metrics
+    /// STARTUP ONLY: Statistics structure affects memory layout
+    pub const STARTUP_DETAILED_STATS: ConfigFlags = ConfigFlags(0b0000_1000);
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // HYBRID FLAGS (bits 16-31) - Startup optimized, runtime toggleable
+    // These flags optimize behavior at startup but can be disabled at runtime
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    /// Enable SIMD acceleration for parsing operations
+    /// HYBRID: Can be disabled at runtime for compatibility
+    pub const SIMD: ConfigFlags = ConfigFlags(0b0001_0000_0000_0000_0000);
+    
+    /// Enable array merge operations (_ADD/_REMOVE suffixes)
+    /// HYBRID: Can be disabled at runtime for security
+    pub const ARRAY_MERGE: ConfigFlags = ConfigFlags(0b0010_0000_0000_0000_0000);
+    
+    /// Enable parallel loading for multiple files
+    /// HYBRID: Can be disabled at runtime to reduce resource usage
+    pub const PARALLEL: ConfigFlags = ConfigFlags(0b0100_0000_0000_0000_0000);
+    
+    /// Enable hot reload file watching
+    /// HYBRID: Can be disabled at runtime to reduce file handles
+    pub const HOT_RELOAD: ConfigFlags = ConfigFlags(0b1000_0000_0000_0000_0000);
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // RUNTIME FLAGS (bits 32-63) - Fully mutable at runtime
+    // These flags can be enabled/disabled freely without affecting core structures
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    /// Enable performance profiling and metrics collection
+    /// RUNTIME: Can be toggled for debugging without affecting performance
+    pub const PROFILING: ConfigFlags = ConfigFlags(0b01_0000_0000_0000_0000_0000_0000_0000_0000_0000);
+    
+    /// Enable strict validation mode with comprehensive error checking
+    /// RUNTIME: Can be toggled based on environment (dev vs prod)
+    pub const STRICT_MODE: ConfigFlags = ConfigFlags(0b10_0000_0000_0000_0000_0000_0000_0000_0000_0000);
+    
+    /// Enable verbose logging for debugging
+    /// RUNTIME: Can be toggled for troubleshooting
+    pub const VERBOSE_LOGGING: ConfigFlags = ConfigFlags(0b0100_0000_0000_0000_0000_0000_0000_0000_0000_0000);
+    
+    /// Enable environment variable expansion (${VAR})
+    /// RUNTIME: Can be disabled for security in production
+    pub const ENV_EXPANSION: ConfigFlags = ConfigFlags(0b1000_0000_0000_0000_0000_0000_0000_0000_0000_0000);
+    
+    /// Allow empty/null values in configuration
+    /// RUNTIME: Can be toggled based on validation requirements
+    pub const EMPTY_VALUES: ConfigFlags = ConfigFlags(0b0001_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000);
+    
+    /// Enable format auto-detection fallbacks
+    /// RUNTIME: Can be disabled for strict format requirements
+    pub const FORMAT_FALLBACK: ConfigFlags = ConfigFlags(0b0010_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000);
+    
+    /// Enable schema validation during loading
+    /// RUNTIME: Can be toggled based on environment
+    pub const SCHEMA_VALIDATION: ConfigFlags = ConfigFlags(0b0100_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000);
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // UTILITY METHODS
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    /// Check if a specific flag is enabled
+    pub fn has(self, flag: ConfigFlags) -> bool {
+        (self.0 & flag.0) != 0
+    }
+    
+    /// Enable flags (immutable operation)
+    pub fn enable(self, flags: ConfigFlags) -> Self {
+        ConfigFlags(self.0 | flags.0)
+    }
+    
+    /// Disable flags (immutable operation)
+    pub fn disable(self, flags: ConfigFlags) -> Self {
+        ConfigFlags(self.0 & !flags.0)
+    }
+    
+    /// Check if flags are startup-only (cannot be changed at runtime)
+    pub fn is_startup_only(self) -> bool {
+        (self.0 & 0x0000_0000_0000_FFFF) != 0
+    }
+    
+    /// Split flags into startup and runtime components
+    pub fn split_startup_runtime(self) -> (ConfigFlags, ConfigFlags) {
+        let startup = ConfigFlags(self.0 & 0x0000_0000_FFFF_FFFF);  // Bits 0-31
+        let runtime = ConfigFlags(self.0 & 0xFFFF_FFFF_0000_0000);  // Bits 32-63
+        (startup, runtime)
+    }
+}
+
+// Bitwise operations for combining flags
+impl std::ops::BitOr for ConfigFlags {
+    type Output = Self;
+    fn bitor(self, rhs: Self) -> Self {
+        ConfigFlags(self.0 | rhs.0)
+    }
+}
+
+impl std::ops::BitAnd for ConfigFlags {
+    type Output = Self;
+    fn bitand(self, rhs: Self) -> Self {
+        ConfigFlags(self.0 & rhs.0)
+    }
 }
 
 /// Unique identifier for configuration handles

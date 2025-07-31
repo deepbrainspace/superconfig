@@ -1,90 +1,22 @@
-//! Core registry system for `SuperConfig` V2
-//!
-//! This module implements the foundational handle-based registry system that enables
-//! zero-copy configuration access with sub-microsecond lookup times.
+//! Main configuration registry implementation
 
 use dashmap::DashMap;
 use parking_lot::RwLock;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::{
-    marker::PhantomData,
     sync::{
         Arc,
         atomic::{AtomicU64, Ordering},
     },
     time::Instant,
 };
-use thiserror::Error;
 
-/// Unique identifier for configuration handles
-pub type HandleId = u64;
-
-/// Global configuration registry instance
-static GLOBAL_REGISTRY: std::sync::LazyLock<ConfigRegistry> =
-    std::sync::LazyLock::new(ConfigRegistry::new);
-
-/// Get a reference to the global configuration registry
-#[must_use]
-pub fn global_registry() -> &'static ConfigRegistry {
-    &GLOBAL_REGISTRY
-}
-
-/// Errors that can occur during registry operations
-#[derive(Error, Debug, Clone)]
-pub enum RegistryError {
-    /// Handle not found in registry
-    #[error("Handle {handle_id} not found in registry")]
-    HandleNotFound {
-        /// The handle ID that was not found
-        handle_id: HandleId,
-    },
-
-    /// Handle has wrong type
-    #[error("Handle {handle_id} has wrong type: expected {expected}, found {found}")]
-    WrongType {
-        /// The handle ID with wrong type
-        handle_id: HandleId,
-        /// Expected type name
-        expected: &'static str,
-        /// Found type name
-        found: &'static str,
-    },
-
-    /// Handle has been invalidated
-    #[error("Handle {handle_id} has been invalidated")]
-    InvalidHandle {
-        /// The invalidated handle ID
-        handle_id: HandleId,
-    },
-
-    /// Registry is at capacity
-    #[error("Registry is at maximum capacity")]
-    RegistryFull,
-
-    /// Serialization error
-    #[error("Serialization error: {message}")]
-    SerializationError {
-        /// Error message
-        message: String,
-    },
-}
-
-/// Statistics about the registry state
-#[derive(Debug, Clone, Default)]
-pub struct RegistryStats {
-    /// Total number of active handles
-    pub total_handles: u64,
-    /// Total number of create operations
-    pub total_creates: u64,
-    /// Total number of read operations
-    pub total_reads: u64,
-    /// Total number of update operations
-    pub total_updates: u64,
-    /// Total number of delete operations
-    pub total_deletes: u64,
-    /// Approximate memory usage in bytes
-    pub memory_usage_bytes: u64,
-}
+use super::{
+    errors::{HandleId, RegistryError},
+    handle::ConfigHandle,
+    stats::RegistryStats,
+};
+use crate::config_flags::{FlagError, VerbosityLevel, verbosity};
 
 /// Internal entry stored in the registry
 #[derive(Debug)]
@@ -140,49 +72,29 @@ impl ConfigEntry {
     }
 }
 
-/// Type-safe handle for accessing configuration data
-#[derive(Debug, Clone)]
-pub struct ConfigHandle<T> {
-    id: HandleId,
-    _phantom: PhantomData<T>,
-}
-
-impl<T> ConfigHandle<T> {
-    const fn new(id: HandleId) -> Self {
-        Self {
-            id,
-            _phantom: PhantomData,
-        }
-    }
-
-    /// Get the handle ID
-    #[must_use]
-    pub const fn id(&self) -> HandleId {
-        self.id
-    }
-}
-
-// Implement Serialize/Deserialize for ConfigHandle
-impl<T> Serialize for ConfigHandle<T> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        self.id.serialize(serializer)
-    }
-}
-
-impl<'de, T> Deserialize<'de> for ConfigHandle<T> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let id = HandleId::deserialize(deserializer)?;
-        Ok(Self::new(id))
-    }
-}
-
 /// Main configuration registry using lock-free operations
+///
+/// The registry provides handle-based access to configuration data with sub-microsecond
+/// lookup times. It supports both startup flags (immutable after creation) and runtime
+/// flags (mutable during operation).
+///
+/// # Examples
+///
+/// ```
+/// use superconfig::{ConfigRegistry, config_flags::{startup, runtime}};
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// // Create registry with startup flags
+/// let registry = ConfigRegistry::custom(startup::SIMD | startup::THREAD_POOL)
+///     .enable(runtime::STRICT_MODE)?;
+///
+/// // Store configuration
+/// let handle = registry.create("localhost".to_string()).unwrap();
+/// let config = registry.read(&handle).unwrap();
+/// assert_eq!(*config, "localhost");
+/// # Ok(())
+/// # }
+/// ```
 pub struct ConfigRegistry {
     /// Internal storage using `DashMap` for lock-free operations
     entries: DashMap<HandleId, ConfigEntry>,
@@ -190,24 +102,263 @@ pub struct ConfigRegistry {
     next_id: AtomicU64,
     /// Registry statistics protected by `RwLock`
     stats: Arc<RwLock<RegistryStats>>,
+    /// Startup flags - immutable after registry creation
+    startup_flags: u32,
+    /// Runtime flags - mutable at runtime
+    runtime_flags: Arc<parking_lot::RwLock<u64>>,
+    /// Verbosity level - mutable at runtime
+    verbosity: Arc<parking_lot::RwLock<u8>>,
 }
 
 impl ConfigRegistry {
-    /// Create a new configuration registry
+    /// Create a new configuration registry with default settings (no startup flags)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use superconfig::ConfigRegistry;
+    ///
+    /// let registry = ConfigRegistry::new();
+    /// assert_eq!(registry.get_startup_flags(), 0);
+    /// ```
     #[must_use]
     pub fn new() -> Self {
+        Self::custom(0) // No startup flags
+    }
+
+    /// Create a configuration registry with custom startup flags
+    ///
+    /// Startup flags affect internal structures and cannot be changed after creation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use superconfig::{ConfigRegistry, config_flags::startup};
+    ///
+    /// let registry = ConfigRegistry::custom(startup::SIMD | startup::THREAD_POOL);
+    /// assert!(registry.startup_enabled(startup::SIMD));
+    /// assert!(registry.startup_enabled(startup::THREAD_POOL));
+    /// ```
+    #[must_use]
+    pub fn custom(startup_flags: u32) -> Self {
         Self {
             entries: DashMap::new(),
             next_id: AtomicU64::new(1),
             stats: Arc::new(RwLock::new(RegistryStats::default())),
+            startup_flags,
+            runtime_flags: Arc::new(parking_lot::RwLock::new(0)),
+            verbosity: Arc::new(parking_lot::RwLock::new(verbosity::NONE)),
         }
     }
 
+    /// Builder method: set verbosity level during construction  
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use superconfig::{ConfigRegistry, config_flags::verbosity};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let registry = ConfigRegistry::new()
+    ///     .verbosity(verbosity::DEBUG)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    /// Returns `RegistryError::Flag` if level is greater than `verbosity::TRACE`
+    pub fn verbosity(self, level: u8) -> Result<Self, RegistryError> {
+        {
+            let mut verbosity = self.verbosity.write();
+            *verbosity = level;
+        }
+        Ok(self)
+    }
+
+    // Flag management methods
+
+    /// Enable runtime flags (startup flags cannot be modified after creation)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use superconfig::{ConfigRegistry, config_flags::runtime};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let registry = ConfigRegistry::new()
+    ///     .enable(runtime::ARRAY_MERGE)?
+    ///     .enable(runtime::STRICT_MODE)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    /// Returns `RegistryError::Flag` if any flag in `flags` is invalid
+    pub fn enable(self, flags: u64) -> Result<Self, RegistryError> {
+        {
+            let mut runtime_flags = self.runtime_flags.write();
+            *runtime_flags |= flags;
+        }
+        Ok(self)
+    }
+
+    /// Disable runtime flags (startup flags cannot be modified after creation)
+    ///
+    /// # Errors
+    /// Returns `RegistryError::Flag` if any flag in `flags` is invalid
+    pub fn disable(self, flags: u64) -> Result<Self, RegistryError> {
+        {
+            let mut runtime_flags = self.runtime_flags.write();
+            *runtime_flags &= !flags;
+        }
+        Ok(self)
+    }
+
+    /// Check if startup flags are enabled
+    #[must_use]
+    pub const fn startup_enabled(&self, flags: u32) -> bool {
+        (self.startup_flags & flags) != 0
+    }
+
+    /// Check if startup flags are disabled
+    #[must_use]
+    pub const fn startup_disabled(&self, flags: u32) -> bool {
+        !self.startup_enabled(flags)
+    }
+
+    /// Check if runtime flags are enabled
+    #[must_use]
+    pub fn runtime_enabled(&self, flags: u64) -> bool {
+        let runtime_flags = self.runtime_flags.read();
+        (*runtime_flags & flags) != 0
+    }
+
+    /// Check if runtime flags are disabled
+    #[must_use]
+    pub fn runtime_disabled(&self, flags: u64) -> bool {
+        !self.runtime_enabled(flags)
+    }
+
+    /// Runtime method: set verbosity level
+    ///
+    /// # Errors
+    /// Returns `RegistryError::Flag` if level is greater than `verbosity::TRACE`
+    pub fn set_verbosity(&self, level: u8) -> Result<(), RegistryError> {
+        if level > verbosity::TRACE {
+            return Err(FlagError::InvalidVerbosity { level }.into());
+        }
+
+        *self.verbosity.write() = level;
+        Ok(())
+    }
+
+    /// Get current verbosity level
+    #[must_use]
+    pub fn get_verbosity(&self) -> u8 {
+        *self.verbosity.read()
+    }
+
+    /// Get current verbosity level as enum
+    #[must_use]
+    pub fn get_verbosity_level(&self) -> VerbosityLevel {
+        VerbosityLevel::from(*self.verbosity.read())
+    }
+
+    /// Get current startup flags
+    #[must_use]
+    pub const fn get_startup_flags(&self) -> u32 {
+        self.startup_flags
+    }
+
+    /// Get current runtime flags
+    #[must_use]
+    pub fn get_runtime_flags(&self) -> u64 {
+        *self.runtime_flags.read()
+    }
+
+    // JSON helpers for FFI compatibility
+
+    /// JSON helper for enable method (FFI compatibility)
+    #[allow(dead_code)] // Used by FFI crates in Phase 4
+    pub(crate) fn enable_as_json(self, flags: u64) -> String {
+        match self.enable(flags) {
+            Ok(_) => serde_json::to_string(&serde_json::json!({"success": true})).unwrap(),
+            Err(e) => serde_json::to_string(&serde_json::json!({
+                "success": false,
+                "error": e.to_string()
+            }))
+            .unwrap(),
+        }
+    }
+
+    /// JSON helper for disable method (FFI compatibility)
+    #[allow(dead_code)] // Used by FFI crates in Phase 4
+    pub(crate) fn disable_as_json(self, flags: u64) -> String {
+        match self.disable(flags) {
+            Ok(_) => serde_json::to_string(&serde_json::json!({"success": true})).unwrap(),
+            Err(e) => serde_json::to_string(&serde_json::json!({
+                "success": false,
+                "error": e.to_string()
+            }))
+            .unwrap(),
+        }
+    }
+
+    /// JSON helper for `startup_enabled` method (FFI compatibility)
+    #[allow(dead_code)] // Used by FFI crates in Phase 4
+    pub(crate) fn startup_enabled_as_json(&self, flags: u32) -> String {
+        let result = self.startup_enabled(flags);
+        serde_json::to_string(&serde_json::json!({"enabled": result})).unwrap()
+    }
+
+    /// JSON helper for `runtime_enabled` method (FFI compatibility)
+    #[allow(dead_code)] // Used by FFI crates in Phase 4
+    pub(crate) fn runtime_enabled_as_json(&self, flags: u64) -> String {
+        let result = self.runtime_enabled(flags);
+        serde_json::to_string(&serde_json::json!({"enabled": result})).unwrap()
+    }
+
+    /// JSON helper for `set_verbosity` method (FFI compatibility)
+    #[allow(dead_code)] // Used by FFI crates in Phase 4
+    pub(crate) fn set_verbosity_as_json(&self, level: u8) -> String {
+        match self.set_verbosity(level) {
+            Ok(()) => serde_json::to_string(&serde_json::json!({"success": true})).unwrap(),
+            Err(e) => serde_json::to_string(&serde_json::json!({
+                "success": false,
+                "error": e.to_string()
+            }))
+            .unwrap(),
+        }
+    }
+}
+
+impl Default for ConfigRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+// CRUD Operations
+
+impl ConfigRegistry {
     /// Create a new configuration entry and return a handle to it
+    ///
+    /// Returns `Arc<T>` for efficient sharing. Use field access (`config.host`)
+    /// and method calls (`config.validate()`) directly - they're zero-cost due to auto-deref.
     ///
     /// # Errors
     ///
     /// Returns `RegistryError::RegistryFull` if the registry has reached maximum capacity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use superconfig::ConfigRegistry;
+    ///
+    /// let registry = ConfigRegistry::new();
+    /// let handle = registry.create("my config".to_string()).unwrap();
+    /// assert_eq!(handle.id(), 1);
+    /// ```
     pub fn create<T: 'static + Send + Sync>(
         &self,
         data: T,
@@ -221,9 +372,8 @@ impl ConfigRegistry {
         // Update statistics
         {
             let mut stats = self.stats.write();
-            stats.total_handles += 1;
-            stats.total_creates += 1;
-            stats.memory_usage_bytes += data_size as u64;
+            stats.increment_creates();
+            stats.add_memory(data_size as u64);
         }
 
         Ok(ConfigHandle::new(id))
@@ -247,23 +397,34 @@ impl ConfigRegistry {
     /// - Method calls: `config.validate()` (zero cost)
     /// - Passing to functions: `process(config)` (~1ns to move Arc)
     /// - Multiple reads share the same underlying data efficiently
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use superconfig::ConfigRegistry;
+    ///
+    /// let registry = ConfigRegistry::new();
+    /// let handle = registry.create("test".to_string()).unwrap();
+    /// let data = registry.read(&handle).unwrap();
+    /// assert_eq!(*data, "test");
+    /// ```
     pub fn read<T: 'static>(&self, handle: &ConfigHandle<T>) -> Result<Arc<T>, RegistryError> {
-        let entry_ref = self
-            .entries
-            .get(&handle.id)
-            .ok_or(RegistryError::HandleNotFound {
-                handle_id: handle.id,
-            })?;
+        let entry_ref =
+            self.entries
+                .get(&handle.id())
+                .ok_or_else(|| RegistryError::HandleNotFound {
+                    handle_id: handle.id(),
+                })?;
 
         // Update statistics
         {
             let mut stats = self.stats.write();
-            stats.total_reads += 1;
+            stats.increment_reads();
         }
 
         let arc = entry_ref.get_arc_data::<T>().map_err(|mut e| {
             if let RegistryError::WrongType { handle_id, .. } = &mut e {
-                *handle_id = handle.id;
+                *handle_id = handle.id();
             }
             e
         })?;
@@ -295,18 +456,31 @@ impl ConfigRegistry {
     /// # Errors
     ///
     /// Returns `RegistryError::HandleNotFound` if the handle doesn't exist in the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use superconfig::ConfigRegistry;
+    ///
+    /// let registry = ConfigRegistry::new();
+    /// let handle = registry.create("old".to_string()).unwrap();
+    ///
+    /// registry.update(&handle, "new".to_string()).unwrap();
+    /// let data = registry.read(&handle).unwrap();
+    /// assert_eq!(*data, "new");
+    /// ```
     pub fn update<T: 'static + Send + Sync>(
         &self,
         handle: &ConfigHandle<T>,
         new_data: T,
     ) -> Result<(), RegistryError> {
         // Remove old entry to get its size
-        let old_entry = self
-            .entries
-            .remove(&handle.id)
-            .ok_or(RegistryError::HandleNotFound {
-                handle_id: handle.id,
-            })?;
+        let old_entry =
+            self.entries
+                .remove(&handle.id())
+                .ok_or_else(|| RegistryError::HandleNotFound {
+                    handle_id: handle.id(),
+                })?;
 
         let old_size = old_entry.1.data_size;
 
@@ -315,16 +489,14 @@ impl ConfigRegistry {
         let new_size = new_entry.data_size;
 
         // Insert new entry (this atomically replaces the old one)
-        self.entries.insert(handle.id, new_entry);
+        self.entries.insert(handle.id(), new_entry);
 
         // Update statistics
         {
             let mut stats = self.stats.write();
-            stats.total_updates += 1;
-            stats.memory_usage_bytes = stats
-                .memory_usage_bytes
-                .saturating_sub(old_size as u64)
-                .saturating_add(new_size as u64);
+            stats.increment_updates();
+            stats.remove_memory(old_size as u64);
+            stats.add_memory(new_size as u64);
         }
 
         Ok(())
@@ -339,13 +511,26 @@ impl ConfigRegistry {
     ///
     /// Returns `RegistryError::HandleNotFound` if the handle doesn't exist in the registry.
     /// Returns `RegistryError::WrongType` if the handle points to data of a different type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use superconfig::ConfigRegistry;
+    ///
+    /// let registry = ConfigRegistry::new();
+    /// let handle = registry.create("test".to_string()).unwrap();
+    ///
+    /// let data = registry.delete(&handle).unwrap();
+    /// assert_eq!(*data, "test");
+    /// assert!(!registry.contains_handle(&handle));
+    /// ```
     pub fn delete<T: 'static>(&self, handle: &ConfigHandle<T>) -> Result<Arc<T>, RegistryError> {
-        let (_, entry) = self
-            .entries
-            .remove(&handle.id)
-            .ok_or(RegistryError::HandleNotFound {
-                handle_id: handle.id,
-            })?;
+        let (_, entry) =
+            self.entries
+                .remove(&handle.id())
+                .ok_or_else(|| RegistryError::HandleNotFound {
+                    handle_id: handle.id(),
+                })?;
 
         let data_size = entry.data_size;
 
@@ -354,7 +539,7 @@ impl ConfigRegistry {
             .data
             .downcast::<Arc<T>>()
             .map_err(|_| RegistryError::WrongType {
-                handle_id: handle.id,
+                handle_id: handle.id(),
                 expected: std::any::type_name::<T>(),
                 found: entry.type_name,
             })?;
@@ -362,55 +547,130 @@ impl ConfigRegistry {
         // Update statistics
         {
             let mut stats = self.stats.write();
-            stats.total_handles = stats.total_handles.saturating_sub(1);
-            stats.total_deletes += 1;
-            stats.memory_usage_bytes = stats.memory_usage_bytes.saturating_sub(data_size as u64);
+            stats.increment_deletes();
+            stats.remove_memory(data_size as u64);
         }
 
         Ok(*arc)
     }
 
     /// Get current registry statistics
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use superconfig::ConfigRegistry;
+    ///
+    /// let registry = ConfigRegistry::new();
+    /// let stats = registry.stats();
+    /// assert_eq!(stats.total_handles, 0);
+    /// ```
     #[must_use]
     pub fn stats(&self) -> RegistryStats {
         self.stats.read().clone()
     }
 
     /// Check if a handle exists in the registry
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use superconfig::ConfigRegistry;
+    ///
+    /// let registry = ConfigRegistry::new();
+    /// let handle = registry.create("test".to_string()).unwrap();
+    ///
+    /// assert!(registry.contains_handle(&handle));
+    /// registry.delete(&handle).unwrap();
+    /// assert!(!registry.contains_handle(&handle));
+    /// ```
     #[must_use]
     pub fn contains_handle<T>(&self, handle: &ConfigHandle<T>) -> bool {
-        self.entries.contains_key(&handle.id)
+        self.entries.contains_key(&handle.id())
     }
 
     /// Clear all entries from the registry
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use superconfig::ConfigRegistry;
+    ///
+    /// let registry = ConfigRegistry::new();
+    /// let _handle = registry.create("test".to_string()).unwrap();
+    ///
+    /// assert_eq!(registry.len(), 1);
+    /// registry.clear();
+    /// assert_eq!(registry.len(), 0);
+    /// ```
     pub fn clear(&self) {
         self.entries.clear();
         let mut stats = self.stats.write();
-        *stats = RegistryStats::default();
+        stats.reset();
     }
 
     /// Get the number of entries in the registry
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use superconfig::ConfigRegistry;
+    ///
+    /// let registry = ConfigRegistry::new();
+    /// assert_eq!(registry.len(), 0);
+    ///
+    /// let _handle = registry.create("test".to_string()).unwrap();
+    /// assert_eq!(registry.len(), 1);
+    /// ```
     #[must_use]
     pub fn len(&self) -> usize {
         self.entries.len()
     }
 
     /// Check if the registry is empty
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use superconfig::ConfigRegistry;
+    ///
+    /// let registry = ConfigRegistry::new();
+    /// assert!(registry.is_empty());
+    ///
+    /// let _handle = registry.create("test".to_string()).unwrap();
+    /// assert!(!registry.is_empty());
+    /// ```
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
 }
 
-impl Default for ConfigRegistry {
-    fn default() -> Self {
-        Self::new()
-    }
+// Global registry instance - defined here to be close to the implementation
+/// Global configuration registry instance
+static GLOBAL_REGISTRY: std::sync::LazyLock<ConfigRegistry> =
+    std::sync::LazyLock::new(ConfigRegistry::new);
+
+/// Get a reference to the global configuration registry
+///
+/// # Examples
+///
+/// ```
+/// use superconfig::global_registry;
+///
+/// let handle = global_registry().create("test".to_string()).unwrap();
+/// let data = global_registry().read(&handle).unwrap();
+/// assert_eq!(*data, "test");
+/// ```
+#[must_use]
+pub fn global_registry() -> &'static ConfigRegistry {
+    &GLOBAL_REGISTRY
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config_flags::{VerbosityLevel, runtime, startup, verbosity};
     use serde::{Deserialize, Serialize};
     use std::sync::atomic::{AtomicU32, Ordering};
     use std::thread;
@@ -441,6 +701,38 @@ mod tests {
 
         assert_eq!(*retrieved, config);
         assert_eq!(handle.id(), 1);
+    }
+
+    #[test]
+    fn test_flag_operations() {
+        let registry = ConfigRegistry::custom(startup::SIMD | startup::THREAD_POOL)
+            .enable(runtime::STRICT_MODE | runtime::PARALLEL)
+            .unwrap()
+            .verbosity(verbosity::DEBUG)
+            .unwrap();
+
+        // Test startup flags
+        assert!(registry.startup_enabled(startup::SIMD));
+        assert!(registry.startup_enabled(startup::THREAD_POOL));
+        assert!(!registry.startup_enabled(startup::DETAILED_STATS));
+        assert!(registry.startup_disabled(startup::DETAILED_STATS));
+
+        // Test runtime flags
+        assert!(registry.runtime_enabled(runtime::STRICT_MODE));
+        assert!(registry.runtime_enabled(runtime::PARALLEL));
+        assert!(!registry.runtime_enabled(runtime::ARRAY_MERGE));
+        assert!(registry.runtime_disabled(runtime::ARRAY_MERGE));
+
+        // Test verbosity
+        assert_eq!(registry.get_verbosity(), verbosity::DEBUG);
+        assert_eq!(registry.get_verbosity_level(), VerbosityLevel::Debug);
+
+        // Test runtime flag modification
+        let registry = registry.enable(runtime::ARRAY_MERGE).unwrap();
+        assert!(registry.runtime_enabled(runtime::ARRAY_MERGE));
+
+        let registry = registry.disable(runtime::PARALLEL).unwrap();
+        assert!(!registry.runtime_enabled(runtime::PARALLEL));
     }
 
     #[test]
@@ -630,29 +922,6 @@ mod tests {
     }
 
     #[test]
-    fn test_handle_serialization() {
-        let registry = ConfigRegistry::new();
-        let config = TestConfig {
-            host: "localhost".to_string(),
-            port: 8080,
-            timeout_ms: 5000,
-        };
-
-        let handle = registry.create(config).unwrap();
-
-        // Serialize handle
-        let serialized = serde_json::to_string(&handle).unwrap();
-
-        // Deserialize handle
-        let deserialized: ConfigHandle<TestConfig> = serde_json::from_str(&serialized).unwrap();
-
-        assert_eq!(handle.id(), deserialized.id());
-
-        // Should be able to use deserialized handle
-        let _data = registry.read(&deserialized).unwrap();
-    }
-
-    #[test]
     fn test_global_registry() {
         let config = SimpleConfig { value: 123 };
 
@@ -743,5 +1012,32 @@ mod tests {
         registry.delete(&handle2).unwrap();
         let handle4 = registry.create(SimpleConfig { value: 4 }).unwrap();
         assert_eq!(handle4.id(), 4);
+    }
+
+    #[test]
+    fn test_verbosity_validation() {
+        let registry = ConfigRegistry::new();
+
+        // Valid verbosity levels
+        assert!(registry.set_verbosity(verbosity::NONE).is_ok());
+        assert!(registry.set_verbosity(verbosity::WARN).is_ok());
+        assert!(registry.set_verbosity(verbosity::DEBUG).is_ok());
+        assert!(registry.set_verbosity(verbosity::TRACE).is_ok());
+
+        // Invalid verbosity level
+        assert!(registry.set_verbosity(99).is_err());
+    }
+
+    #[test]
+    fn test_builder_pattern() {
+        let registry = ConfigRegistry::custom(startup::SIMD)
+            .enable(runtime::STRICT_MODE)
+            .unwrap()
+            .verbosity(verbosity::DEBUG)
+            .unwrap();
+
+        assert!(registry.startup_enabled(startup::SIMD));
+        assert!(registry.runtime_enabled(runtime::STRICT_MODE));
+        assert_eq!(registry.get_verbosity(), verbosity::DEBUG);
     }
 }

@@ -128,17 +128,25 @@ Build the core configuration processing engine including file loading, parsing, 
 
 ### Key Deliverables
 
-- Multi-format configuration parsing (JSON, TOML, YAML, ENV)
+- Comprehensive multi-format configuration parsing (JSON, TOML, YAML, ENV, INI, RON, JSON5)
+- Enhanced format detection prioritizing TOML over JSON for better accuracy
 - Advanced array merging with `_add`/`_remove` patterns
-- High-performance file loading with caching
-- Environment variable processing with nested key support
+- High-performance file loading with caching and memory mapping
+- Environment variable processing with smart section support:
+  - **Default section**: `APP_HOST` → `host` (root level)
+  - **Named sections**: `APP__DATABASE_CONFIG__HOST` → `database_config.host`
+  - **Array operations**: `APP__TAGS__ADD` → adds to `tags` array (feature flag required)
+  - **Multi-word support**: Section and key names can contain underscores
+  - **TOML equivalency**: Direct mapping to TOML section structure
 
 ### Success Criteria
 
 - ✅ File loading meets 20-30μs performance target
-- ✅ All configuration formats parse correctly with error collection
-- ✅ Array merge patterns work as specified
-- ✅ Memory usage remains efficient with intelligent caching
+- ✅ All 7 configuration formats (JSON, TOML, YAML, ENV, INI, RON, JSON5) parse correctly with error collection
+- ✅ Enhanced format detection accurately identifies formats (TOML prioritized over JSON)
+- ✅ Array merge patterns work as specified with environment variable `_ADD`/`_REMOVE` support
+- ✅ Environment variable processing correctly handles prefix filtering and nested keys
+- ✅ Memory usage remains efficient with intelligent caching and memory mapping for large files
 
 ### Dependencies
 

@@ -237,6 +237,7 @@ impl FileProvider {
     }
     
     /// Intelligent format detection using file extension and content analysis
+    /// Enhanced with comprehensive format support based on config-rs, confique, and cfgfifo research
     fn detect_format(&self, path: &Path, content: &[u8]) -> Result<ConfigFormat, ProviderError> {
         // Try extension-based detection first
         if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
@@ -245,6 +246,9 @@ impl FileProvider {
                 "toml" => return Ok(ConfigFormat::Toml),
                 "yaml" | "yml" => return Ok(ConfigFormat::Yaml),
                 "env" => return Ok(ConfigFormat::Env),
+                "ini" | "cfg" | "conf" => return Ok(ConfigFormat::Ini),
+                "ron" => return Ok(ConfigFormat::Ron),
+                "json5" => return Ok(ConfigFormat::Json5),
                 _ => {} // Fall through to content-based detection
             }
         }
@@ -262,6 +266,35 @@ impl FileProvider {
         let text = String::from_utf8_lossy(content);
         let trimmed = text.trim();
         
+        // TOML detection first (has [section] or key = value patterns)
+        // This is more specific than JSON, so check it first
+        if text.lines().any(|line| {
+            let line = line.trim();
+            (line.starts_with('[') && line.ends_with(']') && !line.contains(',')) ||
+            (line.contains('=') && !line.starts_with('#') && !line.contains(':'))
+        }) {
+            return Ok(ConfigFormat::Toml);
+        }
+        
+        // INI detection (similar to TOML but less strict)
+        if text.lines().any(|line| {
+            let line = line.trim();
+            line.starts_with('[') && line.ends_with(']') && line.len() > 2
+        }) {
+            return Ok(ConfigFormat::Ini);
+        }
+        
+        // RON detection (starts with parentheses or has RON-specific syntax)
+        if trimmed.starts_with('(') && trimmed.ends_with(')') {
+            return Ok(ConfigFormat::Ron);
+        }
+        
+        // JSON5 detection (similar to JSON but may have comments)
+        if (trimmed.starts_with('{') || trimmed.starts_with('[')) && 
+           (text.contains("//") || text.contains("/*")) {
+            return Ok(ConfigFormat::Json5);
+        }
+        
         // JSON detection
         if (trimmed.starts_with('{') && trimmed.ends_with('}')) ||
            (trimmed.starts_with('[') && trimmed.ends_with(']')) {
@@ -270,29 +303,24 @@ impl FileProvider {
         
         // YAML detection (starts with ---, has key: value patterns)
         if trimmed.starts_with("---") || 
-           text.lines().any(|line| line.trim().contains(": ") && !line.trim_start().starts_with('#')) {
+           text.lines().any(|line| {
+               let line = line.trim();
+               line.contains(": ") && !line.trim_start().starts_with('#') && !line.contains('=')
+           }) {
             return Ok(ConfigFormat::Yaml);
         }
         
-        // TOML detection (has [section] or key = value patterns)
-        if text.lines().any(|line| {
-            let line = line.trim();
-            line.starts_with('[') && line.ends_with(']') ||
-            line.contains('=') && !line.starts_with('#')
-        }) {
-            return Ok(ConfigFormat::Toml);
-        }
-        
-        // Environment file detection (KEY=value patterns)
+        // Environment file detection (KEY=value patterns, all lines)
         if text.lines().all(|line| {
             let line = line.trim();
-            line.is_empty() || line.starts_with('#') || line.contains('=')
+            line.is_empty() || line.starts_with('#') || 
+            (line.contains('=') && line.chars().next().map_or(false, |c| c.is_ascii_uppercase()))
         }) {
             return Ok(ConfigFormat::Env);
         }
         
-        // Default to JSON if unable to detect
-        Ok(ConfigFormat::Json)
+        // Default to TOML if unable to detect (more forgiving than JSON)
+        Ok(ConfigFormat::Toml)
     }
 }
 ```
@@ -300,13 +328,24 @@ impl FileProvider {
 ### Format Parsing
 
 ```rust
-/// Configuration format types
+/// Comprehensive configuration format types
+/// Enhanced with formats from config-rs, confique, and cfgfifo for maximum compatibility
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ConfigFormat {
+    /// JSON format with SIMD acceleration support
     Json,
+    /// TOML format for structured configuration
     Toml,
+    /// YAML format for human-readable configuration
     Yaml,
+    /// Environment variable format
     Env,
+    /// INI format for legacy configuration files
+    Ini,
+    /// RON (Rust Object Notation) format for Rust-native configs
+    Ron,
+    /// JSON5 format with comments and relaxed syntax
+    Json5,
 }
 
 impl FileProvider {
@@ -324,6 +363,9 @@ impl FileProvider {
             ConfigFormat::Toml => self.parse_toml(content).await,
             ConfigFormat::Yaml => self.parse_yaml(content).await,
             ConfigFormat::Env => self.parse_env(content, context).await,
+            ConfigFormat::Ini => self.parse_ini(content).await,
+            ConfigFormat::Ron => self.parse_ron(content).await,
+            ConfigFormat::Json5 => self.parse_json5(content).await,
         };
         
         let parse_time = start_time.elapsed();
@@ -429,6 +471,63 @@ impl FileProvider {
         Ok(serde_json::Value::Object(result))
     }
     
+    /// Parse INI format with section support
+    async fn parse_ini(&self, content: &[u8]) -> Result<serde_json::Value, ProviderError> {
+        let text = String::from_utf8_lossy(content);
+        let ini = ini::Ini::load_from_str(&text)
+            .map_err(|e| ProviderError::ParseError {
+                format: ConfigFormat::Ini,
+                source: Box::new(e),
+            })?;
+        
+        let mut result = serde_json::Map::new();
+        
+        // Convert INI sections to nested JSON structure
+        for (section_name, properties) in ini.iter() {
+            let section_name = section_name.unwrap_or("default");
+            let mut section_map = serde_json::Map::new();
+            
+            for (key, value) in properties.iter() {
+                // Try to parse value as JSON first, fall back to string
+                let parsed_value = serde_json::from_str(value)
+                    .unwrap_or_else(|_| serde_json::Value::String(value.to_string()));
+                section_map.insert(key.to_string(), parsed_value);
+            }
+            
+            result.insert(section_name.to_string(), serde_json::Value::Object(section_map));
+        }
+        
+        Ok(serde_json::Value::Object(result))
+    }
+    
+    /// Parse RON format (Rust Object Notation)
+    async fn parse_ron(&self, content: &[u8]) -> Result<serde_json::Value, ProviderError> {
+        let text = String::from_utf8_lossy(content);
+        let ron_value: ron::Value = ron::from_str(&text)
+            .map_err(|e| ProviderError::ParseError {
+                format: ConfigFormat::Ron,
+                source: Box::new(e),
+            })?;
+        
+        // Convert RON to JSON for unified handling
+        serde_json::to_value(ron_value)
+            .map_err(|e| ProviderError::ConversionError {
+                from: ConfigFormat::Ron,
+                to: ConfigFormat::Json,
+                source: Box::new(e),
+            })
+    }
+    
+    /// Parse JSON5 format with enhanced syntax support
+    async fn parse_json5(&self, content: &[u8]) -> Result<serde_json::Value, ProviderError> {
+        let text = String::from_utf8_lossy(content);
+        json5::from_str(&text)
+            .map_err(|e| ProviderError::ParseError {
+                format: ConfigFormat::Json5,
+                source: Box::new(e),
+            })
+    }
+    
     /// Expand environment variables in values
     fn expand_env_vars(&self, value: &str, env_vars: &HashMap<String, String>) -> Result<String, ProviderError> {
         let mut result = value.to_string();
@@ -496,7 +595,401 @@ impl FileProvider {
 
 ### Advanced Environment Variable Processing
 
+#### Environment Variable Syntax Guide
+
+SuperConfig V2 provides powerful environment variable processing with support for sections, nested keys, and array operations. The syntax uses strategic underscore placement to create clean, predictable mappings.
+
+##### Basic Syntax Rules
+
+1. **App Prefix Separation**: Single underscore (`_`) separates app prefix from configuration
+2. **Section Boundaries**: Double underscore (`__`) separates sections and operations
+3. **Word Separation**: Single underscore (`_`) within section/key names for readability
+4. **Array Operations**: Double underscore (`__`) before `ADD`/`REMOVE` for array manipulation
+
+##### Examples
+
+**Default Section (Root Level)**
+
+```bash
+# Maps to root level keys
+APP_HOST=localhost              # → { "host": "localhost" }
+APP_DATABASE_HOST=db.example    # → { "database_host": "db.example" }  
+APP_LOG_LEVEL=info              # → { "log_level": "info" }
+```
+
+**Named Sections**
+
+```bash
+# Maps to nested objects (like TOML sections)
+APP__DATABASE_CONFIG__HOST=localhost        # → { "database_config": { "host": "localhost" } }
+APP__DATABASE_CONFIG__PORT=5432             # → { "database_config": { "port": 5432 } }
+APP__LOG_SETTINGS__LEVEL=debug              # → { "log_settings": { "level": "debug" } }
+APP__API_SERVER__MAX_CONNECTIONS=100        # → { "api_server": { "max_connections": 100 } }
+```
+
+**Array Operations (Feature Flag Required)**
+
+```bash
+# Enable with: config.enable_array_operations = true
+APP__DATABASE_CONFIG__TAGS__ADD='["primary","cached"]'    # Adds to database_config.tags
+APP__DATABASE_CONFIG__TAGS__REMOVE='["old"]'             # Removes from database_config.tags
+APP_FEATURES__ADD='["auth","logging"]'                    # Adds to root features array
+```
+
+##### TOML Equivalency
+
+This environment variable syntax directly maps to TOML structure:
+
+```toml
+# Environment: APP_HOST=localhost, APP_LOG_LEVEL=info
+host = "localhost"
+log_level = "info"
+
+# Environment: APP__DATABASE_CONFIG__HOST=localhost, APP__DATABASE_CONFIG__PORT=5432
+[database_config]
+host = "localhost"
+port = 5432
+
+# Environment: APP__LOG_SETTINGS__LEVEL=debug, APP__LOG_SETTINGS__FILE=/var/log/app.log
+[log_settings]
+level = "debug"
+file = "/var/log/app.log"
+```
+
+##### Configuration Options
+
 ```rust
+// Enhanced chainable flag management with per-source control
+use superconfig::{ConfigFlags, ConfigBuilder};
+
+let config = ConfigBuilder::new()
+    .enable(ConfigFlags::STRICT_MODE | ConfigFlags::SIMD)
+    .with_file("config.toml")
+    .disable(ConfigFlags::SIMD)  // Disable SIMD for this file specifically
+    .with_file("legacy.ini")     // SIMD remains disabled for INI
+    .enable(ConfigFlags::ARRAY_MERGE)
+    .with_env("APP")             // Array merge enabled for env vars
+    .disable(ConfigFlags::ARRAY_MERGE | ConfigFlags::STRICT_MODE)
+    .with_file("override.yaml")  // Different flags for final override
+    .build()?;
+
+// Sequential flag management - flags apply to subsequently added sources
+let config = ConfigBuilder::new()
+    .enable(ConfigFlags::STRICT_MODE | ConfigFlags::PROFILING)  // Global defaults
+    .with_file("base.toml")              // Uses: STRICT_MODE + PROFILING
+    .enable(ConfigFlags::ARRAY_MERGE)   // Add array merge to current flags
+    .with_env("APP")                     // Uses: STRICT_MODE + PROFILING + ARRAY_MERGE
+    .disable(ConfigFlags::PROFILING)    // Remove profiling from current flags
+    .with_file("secrets.env")           // Uses: STRICT_MODE + ARRAY_MERGE
+    .build()?;
+
+// Individual provider configuration remains available
+let env_provider = EnvironmentProvider::new()
+    .with_prefix("APP".to_string())
+    .with_case_handling(false)
+    .enable(ConfigFlags::ARRAY_MERGE | ConfigFlags::ENV_EXPANSION);
+```
+
+##### Bitwise Configuration Flags
+
+```rust
+/// Global configuration flags using bitwise operations (FFI-compatible)
+/// Uses u64 for universal language support (JavaScript, WASM, Python, C/C++, Go, Java, C#, Swift, Kotlin)
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ConfigFlags(pub u64);
+
+impl ConfigFlags {
+    /// Enable array merge operations (_ADD/_REMOVE suffixes)
+    pub const ARRAY_MERGE: ConfigFlags = ConfigFlags(0b0000_0001);
+    
+    /// Enable environment variable expansion (${VAR})
+    pub const ENV_EXPANSION: ConfigFlags = ConfigFlags(0b0000_0010);
+    
+    /// Allow empty/null values in configuration
+    pub const EMPTY_VALUES: ConfigFlags = ConfigFlags(0b0000_0100);
+    
+    /// Enable hot reload file watching
+    pub const HOT_RELOAD: ConfigFlags = ConfigFlags(0b0000_1000);
+    
+    /// Enable SIMD acceleration for parsing
+    pub const SIMD: ConfigFlags = ConfigFlags(0b0001_0000);
+    
+    /// Enable parallel loading for multiple files
+    pub const PARALLEL: ConfigFlags = ConfigFlags(0b0010_0000);
+    
+    /// Enable performance profiling and metrics
+    pub const PROFILING: ConfigFlags = ConfigFlags(0b0100_0000);
+    
+    /// Enable strict validation mode
+    pub const STRICT_MODE: ConfigFlags = ConfigFlags(0b1000_0000);
+    
+    /// Enable format auto-detection fallbacks
+    pub const FORMAT_FALLBACK: ConfigFlags = ConfigFlags(0b0001_0000_0000);
+    
+    /// Enable schema validation during loading
+    pub const SCHEMA_VALIDATION: ConfigFlags = ConfigFlags(0b0010_0000_0000);
+    
+    /// No flags enabled (default)
+    pub const NONE: ConfigFlags = ConfigFlags(0);
+    
+    /// All flags enabled (for testing)
+    pub const ALL: ConfigFlags = ConfigFlags(0b0011_1111_1111);
+}
+
+// Bitwise operations
+impl std::ops::BitOr for ConfigFlags {
+    type Output = Self;
+    fn bitor(self, rhs: Self) -> Self {
+        ConfigFlags(self.0 | rhs.0)
+    }
+}
+
+impl std::ops::BitAnd for ConfigFlags {
+    type Output = Self;
+    fn bitand(self, rhs: Self) -> Self {
+        ConfigFlags(self.0 & rhs.0)
+    }
+}
+
+impl ConfigFlags {
+    /// Check if a specific flag is enabled
+    pub fn has(self, flag: ConfigFlags) -> bool {
+        (self & flag).0 != 0
+    }
+    
+    /// Enable a flag (immutable)
+    pub fn enable(self, flag: ConfigFlags) -> Self {
+        self | flag
+    }
+    
+    /// Disable a flag (immutable)
+    pub fn disable(self, flag: ConfigFlags) -> Self {
+        ConfigFlags(self.0 & !flag.0)
+    }
+    
+    /// Toggle a flag (immutable)
+    pub fn toggle(self, flag: ConfigFlags) -> Self {
+        ConfigFlags(self.0 ^ flag.0)
+    }
+}
+
+/// Enhanced configuration builder with chainable flag management
+#[derive(Debug, Clone)]
+pub struct ConfigBuilder {
+    /// Current flag state that applies to subsequently added sources
+    current_flags: ConfigFlags,
+    
+    /// Configuration sources with their associated flags
+    sources: Vec<ConfigSource>,
+    
+    /// Global configuration options
+    global_options: GlobalOptions,
+}
+
+#[derive(Debug, Clone)]
+pub struct ConfigSource {
+    /// Source type and location
+    source_type: SourceType,
+    
+    /// Flags active for this specific source
+    flags: ConfigFlags,
+    
+    /// Source-specific options
+    options: SourceOptions,
+}
+
+#[derive(Debug, Clone)]
+pub enum SourceType {
+    File { path: PathBuf, format: Option<ConfigFormat> },
+    Environment { prefix: Option<String> },
+    Directory { path: PathBuf, recursive: bool },
+    Glob { patterns: Vec<String> },
+    Hierarchical { app_name: String, base_dir: PathBuf },
+}
+
+impl ConfigBuilder {
+    /// Create new builder with no flags enabled
+    pub fn new() -> Self {
+        Self {
+            current_flags: ConfigFlags::NONE,
+            sources: Vec::new(),
+            global_options: GlobalOptions::default(),
+        }
+    }
+    
+    /// Enable flags for subsequently added sources
+    pub fn enable(mut self, flags: ConfigFlags) -> Self {
+        self.current_flags = self.current_flags.enable(flags);
+        self
+    }
+    
+    /// Disable flags for subsequently added sources
+    pub fn disable(mut self, flags: ConfigFlags) -> Self {
+        self.current_flags = self.current_flags.disable(flags);
+        self
+    }
+    
+    /// Add file source with current flag state
+    pub fn with_file<P: Into<PathBuf>>(mut self, path: P) -> Self {
+        let source = ConfigSource {
+            source_type: SourceType::File { 
+                path: path.into(), 
+                format: None  // Auto-detect format
+            },
+            flags: self.current_flags,
+            options: SourceOptions::default(),
+        };
+        self.sources.push(source);
+        self
+    }
+    
+    /// Add environment source with current flag state
+    pub fn with_env<S: Into<String>>(mut self, prefix: S) -> Self {
+        let source = ConfigSource {
+            source_type: SourceType::Environment { 
+                prefix: Some(prefix.into()) 
+            },
+            flags: self.current_flags,
+            options: SourceOptions::default(),
+        };
+        self.sources.push(source);
+        self
+    }
+    
+    /// Add directory source with current flag state
+    pub fn with_directory<P: Into<PathBuf>>(mut self, path: P) -> Self {
+        let source = ConfigSource {
+            source_type: SourceType::Directory { 
+                path: path.into(), 
+                recursive: false 
+            },
+            flags: self.current_flags,
+            options: SourceOptions::default(),
+        };
+        self.sources.push(source);
+        self
+    }
+    
+    /// Add glob pattern source with current flag state
+    pub fn with_glob<I, S>(mut self, patterns: I) -> Self 
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let source = ConfigSource {
+            source_type: SourceType::Glob { 
+                patterns: patterns.into_iter().map(|s| s.into()).collect() 
+            },
+            flags: self.current_flags,
+            options: SourceOptions::default(),
+        };
+        self.sources.push(source);
+        self
+    }
+    
+    /// Build the final configuration
+    pub fn build(self) -> Result<ConfigHandle, ConfigError> {
+        // Create configuration engine with sources and flags
+        let engine = ConfigEngine::new(self.sources, self.global_options)?;
+        engine.load()
+    }
+    
+    /// Get preview of current configuration without building
+    pub fn preview(self) -> ConfigPreview {
+        ConfigPreview {
+            sources: self.sources,
+            global_flags: self.current_flags,
+            estimated_load_time: self.estimate_load_time(),
+        }
+    }
+    
+    /// Estimate configuration loading time based on sources and flags
+    fn estimate_load_time(&self) -> std::time::Duration {
+        let mut total_us = 0u64;
+        
+        for source in &self.sources {
+            let base_time = match &source.source_type {
+                SourceType::File { .. } => 25,      // ~25μs per file
+                SourceType::Environment { .. } => 10,  // ~10μs for env vars
+                SourceType::Directory { .. } => 100,   // ~100μs for directory scan
+                SourceType::Glob { patterns } => patterns.len() as u64 * 30, // ~30μs per pattern
+                SourceType::Hierarchical { .. } => 200, // ~200μs for hierarchical discovery
+            };
+            
+            // Adjust for flags
+            let flag_multiplier = if source.flags.has(ConfigFlags::SIMD) { 0.5 } else { 1.0 };
+            let parallel_divisor = if source.flags.has(ConfigFlags::PARALLEL) { 2.0 } else { 1.0 };
+            
+            total_us += ((base_time as f64 * flag_multiplier) / parallel_divisor) as u64;
+        }
+        
+        std::time::Duration::from_micros(total_us)
+    }
+}
+
+/// Preview information for configuration building
+#[derive(Debug)]
+pub struct ConfigPreview {
+    pub sources: Vec<ConfigSource>,
+    pub global_flags: ConfigFlags,
+    pub estimated_load_time: std::time::Duration,
+}
+
+impl ConfigPreview {
+    /// Get human-readable summary
+    pub fn summary(&self) -> String {
+        format!(
+            "Configuration with {} sources, estimated load time: {}μs",
+            self.sources.len(),
+            self.estimated_load_time.as_micros()
+        )
+    }
+}
+```
+
+##### Best Practices
+
+1. **Consistent Prefixes**: Use consistent app prefixes (e.g., `MYAPP_`, `SERVICE_`)
+2. **Meaningful Sections**: Use descriptive section names (`DATABASE_CONFIG` not `DB`)
+3. **Array Operations**: Only enable when needed (security consideration)
+4. **Documentation**: Document your environment variable schema for your users
+5. **Validation**: Validate critical configuration values after loading
+
+##### Advanced Features
+
+**Type-Aware Parsing**: Values are automatically parsed as JSON when possible
+
+```bash
+APP_PORT=8080                    # → { "port": 8080 } (number)
+APP_ENABLED=true                 # → { "enabled": true } (boolean)
+APP_TAGS='["web","api"]'         # → { "tags": ["web", "api"] } (array)
+APP_CONFIG='{"timeout":30}'      # → { "config": {"timeout": 30} } (object)
+```
+
+**Variable Expansion**: Environment variables can reference other variables
+
+```bash
+APP_DATA_DIR=/var/data
+APP_LOG_FILE=${APP_DATA_DIR}/app.log  # → "/var/data/app.log"
+```
+
+```rust
+/// Array operation types for environment variables
+#[derive(Debug, Clone)]
+pub enum ArrayOperationType {
+    Add,
+    Remove,
+}
+
+/// Array operation structure
+#[derive(Debug, Clone)]
+pub struct ArrayOperation {
+    key: String,
+    operation: ArrayOperationType,
+    value: String,
+}
+
 /// Environment variable provider with prefix support and nesting
 pub struct EnvironmentProvider {
     /// Configuration for environment processing
@@ -505,10 +998,10 @@ pub struct EnvironmentProvider {
 
 #[derive(Debug, Clone)]
 pub struct EnvironmentProviderConfig {
-    /// Environment variable prefix to filter by
+    /// Environment variable prefix to filter by (e.g. "APP")
     pub prefix: Option<String>,
     
-    /// Separator for nested keys (default: "__")
+    /// Separator for nested keys (default: "__" for sections, "_" within sections)
     pub separator: String,
     
     /// Whether to preserve case or convert to lowercase
@@ -516,6 +1009,9 @@ pub struct EnvironmentProviderConfig {
     
     /// Whether to strip prefix from keys
     pub strip_prefix: bool,
+    
+    /// Enable array operations with _ADD/_REMOVE suffixes (config-wide feature flag)
+    pub enable_array_operations: bool,
 }
 
 impl EnvironmentProvider {
@@ -526,6 +1022,7 @@ impl EnvironmentProvider {
                 separator: "__".to_string(),
                 preserve_case: false,
                 strip_prefix: true,
+                enable_array_operations: false, // Disabled by default
             }
         }
     }
@@ -535,17 +1032,34 @@ impl EnvironmentProvider {
         self
     }
     
-    /// Load environment variables into nested configuration
+    pub fn with_array_operations(mut self, enabled: bool) -> Self {
+        self.config.enable_array_operations = enabled;
+        self
+    }
+    
+    pub fn with_case_handling(mut self, preserve_case: bool) -> Self {
+        self.config.preserve_case = preserve_case;
+        self
+    }
+    
+    /// Load environment variables with smart section support
+    /// Logic: APP_ (single) separates prefix, __ (double) separates sections/operations
+    /// Example: APP_DATABASE_HOST → database_host (default section)
+    /// Example: APP__SECTION_NAME__KEY_WORD → section_name.key_word
+    /// Example: APP__SECTION_NAME__KEY_WORD__ADD → adds to section_name.key_word array (if enabled)
     async fn load_env(&self, context: &LoadContext) -> Result<ProviderResult, ProviderError> {
         let mut result = serde_json::Map::new();
+        let mut array_operations = Vec::new();
         
         for (key, value) in &context.env_vars {
+            // Apply prefix filtering
             if let Some(ref prefix) = self.config.prefix {
                 if !key.starts_with(prefix) {
                     continue;
                 }
             }
             
+            // Strip prefix and process key
             let processed_key = if let Some(ref prefix) = self.config.prefix {
                 if self.config.strip_prefix {
                     key.strip_prefix(prefix)
@@ -558,13 +1072,40 @@ impl EnvironmentProvider {
                 key
             };
             
-            let final_key = if self.config.preserve_case {
-                processed_key.to_string()
+            // Check for array operation suffixes (__ADD, __REMOVE) if enabled
+            let (final_key, array_op) = if self.config.enable_array_operations {
+                if let Some(base_key) = processed_key.strip_suffix("__ADD") {
+                    (base_key, Some(ArrayOperationType::Add))
+                } else if let Some(base_key) = processed_key.strip_suffix("__REMOVE") {
+                    (base_key, Some(ArrayOperationType::Remove))
+                } else {
+                    (processed_key, None)
+                }
             } else {
-                processed_key.to_lowercase()
+                (processed_key, None)
             };
             
-            self.insert_nested_env_key(&mut result, &final_key, value);
+            let final_key = if self.config.preserve_case {
+                final_key.to_string()
+            } else {
+                final_key.to_lowercase()
+            };
+            
+            // Handle array operations separately
+            if let Some(op) = array_op {
+                array_operations.push(ArrayOperation {
+                    key: final_key,
+                    operation: op,
+                    value: value.clone(),
+                });
+            } else {
+                self.insert_env_key_with_sections(&mut result, &final_key, value);
+            }
+        }
+        
+        // Apply array operations after basic key insertion
+        for array_op in array_operations {
+            self.apply_array_operation(&mut result, &array_op)?;
         }
         
         Ok(ProviderResult {
@@ -582,8 +1123,9 @@ impl EnvironmentProvider {
         })
     }
     
-    /// Insert environment variable with nested key support
-    fn insert_nested_env_key(&self, object: &mut serde_json::Map<String, serde_json::Value>, key: &str, value: &str) {
+    /// Insert environment variable with section support
+    /// Handles both default section (no __) and named sections (with __)
+    fn insert_env_key_with_sections(&self, object: &mut serde_json::Map<String, serde_json::Value>, key: &str, value: &str) {
         let parts: Vec<&str> = key.split(&self.config.separator).collect();
         
         if parts.len() == 1 {
@@ -615,6 +1157,73 @@ impl EnvironmentProvider {
                 }
             }
         }
+    }
+    
+    /// Apply array operation (ADD/REMOVE) to configuration
+    fn apply_array_operation(&self, object: &mut serde_json::Map<String, serde_json::Value>, array_op: &ArrayOperation) -> Result<(), ProviderError> {
+        let parts: Vec<&str> = array_op.key.split(&self.config.separator).collect();
+        
+        // Navigate to the parent object containing the array
+        let mut current = object;
+        for part in &parts[..parts.len() - 1] {
+            let entry = current.entry(part.to_string()).or_insert_with(|| {
+                serde_json::Value::Object(serde_json::Map::new())
+            });
+            
+            if let serde_json::Value::Object(obj) = entry {
+                current = obj;
+            } else {
+                return Err(ProviderError::ArrayOperationError {
+                    key: array_op.key.clone(),
+                    error: format!("Path {} is not an object", part),
+                });
+            }
+        }
+        
+        // Get the final array key
+        let array_key = parts.last().unwrap();
+        
+        // Parse the value (could be JSON array or single value)
+        let new_values: Vec<serde_json::Value> = if array_op.value.starts_with('[') {
+            // Parse as JSON array  
+            serde_json::from_str(&array_op.value)
+                .map_err(|e| ProviderError::ArrayOperationError {
+                    key: array_op.key.clone(),
+                    error: format!("Invalid JSON array: {}", e),
+                })?
+        } else {
+            // Single value
+            vec![serde_json::Value::String(array_op.value.clone())]
+        };
+        
+        // Apply the operation
+        match array_op.operation {
+            ArrayOperationType::Add => {
+                let entry = current.entry(array_key.to_string()).or_insert_with(|| {
+                    serde_json::Value::Array(Vec::new())
+                });
+                
+                if let serde_json::Value::Array(arr) = entry {
+                    arr.extend(new_values);
+                } else {
+                    return Err(ProviderError::ArrayOperationError {
+                        key: array_op.key.clone(),
+                        error: "Target is not an array".to_string(),
+                    });
+                }
+            },
+            ArrayOperationType::Remove => {
+                if let Some(serde_json::Value::Array(arr)) = current.get_mut(array_key) {
+                    // Remove matching values
+                    for value_to_remove in &new_values {
+                        arr.retain(|v| v != value_to_remove);
+                    }
+                }
+                // If array doesn't exist, ignore remove operation
+            }
+        }
+        
+        Ok(())
     }
 }
 ```
@@ -1125,6 +1734,9 @@ pub enum ProviderError {
     
     #[error("Provider operation timed out after {timeout_ms}ms")]
     ProviderTimeout { timeout_ms: u64 },
+    
+    #[error("Array operation failed for key '{key}': {error}")]
+    ArrayOperationError { key: String, error: String },
 }
 ```
 

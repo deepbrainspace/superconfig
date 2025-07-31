@@ -28,6 +28,73 @@ This document specifies the Foreign Function Interface (FFI) integration strateg
 3. **Zero-Copy Design**: Minimize data copying between languages
 4. **Memory Safety**: Automatic cleanup with RAII patterns
 5. **Performance First**: Target <1μs Python FFI, <2μs Node.js FFI overhead
+6. **JSON Bridge Pattern**: Core crate provides `_as_json` helpers for seamless FFI error handling
+
+## JSON Bridge Pattern for FFI Compatibility
+
+### Core Implementation Strategy
+
+To maintain thin FFI wrappers and consistent error handling across all language bindings, SuperConfig V2 uses a **JSON Bridge Pattern**:
+
+```rust
+// Core crate - Business logic with Result<T, Error>
+impl ConfigRegistry {
+    pub fn enable(&self, flags: u64) -> Result<(), RegistryError> {
+        // Business logic here
+    }
+    
+    // JSON helper for FFI - internal use only
+    #[allow(dead_code)] // Used by FFI crates
+    pub(crate) fn enable_as_json(&self, flags: u64) -> String {
+        match self.enable(flags) {
+            Ok(()) => serde_json::to_string(&serde_json::json!({"success": true})).unwrap(),
+            Err(e) => serde_json::to_string(&serde_json::json!({
+                "success": false,
+                "error": e.to_string()
+            })).unwrap(),
+        }
+    }
+}
+```
+
+### FFI Wrapper Implementation
+
+Each language binding provides a thin wrapper that uses the JSON helper:
+
+```python
+# superconfig-py - Python wrapper
+class ConfigRegistry:
+    def enable(self, flags: int) -> None:
+        result = json.loads(self._registry.enable_as_json(flags))
+        if not result["success"]:
+            raise RuntimeError(result["error"])
+```
+
+```javascript
+// superconfig-napi - Node.js wrapper  
+class ConfigRegistry {
+    enable(flags) {
+        const result = JSON.parse(this._registry.enableAsJson(flags));
+        if (!result.success) {
+            throw new Error(result.error);
+        }
+    }
+}
+```
+
+### Pattern Benefits
+
+1. **Consistent Error Handling**: Same error format across all languages
+2. **Thin Wrappers**: FFI code only handles JSON parsing + language-specific exceptions
+3. **Single Source of Truth**: All business logic and error messages in Rust core
+4. **Easy Maintenance**: Add new methods once in core, minimal FFI wrapper code
+5. **Type Safety**: Rust core maintains full type safety, JSON only at FFI boundary
+
+### JSON Helper Naming Convention
+
+- Core method: `method_name()` - returns `Result<T, Error>`
+- JSON helper: `method_name_as_json()` - returns `String` with success/error JSON
+- FFI wrapper: `method_name()` - parses JSON and throws language-appropriate exceptions
 
 ## Python Bindings (PyO3)
 
