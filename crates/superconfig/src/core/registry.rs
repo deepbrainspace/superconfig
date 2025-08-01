@@ -17,7 +17,7 @@ use super::{
     handle::ConfigHandle,
     stats::RegistryStats,
 };
-use crate::config_flags::{FlagError, VerbosityLevel, verbosity};
+use logffi::warn;
 
 /// Internal entry stored in the registry
 #[derive(Debug)]
@@ -104,8 +104,6 @@ pub struct ConfigRegistry {
     startup_flags: u32,
     /// Runtime flags - mutable at runtime
     runtime_flags: Arc<parking_lot::RwLock<u64>>,
-    /// Verbosity level - mutable at runtime
-    verbosity: Arc<parking_lot::RwLock<u8>>,
     /// Collected errors from try_* methods for permissive error handling
     #[allow(dead_code)] // Used by fluent API patterns (future implementation)
     collected_errors: Arc<parking_lot::RwLock<Vec<FluentError>>>,
@@ -114,6 +112,10 @@ pub struct ConfigRegistry {
 impl ConfigRegistry {
     /// Create a new configuration registry with default settings (no startup flags)
     ///
+    /// Does not set any log level by default - respects existing logger configuration
+    /// (e.g., `RUST_LOG` environment variable) or your application's logging setup.
+    /// Use logffi directly to configure logging as needed.
+    ///
     /// Returns Arc<ConfigRegistry> for consistent Arc-based chaining with all methods.
     ///
     /// # Examples
@@ -121,12 +123,15 @@ impl ConfigRegistry {
     /// use superconfig::ConfigRegistry;
     /// use std::sync::Arc;
     ///
+    /// // No automatic logging - respects your app's logger setup
     /// let registry = ConfigRegistry::new();
-    /// // registry is Arc<ConfigRegistry>, ready for Arc-based chaining
+    ///
+    /// // Configure logging separately with logffi
+    /// logffi::set_max_level(logffi::LevelFilter::Warn);
     /// ```
     #[must_use]
     pub fn new() -> Arc<Self> {
-        Self::custom(0) // No startup flags
+        Self::custom(crate::config_flags::startup::NO_FLAGS)
     }
 
     /// Create a new configuration registry with custom startup flags
@@ -150,37 +155,8 @@ impl ConfigRegistry {
             stats: Arc::new(RwLock::new(RegistryStats::default())),
             startup_flags,
             runtime_flags: Arc::new(parking_lot::RwLock::new(0)),
-            verbosity: Arc::new(parking_lot::RwLock::new(verbosity::NONE)),
             collected_errors: Arc::new(parking_lot::RwLock::new(Vec::new())),
         })
-    }
-
-    /// Builder method: set verbosity level during construction  
-    ///
-    /// This method works with Arc<ConfigRegistry> for consistent Arc-based chaining.
-    /// Always returns Arc<Self> to continue the chain, errors are collected internally.
-    ///
-    /// # Examples
-    /// ```
-    /// use superconfig::{ConfigRegistry, config_flags::verbosity};
-    ///
-    /// let registry = ConfigRegistry::new()
-    ///     .verbosity(verbosity::DEBUG);
-    /// ```
-    #[generate_json_helper(outgoing, handle_mode)]
-    pub fn verbosity(self: Arc<Self>, level: u8) -> Arc<Self> {
-        // Validate verbosity level
-        if level > verbosity::TRACE {
-            println!("Error: Invalid verbosity level: {level}");
-            return self;
-        }
-
-        // Directly modify the verbosity level through the Arc
-        {
-            let mut verbosity = self.verbosity.write();
-            *verbosity = level;
-        }
-        self
     }
 
     // Flag management methods
@@ -202,7 +178,7 @@ impl ConfigRegistry {
     pub fn enable(self: Arc<Self>, flags: u64) -> Arc<Self> {
         // Validate flags - check if it's a known runtime flag
         if !crate::config_flags::is_valid_runtime_flag(flags) {
-            println!("Error: Invalid runtime flag: 0x{flags:X}");
+            warn!(target: "superconfig.flags", "Invalid runtime flag: 0x{:X}", flags);
             return self;
         }
 
@@ -231,7 +207,7 @@ impl ConfigRegistry {
     pub fn disable(self: Arc<Self>, flags: u64) -> Arc<Self> {
         // Validate flags - check if it's a known runtime flag
         if !crate::config_flags::is_valid_runtime_flag(flags) {
-            println!("Error: Invalid runtime flag: 0x{flags:X}");
+            warn!(target: "superconfig.flags", "Invalid runtime flag: 0x{:X}", flags);
             return self;
         }
 
@@ -266,31 +242,6 @@ impl ConfigRegistry {
     #[must_use]
     pub fn runtime_disabled(&self, flags: u64) -> bool {
         !self.runtime_enabled(flags)
-    }
-
-    /// Runtime method: set verbosity level
-    ///
-    /// # Errors
-    /// Returns `RegistryError::Flag` if level is greater than `verbosity::TRACE`
-    pub fn set_verbosity(&self, level: u8) -> Result<(), RegistryError> {
-        if level > verbosity::TRACE {
-            return Err(FlagError::InvalidVerbosity { level }.into());
-        }
-
-        *self.verbosity.write() = level;
-        Ok(())
-    }
-
-    /// Get current verbosity level
-    #[must_use]
-    pub fn get_verbosity(&self) -> u8 {
-        *self.verbosity.read()
-    }
-
-    /// Get current verbosity level as enum
-    #[must_use]
-    pub fn get_verbosity_level(&self) -> VerbosityLevel {
-        VerbosityLevel::from(*self.verbosity.read())
     }
 
     /// Get current startup flags
@@ -705,7 +656,7 @@ pub fn global_registry() -> &'static Arc<ConfigRegistry> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config_flags::{VerbosityLevel, runtime, startup, verbosity};
+    use crate::config_flags::{runtime, startup};
     use serde::{Deserialize, Serialize};
     use std::sync::atomic::{AtomicU32, Ordering};
     use std::thread;
@@ -741,8 +692,7 @@ mod tests {
     #[test]
     fn test_flag_operations() {
         let registry = ConfigRegistry::custom(startup::SIMD | startup::THREAD_POOL)
-            .enable(runtime::STRICT_MODE | runtime::PARALLEL)
-            .verbosity(verbosity::DEBUG);
+            .enable(runtime::STRICT_MODE | runtime::PARALLEL);
 
         // Test startup flags
         assert!(registry.startup_enabled(startup::SIMD));
@@ -755,10 +705,6 @@ mod tests {
         assert!(registry.runtime_enabled(runtime::PARALLEL));
         assert!(!registry.runtime_enabled(runtime::ARRAY_MERGE));
         assert!(registry.runtime_disabled(runtime::ARRAY_MERGE));
-
-        // Test verbosity
-        assert_eq!(registry.get_verbosity(), verbosity::DEBUG);
-        assert_eq!(registry.get_verbosity_level(), VerbosityLevel::Debug);
 
         // Test runtime flag modification
         let registry = registry.enable(runtime::ARRAY_MERGE);
@@ -1048,28 +994,11 @@ mod tests {
     }
 
     #[test]
-    fn test_verbosity_validation() {
-        let registry = ConfigRegistry::new();
-
-        // Valid verbosity levels
-        assert!(registry.set_verbosity(verbosity::NONE).is_ok());
-        assert!(registry.set_verbosity(verbosity::WARN).is_ok());
-        assert!(registry.set_verbosity(verbosity::DEBUG).is_ok());
-        assert!(registry.set_verbosity(verbosity::TRACE).is_ok());
-
-        // Invalid verbosity level
-        assert!(registry.set_verbosity(99).is_err());
-    }
-
-    #[test]
     fn test_builder_pattern() {
-        let registry = ConfigRegistry::custom(startup::SIMD)
-            .enable(runtime::STRICT_MODE)
-            .verbosity(verbosity::DEBUG);
+        let registry = ConfigRegistry::custom(startup::SIMD).enable(runtime::STRICT_MODE);
 
         assert!(registry.startup_enabled(startup::SIMD));
         assert!(registry.runtime_enabled(runtime::STRICT_MODE));
-        assert_eq!(registry.get_verbosity(), verbosity::DEBUG);
     }
 
     /// Test the macro-generated `enable_as_json` method
@@ -1355,44 +1284,5 @@ mod tests {
         assert!(registry_clone.runtime_enabled(runtime::PARALLEL));
 
         println!("✅ enable_as_json chaining: {json_result}");
-    }
-
-    #[test]
-    fn test_verbosity_chaining() {
-        use crate::config_flags::{runtime, verbosity};
-
-        let registry = ConfigRegistry::new()
-            .enable(runtime::STRICT_MODE)
-            .verbosity(verbosity::DEBUG)
-            .enable(runtime::PARALLEL);
-
-        // Verify all settings were applied
-        assert!(registry.runtime_enabled(runtime::STRICT_MODE));
-        assert!(registry.runtime_enabled(runtime::PARALLEL));
-        assert_eq!(registry.get_verbosity(), verbosity::DEBUG);
-
-        println!("✅ Verbosity chaining works correctly");
-    }
-
-    #[test]
-    fn test_comprehensive_chaining() {
-        use crate::config_flags::{runtime, startup, verbosity};
-
-        // Test a comprehensive chain of operations
-        let registry = ConfigRegistry::custom(startup::SIMD | startup::THREAD_POOL)
-            .enable(runtime::STRICT_MODE)
-            .verbosity(verbosity::DEBUG)
-            .enable(runtime::PARALLEL)
-            .disable(runtime::STRICT_MODE)
-            .verbosity(verbosity::TRACE);
-
-        // Verify final state
-        assert!(registry.startup_enabled(startup::SIMD));
-        assert!(registry.startup_enabled(startup::THREAD_POOL));
-        assert!(!registry.runtime_enabled(runtime::STRICT_MODE)); // Was disabled
-        assert!(registry.runtime_enabled(runtime::PARALLEL));
-        assert_eq!(registry.get_verbosity(), verbosity::TRACE);
-
-        println!("✅ Comprehensive chaining works correctly");
     }
 }

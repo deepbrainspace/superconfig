@@ -22,3 +22,14 @@ tasks:
   publish-dry:
     command: 'cargo publish --dry-run --allow-dirty'
     deps: ['build', 'test', 'lint', 'format-check']
+  
+  # Benchmark baseline management
+  bench-save:
+    command: './benchmarks/scripts/save-baseline.sh'
+    platform: 'system'
+    inputs: ['benchmarks/scripts/save-baseline.sh']
+    
+  bench-compare:
+    command: './benchmarks/scripts/compare-baseline.sh'
+    platform: 'system'  
+    inputs: ['benchmarks/scripts/compare-baseline.sh']

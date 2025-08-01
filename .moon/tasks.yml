@@ -78,13 +78,19 @@ tasks:
     command: "cargo bench --all-features"
     inputs: ["@globs(sources)", "benches/**/*", "@globs(configs)"]
     options:
-      cache: false
+      cache: true
 
-  bench-baseline:
+  bench-compare:
+    command: "cargo bench --all-features -- --baseline main"
+    inputs: ["@globs(sources)", "benches/**/*", "@globs(configs)"]
+    options:
+      cache: true
+
+  bench-save:
     command: "cargo bench --all-features -- --save-baseline main"
     inputs: ["@globs(sources)", "benches/**/*", "@globs(configs)"]
     options:
-      cache: false
+      cache: true
 
   # Feature testing variations
   test-no-default:

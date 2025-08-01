@@ -37,7 +37,7 @@
 use std::sync::OnceLock;
 
 // Re-export everything from log crate for compatibility
-pub use log::{Level, LevelFilter, Metadata, Record, RecordBuilder};
+pub use log::*;
 
 /// FFI callback function type
 /// Parameters: (level, target, message)
@@ -78,18 +78,18 @@ macro_rules! log_with_ffi {
     (target: $target:expr, $level:expr, $($arg:tt)*) => {
         {
             let level_str = match $level {
-                log::Level::Error => "ERROR",
-                log::Level::Warn => "WARN",
-                log::Level::Info => "INFO",
-                log::Level::Debug => "DEBUG",
-                log::Level::Trace => "TRACE",
+                $crate::Level::Error => "ERROR",
+                $crate::Level::Warn => "WARN",
+                $crate::Level::Info => "INFO",
+                $crate::Level::Debug => "DEBUG",
+                $crate::Level::Trace => "TRACE",
             };
 
             // Use log crate's standard logging (respects all filtering)
-            log::log!(target: $target, $level, $($arg)*);
+            $crate::log!(target: $target, $level, $($arg)*);
 
             // Call FFI callback if log would be enabled
-            if log::log_enabled!(target: $target, $level) {
+            if $crate::log_enabled!(target: $target, $level) {
                 let message = format!($($arg)*);
                 $crate::call_ffi_callback(level_str, $target, &message);
             }
@@ -106,10 +106,10 @@ macro_rules! log_with_ffi {
 #[macro_export]
 macro_rules! error {
     (target: $target:expr, $($arg:tt)*) => {
-        $crate::log_with_ffi!(target: $target, log::Level::Error, $($arg)*)
+        $crate::log_with_ffi!(target: $target, $crate::Level::Error, $($arg)*)
     };
     ($($arg:tt)*) => {
-        $crate::log_with_ffi!(log::Level::Error, $($arg)*)
+        $crate::log_with_ffi!($crate::Level::Error, $($arg)*)
     };
 }
 
@@ -119,10 +119,10 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     (target: $target:expr, $($arg:tt)*) => {
-        $crate::log_with_ffi!(target: $target, log::Level::Warn, $($arg)*)
+        $crate::log_with_ffi!(target: $target, $crate::Level::Warn, $($arg)*)
     };
     ($($arg:tt)*) => {
-        $crate::log_with_ffi!(log::Level::Warn, $($arg)*)
+        $crate::log_with_ffi!($crate::Level::Warn, $($arg)*)
     };
 }
 
@@ -132,10 +132,10 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     (target: $target:expr, $($arg:tt)*) => {
-        $crate::log_with_ffi!(target: $target, log::Level::Info, $($arg)*)
+        $crate::log_with_ffi!(target: $target, $crate::Level::Info, $($arg)*)
     };
     ($($arg:tt)*) => {
-        $crate::log_with_ffi!(log::Level::Info, $($arg)*)
+        $crate::log_with_ffi!($crate::Level::Info, $($arg)*)
     };
 }
 
@@ -145,10 +145,10 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     (target: $target:expr, $($arg:tt)*) => {
-        $crate::log_with_ffi!(target: $target, log::Level::Debug, $($arg)*)
+        $crate::log_with_ffi!(target: $target, $crate::Level::Debug, $($arg)*)
     };
     ($($arg:tt)*) => {
-        $crate::log_with_ffi!(log::Level::Debug, $($arg)*)
+        $crate::log_with_ffi!($crate::Level::Debug, $($arg)*)
     };
 }
 
@@ -158,10 +158,10 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! trace {
     (target: $target:expr, $($arg:tt)*) => {
-        $crate::log_with_ffi!(target: $target, log::Level::Trace, $($arg)*)
+        $crate::log_with_ffi!(target: $target, $crate::Level::Trace, $($arg)*)
     };
     ($($arg:tt)*) => {
-        $crate::log_with_ffi!(log::Level::Trace, $($arg)*)
+        $crate::log_with_ffi!($crate::Level::Trace, $($arg)*)
     };
 }
 

@@ -20,12 +20,11 @@
 //! ## Examples
 //!
 //! ```
-//! use superconfig::{ConfigRegistry, config_flags::{startup, runtime, verbosity}};
+//! use superconfig::{ConfigRegistry, config_flags::{startup, runtime}};
 //!
 //! // Create registry with configuration flags
 //! let registry = ConfigRegistry::custom(startup::SIMD | startup::THREAD_POOL)
-//!     .enable(runtime::STRICT_MODE)
-//!     .verbosity(verbosity::DEBUG);
+//!     .enable(runtime::STRICT_MODE);
 //!
 //! // Store and retrieve configuration
 //! let handle = registry.create("localhost".to_string()).unwrap();

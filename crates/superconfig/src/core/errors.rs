@@ -228,11 +228,6 @@ impl FluentError {
                 "Cannot modify startup flags at runtime",
                 "",
             ),
-            FlagError::InvalidVerbosity { level } => SuperConfigError::new(
-                ERROR_INVALID_VERBOSITY,
-                "Invalid verbosity level",
-                format!("level: {level} (valid range: 0-3)"),
-            ),
             FlagError::InvalidFlag { flags } => SuperConfigError::invalid_runtime_flag(*flags),
             FlagError::InvalidRuntimeFlag { flag } => SuperConfigError::invalid_runtime_flag(*flag),
             FlagError::InvalidStartupFlag { flag } => SuperConfigError::invalid_startup_flag(*flag),
@@ -266,19 +261,5 @@ mod tests {
         assert!(format!("{error}").contains("456"));
         assert!(format!("{error}").contains("String"));
         assert!(format!("{error}").contains("i32"));
-    }
-
-    #[test]
-    fn test_error_from_flag_error() {
-        let flag_error = FlagError::InvalidVerbosity { level: 99 };
-        let registry_error: RegistryError = flag_error.into();
-
-        match registry_error {
-            RegistryError::FlagError(inner) => match inner {
-                FlagError::InvalidVerbosity { level } => assert_eq!(level, 99),
-                _ => panic!("Wrong flag error type"),
-            },
-            _ => panic!("Wrong registry error type"),
-        }
     }
 }
