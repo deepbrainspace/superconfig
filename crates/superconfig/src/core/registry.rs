@@ -263,6 +263,7 @@ impl ConfigRegistry {
     /// # Ok(())
     /// # }
     /// ```
+    #[generate_json_helper(outgoing, handle_mode)]
     pub fn arc_enable(self: Arc<Self>, flags: u64) -> Result<Arc<Self>, SuperConfigError> {
         // Validate flags - check if it's a known runtime flag
         if !crate::config_flags::is_valid_runtime_flag(flags) {
@@ -1452,5 +1453,62 @@ mod tests {
         assert!(result2.runtime_enabled(runtime::PARALLEL));
 
         println!("✅ Arc reference behavior: shared state works correctly");
+    }
+
+    #[test]
+    fn test_arc_enable_as_json_success() {
+        use crate::config_flags::runtime;
+
+        let registry = ConfigRegistry::arc_new();
+        let json_result = registry.arc_enable_as_json(runtime::STRICT_MODE);
+
+        let result: serde_json::Value = serde_json::from_str(&json_result).unwrap();
+        assert_eq!(result["success"], true);
+        // handle_mode should not include data field
+        assert!(result.get("data").is_none());
+
+        println!("✅ arc_enable_as_json success: {}", json_result);
+    }
+
+    #[test]
+    fn test_arc_enable_as_json_error() {
+        let registry = ConfigRegistry::arc_new();
+        let json_result = registry.arc_enable_as_json(0xFFFFFFFF); // Invalid flag
+
+        let result: serde_json::Value = serde_json::from_str(&json_result).unwrap();
+        assert_eq!(result["success"], false);
+
+        // Print the actual error to see what it contains
+        let error_msg = result["error"].as_str().unwrap();
+        println!("Actual error message: {}", error_msg);
+
+        // Check for "flag" instead of "invalid" since it might be worded differently
+        assert!(error_msg.contains("flag") || error_msg.contains("runtime"));
+
+        println!("✅ arc_enable_as_json error: {}", json_result);
+    }
+
+    #[test]
+    fn test_arc_enable_as_json_with_chaining() {
+        use crate::config_flags::runtime;
+
+        let registry = ConfigRegistry::arc_new();
+
+        // Test that the original arc_enable still works for chaining
+        let registry = registry.arc_enable(runtime::STRICT_MODE).unwrap();
+
+        // Clone registry before the move
+        let registry_clone = Arc::clone(&registry);
+
+        // Test that JSON helper works after chaining
+        let json_result = registry.arc_enable_as_json(runtime::PARALLEL);
+        let result: serde_json::Value = serde_json::from_str(&json_result).unwrap();
+        assert_eq!(result["success"], true);
+
+        // Verify flags are enabled using the clone
+        assert!(registry_clone.runtime_enabled(runtime::STRICT_MODE));
+        assert!(registry_clone.runtime_enabled(runtime::PARALLEL));
+
+        println!("✅ arc_enable_as_json chaining: {}", json_result);
     }
 }
