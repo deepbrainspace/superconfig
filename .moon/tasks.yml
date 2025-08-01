@@ -9,18 +9,18 @@ fileGroups:
 
 tasks:
   # Standard formatting tasks
-  fmt:
+  format:
     command: "cargo fmt"
     inputs: ["@globs(sources)"]
     options:
       cache: false
 
-  fmt-check:
+  format-check:
     command: "cargo fmt --check"
     inputs: ["@globs(sources)"]
 
   # Standard linting
-  clippy:
+  lint:
     command: "cargo clippy --all-features -- -D warnings"
     inputs: ["@globs(sources)", "@globs(configs)"]
 
@@ -110,7 +110,7 @@ tasks:
   publish-dry:
     command: "cargo publish --dry-run"
     inputs: ["@globs(sources)", "@globs(configs)"]
-    deps: ["build-release", "test", "clippy", "fmt-check"]
+    deps: ["build-release", "test", "lint", "format-check"]
 
   # Full release workflow with tagging
   publish:

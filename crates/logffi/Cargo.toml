@@ -1,0 +1,15 @@
+[package]
+name = "logffi"
+version = "0.1.0"
+categories = ["development-tools::debugging", "api-bindings"]
+edition = "2024"
+keywords = ["logging", "ffi", "rust", "python", "nodejs"]
+license = "MIT"
+repository = "https://github.com/deepbrain/superconfig"
+description = "Drop-in replacement for log crate with FFI callback support"
+
+[dependencies]
+log = "0.4.27"
+
+[dev-dependencies]
+env_logger = "0.11.8"

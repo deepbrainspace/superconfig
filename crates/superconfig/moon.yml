@@ -21,4 +21,4 @@ tasks:
   # Project-specific publishing with dependencies
   publish-dry:
     command: 'cargo publish --dry-run --allow-dirty'
-    deps: ['build', 'test', 'clippy', 'fmt-check']
+    deps: ['build', 'test', 'lint', 'format-check']
