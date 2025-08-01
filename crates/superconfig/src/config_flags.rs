@@ -119,6 +119,13 @@ pub enum FlagError {
     },
 
     /// Invalid runtime flag value
+    #[error("Invalid runtime flag value: 0x{flags:X}")]
+    InvalidFlag {
+        /// The invalid flag value
+        flags: u64,
+    },
+
+    /// Invalid runtime flag value (legacy)
     #[error("Invalid runtime flag value: 0x{flag:X}")]
     InvalidRuntimeFlag {
         /// The invalid flag value
@@ -131,6 +138,48 @@ pub enum FlagError {
         /// The invalid flag value
         flag: u32,
     },
+}
+
+/// All valid runtime flags combined
+const ALL_RUNTIME_FLAGS: u64 = runtime::ARRAY_MERGE
+    | runtime::PARALLEL
+    | runtime::STRICT_MODE
+    | runtime::ENV_EXPANSION
+    | runtime::FORMAT_FALLBACK;
+
+/// All valid startup flags combined  
+const ALL_STARTUP_FLAGS: u32 = startup::SIMD | startup::THREAD_POOL | startup::DETAILED_STATS;
+
+/// Check if a runtime flag value contains only valid flags
+///
+/// # Examples
+/// ```
+/// use superconfig::config_flags::{self, runtime};
+///
+/// assert!(config_flags::is_valid_runtime_flag(runtime::STRICT_MODE));
+/// assert!(config_flags::is_valid_runtime_flag(runtime::PARALLEL | runtime::STRICT_MODE));
+/// assert!(!config_flags::is_valid_runtime_flag(0xFFFFFFFF)); // Invalid flag
+/// ```
+#[must_use]
+pub const fn is_valid_runtime_flag(flags: u64) -> bool {
+    // Check if all bits in flags are covered by valid runtime flags
+    (flags & !ALL_RUNTIME_FLAGS) == 0
+}
+
+/// Check if a startup flag value contains only valid flags
+///
+/// # Examples  
+/// ```
+/// use superconfig::config_flags::{self, startup};
+///
+/// assert!(config_flags::is_valid_startup_flag(startup::SIMD));
+/// assert!(config_flags::is_valid_startup_flag(startup::SIMD | startup::THREAD_POOL));
+/// assert!(!config_flags::is_valid_startup_flag(0xFFFFFFFF)); // Invalid flag
+/// ```
+#[must_use]
+pub const fn is_valid_startup_flag(flags: u32) -> bool {
+    // Check if all bits in flags are covered by valid startup flags
+    (flags & !ALL_STARTUP_FLAGS) == 0
 }
 
 #[cfg(test)]
@@ -223,5 +272,59 @@ mod tests {
         let error = FlagError::InvalidVerbosity { level: 99 };
         assert!(format!("{}", error).contains("99"));
         assert!(format!("{}", error).contains("0-3"));
+    }
+
+    #[test]
+    fn test_runtime_flag_validation() {
+        // Valid individual flags
+        assert!(is_valid_runtime_flag(runtime::ARRAY_MERGE));
+        assert!(is_valid_runtime_flag(runtime::PARALLEL));
+        assert!(is_valid_runtime_flag(runtime::STRICT_MODE));
+        assert!(is_valid_runtime_flag(runtime::ENV_EXPANSION));
+        assert!(is_valid_runtime_flag(runtime::FORMAT_FALLBACK));
+
+        // Valid combinations
+        assert!(is_valid_runtime_flag(
+            runtime::STRICT_MODE | runtime::PARALLEL
+        ));
+        assert!(is_valid_runtime_flag(
+            runtime::ARRAY_MERGE | runtime::ENV_EXPANSION
+        ));
+
+        // All flags combined should be valid
+        assert!(is_valid_runtime_flag(ALL_RUNTIME_FLAGS));
+
+        // Invalid flags
+        assert!(!is_valid_runtime_flag(0xFFFFFFFF)); // Invalid flag
+        assert!(!is_valid_runtime_flag(1 << 10)); // Unused bit
+        assert!(!is_valid_runtime_flag(0xFF00)); // High bits
+
+        // Zero should be valid (no flags set)
+        assert!(is_valid_runtime_flag(0));
+    }
+
+    #[test]
+    fn test_startup_flag_validation() {
+        // Valid individual flags
+        assert!(is_valid_startup_flag(startup::SIMD));
+        assert!(is_valid_startup_flag(startup::THREAD_POOL));
+        assert!(is_valid_startup_flag(startup::DETAILED_STATS));
+
+        // Valid combinations
+        assert!(is_valid_startup_flag(startup::SIMD | startup::THREAD_POOL));
+        assert!(is_valid_startup_flag(
+            startup::SIMD | startup::DETAILED_STATS
+        ));
+
+        // All flags combined should be valid
+        assert!(is_valid_startup_flag(ALL_STARTUP_FLAGS));
+
+        // Invalid flags
+        assert!(!is_valid_startup_flag(0xFFFFFFFF)); // Invalid flag
+        assert!(!is_valid_startup_flag(1 << 10)); // Unused bit
+        assert!(!is_valid_startup_flag(0xFF00)); // High bits
+
+        // Zero should be valid (no flags set)
+        assert!(is_valid_startup_flag(0));
     }
 }
