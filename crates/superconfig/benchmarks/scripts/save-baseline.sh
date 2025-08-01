@@ -14,7 +14,7 @@ mkdir -p "$BASELINE_DIR"
 
 # Run benchmarks and save results
 echo "Running benchmarks..."
-cargo bench --all-features -- --output-format json > "$BASELINE_DIR/results.json" 2>&1
+cargo bench --all-features > "$BASELINE_DIR/results.txt" 2>&1
 
 # Copy criterion detailed results  
 if [ -d "target/criterion" ]; then
