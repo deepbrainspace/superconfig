@@ -50,6 +50,16 @@ impl SuperConfigError {
         )
     }
 
+    /// Create error for invalid runtime flags with automatic operation context
+    #[must_use]
+    pub fn invalid_runtime_flag_with_context(flags: u64, function_name: &str) -> Self {
+        Self::new(
+            ERROR_INVALID_RUNTIME_FLAG,
+            "Invalid runtime flag value",
+            format!("operation: {function_name}, flags: 0x{flags:X}"),
+        )
+    }
+
     /// Create error for invalid startup flags
     #[must_use]
     pub fn invalid_startup_flag(flags: u32) -> Self {
@@ -245,17 +255,17 @@ mod tests {
     #[test]
     fn test_error_display() {
         let error = RegistryError::HandleNotFound { handle_id: 123 };
-        assert!(format!("{}", error).contains("123"));
-        assert!(format!("{}", error).contains("not found"));
+        assert!(format!("{error}").contains("123"));
+        assert!(format!("{error}").contains("not found"));
 
         let error = RegistryError::WrongType {
             handle_id: 456,
             expected: "String",
             found: "i32",
         };
-        assert!(format!("{}", error).contains("456"));
-        assert!(format!("{}", error).contains("String"));
-        assert!(format!("{}", error).contains("i32"));
+        assert!(format!("{error}").contains("456"));
+        assert!(format!("{error}").contains("String"));
+        assert!(format!("{error}").contains("i32"));
     }
 
     #[test]

@@ -2,7 +2,7 @@ use criterion::{Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
 use std::sync::Arc;
 use std::thread;
-use superconfig::*;
+use superconfig::{ConfigHandle, ConfigRegistry};
 
 #[derive(Debug, Clone, PartialEq)]
 struct BenchConfig {
@@ -39,7 +39,7 @@ fn bench_create_operations(c: &mut Criterion) {
 
             let handle = registry.create(black_box(config)).unwrap();
             black_box(handle)
-        })
+        });
     });
 }
 
@@ -51,7 +51,7 @@ fn bench_read_operations(c: &mut Criterion) {
         b.iter(|| {
             let config = registry.read(black_box(&handle)).unwrap();
             black_box(config)
-        })
+        });
     });
 }
 
@@ -71,7 +71,7 @@ fn bench_update_operations(c: &mut Criterion) {
             registry
                 .update(black_box(&handle), black_box(new_config))
                 .unwrap();
-        })
+        });
     });
 }
 
@@ -96,7 +96,7 @@ fn bench_concurrent_reads(c: &mut Criterion) {
             for handle in handles {
                 handle.join().unwrap();
             }
-        })
+        });
     });
 }
 
@@ -138,7 +138,7 @@ fn bench_mixed_operations(c: &mut Criterion) {
             }
 
             black_box(registry)
-        })
+        });
     });
 }
 
@@ -163,7 +163,7 @@ fn bench_arc_sharing_efficiency(c: &mut Criterion) {
             }
 
             black_box(refs)
-        })
+        });
     });
 }
 
@@ -175,7 +175,7 @@ fn bench_handle_serialization(c: &mut Criterion) {
         b.iter(|| {
             let serialized = serde_json::to_string(black_box(&handle)).unwrap();
             black_box(serialized)
-        })
+        });
     });
 
     let serialized = serde_json::to_string(&handle).unwrap();
@@ -184,7 +184,7 @@ fn bench_handle_serialization(c: &mut Criterion) {
             let handle: ConfigHandle<BenchConfig> =
                 serde_json::from_str(black_box(&serialized)).unwrap();
             black_box(handle)
-        })
+        });
     });
 }
 
@@ -197,7 +197,7 @@ fn bench_memory_efficiency(c: &mut Criterion) {
             let handles: Vec<_> = (0..1000)
                 .map(|i| {
                     let config = BenchConfig {
-                        host: format!("host-{}", i),
+                        host: format!("host-{i}"),
                         port: 8000 + (i % 100) as u16,
                         ..Default::default()
                     };
@@ -212,7 +212,7 @@ fn bench_memory_efficiency(c: &mut Criterion) {
 
             let stats = registry.stats();
             black_box((handles, stats))
-        })
+        });
     });
 }
 

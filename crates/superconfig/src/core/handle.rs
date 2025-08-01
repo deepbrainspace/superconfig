@@ -167,7 +167,7 @@ mod tests {
     #[test]
     fn test_handle_debug() {
         let handle = ConfigHandle::<TestConfig>::new(999);
-        let debug_str = format!("{:?}", handle);
+        let debug_str = format!("{handle:?}");
 
         assert!(debug_str.contains("999"));
         assert!(debug_str.contains("ConfigHandle"));

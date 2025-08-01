@@ -307,12 +307,40 @@ This ensures code quality and prevents technical debt.
 - Roll out Arc ConfigRegistry pattern everywhere once integration is proven
 - Prepare for Phase 2 (Configuration Engine) with validated Arc infrastructure
 
+#### **Current Status - ErrorRegistry Architecture Design** - 🔄 IN PROGRESS (2025-01-31)
+
+**Priority Shift**: Pausing Arc + macro integration to implement unified error handling system first. This provides the foundation for clean error collection patterns.
+
+**Current Task**: Implementing standalone `error-registry` crate with builder pattern API
+
+**Architecture Decided**:
+
+- **ErrorRegistry crate**: Generic, high-performance error storage using DashMap
+- **Builder pattern API**: `registry.errors.query().of_type::<T>().show()` / `.extract()`
+- **FFI compatibility**: String-based queries with JSON serialization
+- **Deref integration**: SuperConfig exposes `pub errors: ErrorRegistry` field
+- **Performance targets**: <100ns error storage, <1μs queries, lock-free concurrent access
+
+**Implementation Plan**: Document 20 - ErrorRegistry Architecture Design
+
+- Phase 1: Core ErrorRegistry with DashMap storage (2-3 hours)
+- Phase 2: Query builder with show/extract methods (2-3 hours)
+- Phase 3: Performance optimization & testing (1-2 hours)
+- Phase 4: SuperConfig integration & FFI updates (1-2 hours)
+
+**Key Decisions Made**:
+
+- Use DashMap for both error storage AND type registry (concurrent read optimization)
+- Builder pattern: `.show()` (peek) vs `.extract()` (remove) for error handling
+- FFI uses string-based type names while Rust maintains full type safety
+- Single ErrorRegistry crate serves both SuperConfig and potential future users
+
 #### **Context for Future Sessions**:
 
-- **Current Architecture**: Arc-based ConfigRegistry with procedural macro integration
-- **Test Status**: All existing tests passing, need integration validation
-- **Focus Areas**: Arc state sharing, error collection, JSON FFI compatibility
-- **Performance Targets**: <1μs Arc overhead, <10% error collection overhead
+- **Current Architecture**: Arc-based ConfigRegistry + ErrorRegistry integration in progress
+- **Test Status**: Arc + macro integration completed, now implementing ErrorRegistry
+- **Focus Areas**: High-performance error collection, builder pattern API, FFI compatibility
+- **Performance Targets**: <100ns error storage, <1μs error queries, lock-free scaling
 
 ## Performance Targets
 

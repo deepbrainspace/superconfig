@@ -267,11 +267,11 @@ mod tests {
     #[test]
     fn test_error_display() {
         let error = FlagError::ImmutableStartupFlag;
-        assert!(format!("{}", error).contains("immutable"));
+        assert!(format!("{error}").contains("immutable"));
 
         let error = FlagError::InvalidVerbosity { level: 99 };
-        assert!(format!("{}", error).contains("99"));
-        assert!(format!("{}", error).contains("0-3"));
+        assert!(format!("{error}").contains("99"));
+        assert!(format!("{error}").contains("0-3"));
     }
 
     #[test]
