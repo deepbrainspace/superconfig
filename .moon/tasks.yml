@@ -39,15 +39,24 @@ tasks:
 
   # Coverage using cargo-llvm-cov (replaces tarpaulin)
   coverage:
-    command: "cargo llvm-cov --summary-only --branch"
+    command: "cargo llvm-cov --summary-only"
     inputs: ["@globs(sources)", "@globs(tests)", "@globs(configs)"]
+    options:
+      cache: false
+      outputStyle: "stream"
+
+  # Branch coverage analysis (requires nightly)
+  coverage-branch:
+    command: "cargo +nightly llvm-cov --summary-only --branch --no-run"
+    inputs: ["@globs(sources)", "@globs(tests)", "@globs(configs)"]
+    deps: ["test"]
     options:
       cache: false
       outputStyle: "stream"
 
   # HTML coverage report for browser viewing
   coverage-html:
-    command: "cargo llvm-cov --html --branch --output-dir coverage"
+    command: "cargo +nightly llvm-cov --html --branch --output-dir coverage"
     inputs: ["@globs(sources)", "@globs(tests)", "@globs(configs)"]
     outputs: ["coverage/"]
     options:
@@ -56,14 +65,14 @@ tasks:
 
   # Open HTML coverage report in browser (Linux/WSL compatible)
   coverage-open:
-    command: "bash -c 'cargo llvm-cov --html --branch --output-dir coverage && wslview coverage/index.html'"
+    command: "bash -c 'cargo +nightly llvm-cov --html --branch --output-dir coverage && wslview coverage/index.html'"
     deps: ["coverage-html"]
     options:
       cache: false
 
   # CI-friendly coverage with LCOV output
   coverage-ci:
-    command: "cargo llvm-cov --lcov --branch --output-path coverage.lcov"
+    command: "cargo +nightly llvm-cov --lcov --branch --output-path coverage.lcov"
     inputs: ["@globs(sources)", "@globs(tests)", "@globs(configs)"]
     outputs: ["coverage.lcov"]
     options:
@@ -91,9 +100,9 @@ tasks:
     command: "cargo build --release"
     inputs: ["@globs(sources)", "@globs(configs)"]
 
-  # Combined test with coverage
+  # Test with basic coverage on stable
   test:
-    command: "cargo llvm-cov --summary-only --branch"
+    command: "cargo llvm-cov --summary-only"
     inputs: ["@globs(sources)", "@globs(tests)", "@globs(configs)"]
     options:
       outputStyle: "stream"
