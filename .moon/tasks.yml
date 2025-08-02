@@ -100,17 +100,14 @@ tasks:
     command: "cargo build --release"
     inputs: ["@globs(sources)", "@globs(configs)"]
 
-  # Test with basic coverage on stable
-  test:
-    command: "cargo llvm-cov --summary-only"
-    inputs: ["@globs(sources)", "@globs(tests)", "@globs(configs)"]
-    options:
-      outputStyle: "stream"
 
   # Test without coverage (for when you just want test results)
-  test-only:
+  test:
     command: "cargo test --all-features"
     inputs: ["@globs(sources)", "@globs(tests)", "@globs(configs)"]
+    options:
+      cache: true
+      outputStyle: "stream"
 
   check:
     command: "cargo check --all-features"
