@@ -88,6 +88,10 @@ mod tests {
 
         let _result7 = s.clone().test_normal_as_json();
         let _result8 = s.clone().test_non_result_as_json();
-        let _result9 = s.test_complex_json(500, "test".to_string(), r#"{"a": 500, "b": "test", "c": 50}"#);
+        let _result9 = s.test_complex_json(
+            500,
+            "test".to_string(),
+            r#"{"a": 500, "b": "test", "c": 50}"#,
+        );
     }
 }
