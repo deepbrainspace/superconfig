@@ -172,4 +172,4 @@ The excellent test coverage ensures robust behavior across all supported use cas
 
 **SuperConfig Macros** - Empowering fluent APIs and seamless FFI integration. 🚀
 
-[0.1.0]: https://github.com/deepbrainspace/superconfig/releases/tag/superconfig-macros-v0.1.0
+[0.1.0]: https://crates.io/crates/superconfig-macros/0.1.0
