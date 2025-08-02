@@ -60,6 +60,7 @@ impl SimpleStruct {
     // Test complex params
     #[generate_json_helper]
     pub fn test_complex(self, a: i32, b: String, c: Option<i32>) -> Result<Self, String> {
+        println!("Complex test with string: {}", b);
         Ok(Self {
             value: a + c.unwrap_or(0),
         })
@@ -76,10 +77,10 @@ mod tests {
 
         // Just test that the generated methods exist by calling them
         // This will exercise the macro code during compilation
-        let _result1 = s.clone().test_incoming_from_json(r#"{"param": 100}"#);
+        let _result1 = s.clone().test_incoming_from_json(100, r#"{"param": 100}"#);
         let _result2 = s.clone().test_outgoing_as_json();
-        let _result3 = s.clone().test_auto_json(r#"{"param": 200}"#);
-        let _result4 = s.clone().test_bidirectional_json(r#"{"param": 300}"#);
+        let _result3 = s.clone().test_auto_as_json(200);
+        let _result4 = s.clone().test_bidirectional_json(300, r#"{"param": 300}"#);
         let _result5 = s.clone().test_handle_mode(400);
 
         let arc_s = std::sync::Arc::new(s.clone());
@@ -87,6 +88,6 @@ mod tests {
 
         let _result7 = s.clone().test_normal_as_json();
         let _result8 = s.clone().test_non_result_as_json();
-        let _result9 = s.test_complex_json(r#"{"a": 500, "b": "test", "c": 50}"#);
+        let _result9 = s.test_complex_json(500, "test".to_string(), r#"{"a": 500, "b": "test", "c": 50}"#);
     }
 }
