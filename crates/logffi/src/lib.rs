@@ -34,19 +34,19 @@
 //!
 //! Set a callback to bridge Rust logs to other languages:
 //!
-//! ```rust
+//! ```rust,no_run
 //! use logffi::set_ffi_callback;
 //!
 //! // Bridge to Python logging
 //! set_ffi_callback(Box::new(|level, target, message| {
 //!     // Call Python: logging.getLogger(target).log(level, message)
-//!     python_log_bridge(level, target, message);
+//!     println!("Python bridge: [{}] {}: {}", level, target, message);
 //! }));
 //!
 //! // Bridge to Node.js winston  
 //! set_ffi_callback(Box::new(|level, target, message| {
 //!     // Call Node.js: winston.log(level, message, { target })
-//!     nodejs_log_bridge(level, target, message);
+//!     println!("Node.js bridge: [{}] {}: {}", level, target, message);
 //! }));
 //! ```
 //!
@@ -141,6 +141,7 @@ macro_rules! log_with_ffi {
 /// use logffi::error;
 ///
 /// error!("Connection failed");
+/// let err_msg = "timeout";
 /// error!(target: "database", "Failed to connect: {}", err_msg);
 /// ```
 #[macro_export]
@@ -156,6 +157,16 @@ macro_rules! error {
 /// Log a warning message with FFI callback support
 ///
 /// Identical API to `log::warn!` with added FFI bridging.
+///
+/// # Examples
+///
+/// ```rust
+/// use logffi::warn;
+///
+/// warn!("Deprecated API usage");
+/// let ip = "192.168.1.1";
+/// warn!(target: "auth", "Login attempt from suspicious IP: {}", ip);
+/// ```
 #[macro_export]
 macro_rules! warn {
     (target: $target:expr, $($arg:tt)*) => {
@@ -169,6 +180,16 @@ macro_rules! warn {
 /// Log an info message with FFI callback support
 ///
 /// Identical API to `log::info!` with added FFI bridging.
+///
+/// # Examples
+///
+/// ```rust
+/// use logffi::info;
+///
+/// info!("Server started on port 8080");
+/// let count = 5;
+/// info!(target: "startup", "Loaded {} configuration files", count);
+/// ```
 #[macro_export]
 macro_rules! info {
     (target: $target:expr, $($arg:tt)*) => {
@@ -182,6 +203,17 @@ macro_rules! info {
 /// Log a debug message with FFI callback support
 ///
 /// Identical API to `log::debug!` with added FFI bridging.
+///
+/// # Examples
+///
+/// ```rust
+/// use logffi::debug;
+///
+/// let request = "GET /api/users";
+/// debug!("Processing request: {}", request);
+/// let duration = 150;
+/// debug!(target: "http", "Response time: {}ms", duration);
+/// ```
 #[macro_export]
 macro_rules! debug {
     (target: $target:expr, $($arg:tt)*) => {
@@ -195,6 +227,17 @@ macro_rules! debug {
 /// Log a trace message with FFI callback support
 ///
 /// Identical API to `log::trace!` with added FFI bridging.
+///
+/// # Examples
+///
+/// ```rust
+/// use logffi::trace;
+///
+/// let args = vec!["arg1", "arg2"];
+/// trace!("Entering function with args: {:?}", args);
+/// let key = "user:123";
+/// trace!(target: "perf", "Cache hit for key: {}", key);
+/// ```
 #[macro_export]
 macro_rules! trace {
     (target: $target:expr, $($arg:tt)*) => {

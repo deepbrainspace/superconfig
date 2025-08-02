@@ -3,6 +3,9 @@
 [![Crates.io](https://img.shields.io/crates/v/logffi.svg)](https://crates.io/crates/logffi)
 [![Documentation](https://docs.rs/logffi/badge.svg)](https://docs.rs/logffi)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/deepbrain/superconfig/ci.yml?branch=main)](https://github.com/deepbrain/superconfig/actions)
+[![Coverage](https://img.shields.io/badge/coverage-100%25%20lines-brightgreen.svg)](https://github.com/deepbrain/superconfig/tree/main/crates/logffi/COVERAGE_ANALYSIS.md)
+[![Region Coverage](https://img.shields.io/badge/region%20coverage-94.33%25-green.svg)](https://github.com/deepbrain/superconfig/tree/main/crates/logffi/COVERAGE_ANALYSIS.md)
 
 Drop-in replacement for the `log` crate with FFI callback support for bridging Rust logs to Python, Node.js, and other languages.
 
