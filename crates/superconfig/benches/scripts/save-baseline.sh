@@ -5,7 +5,7 @@ set -e
 # Usage: ./save-baseline.sh [baseline-name]
 
 BASELINE_NAME="${1:-$(git rev-parse --short HEAD)}"
-BASELINE_DIR="benchmarks/baselines/$BASELINE_NAME"
+BASELINE_DIR="benches/baselines/$BASELINE_NAME"
 
 echo "📊 Saving benchmark baseline: $BASELINE_NAME"
 

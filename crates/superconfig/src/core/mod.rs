@@ -32,13 +32,11 @@
 //! assert_eq!(*config, "localhost");
 //! ```
 
-pub mod errors;
 pub mod handle;
 pub mod registry;
 pub mod stats;
 
 // Re-export key types for convenient access
-pub use errors::{HandleId, RegistryError};
 pub use handle::ConfigHandle;
 pub use registry::{ConfigRegistry, global_registry};
 pub use stats::RegistryStats;

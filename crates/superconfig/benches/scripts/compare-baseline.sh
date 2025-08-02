@@ -5,12 +5,12 @@ set -e
 # Usage: ./compare-baseline.sh [baseline-name]
 
 BASELINE_NAME="${1:-pre-logging}"
-BASELINE_DIR="benchmarks/baselines/$BASELINE_NAME"
+BASELINE_DIR="benches/baselines/$BASELINE_NAME"
 
 if [ ! -d "$BASELINE_DIR" ]; then
     echo "❌ Baseline '$BASELINE_NAME' not found in $BASELINE_DIR"
     echo "Available baselines:"
-    ls -1 benchmarks/baselines/ 2>/dev/null || echo "  (none)"
+    ls -1 benches/baselines/ 2>/dev/null || echo "  (none)"
     exit 1
 fi
 

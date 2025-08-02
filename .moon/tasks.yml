@@ -37,9 +37,35 @@ tasks:
     options:
       cache: true
 
-  # Coverage (requires tarpaulin)
+  # Coverage using cargo-llvm-cov (replaces tarpaulin)
   coverage:
-    command: "cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml"
+    command: "cargo llvm-cov --summary-only --branch"
+    inputs: ["@globs(sources)", "@globs(tests)", "@globs(configs)"]
+    options:
+      cache: false
+      outputStyle: "stream"
+
+  # HTML coverage report for browser viewing
+  coverage-html:
+    command: "cargo llvm-cov --html --branch --output-dir coverage"
+    inputs: ["@globs(sources)", "@globs(tests)", "@globs(configs)"]
+    outputs: ["coverage/"]
+    options:
+      cache: false
+      outputStyle: "stream"
+
+  # Open HTML coverage report in browser (Linux/WSL compatible)
+  coverage-open:
+    command: "bash -c 'cargo llvm-cov --html --branch --output-dir coverage && wslview coverage/index.html'"
+    deps: ["coverage-html"]
+    options:
+      cache: false
+
+  # CI-friendly coverage with LCOV output
+  coverage-ci:
+    command: "cargo llvm-cov --lcov --branch --output-path coverage.lcov"
+    inputs: ["@globs(sources)", "@globs(tests)", "@globs(configs)"]
+    outputs: ["coverage.lcov"]
     options:
       cache: false
 
@@ -65,7 +91,15 @@ tasks:
     command: "cargo build --release"
     inputs: ["@globs(sources)", "@globs(configs)"]
 
+  # Combined test with coverage
   test:
+    command: "cargo llvm-cov --summary-only --branch"
+    inputs: ["@globs(sources)", "@globs(tests)", "@globs(configs)"]
+    options:
+      outputStyle: "stream"
+
+  # Test without coverage (for when you just want test results)
+  test-only:
     command: "cargo test --all-features"
     inputs: ["@globs(sources)", "@globs(tests)", "@globs(configs)"]
 
@@ -78,7 +112,8 @@ tasks:
     command: "cargo bench --all-features"
     inputs: ["@globs(sources)", "benches/**/*", "@globs(configs)"]
     options:
-      cache: true
+      cache: false
+      outputStyle: "stream"
 
   bench-compare:
     command: "cargo bench --all-features -- --baseline main"

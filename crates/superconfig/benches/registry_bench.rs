@@ -1,4 +1,4 @@
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{BenchmarkId, Criterion, criterion_group};
 use std::hint::black_box;
 use std::sync::Arc;
 use std::thread;
@@ -216,16 +216,108 @@ fn bench_memory_efficiency(c: &mut Criterion) {
     });
 }
 
+// Benchmark groups for better organization in HTML reports
+fn bench_basic_operations(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Basic Operations");
+    group.significance_level(0.1).sample_size(100);
+
+    // Create operations with different config sizes
+    for size in [1, 10, 100].iter() {
+        group.bench_with_input(BenchmarkId::new("create", size), size, |b, &size| {
+            let registry = ConfigRegistry::new();
+            b.iter(|| {
+                let config = BenchConfig {
+                    host: format!("host-{}", size),
+                    port: 8000 + size as u16,
+                    ..Default::default()
+                };
+                let handle = registry.create(black_box(config)).unwrap();
+                black_box(handle)
+            });
+        });
+    }
+
+    group.finish();
+}
+
+fn bench_concurrent_operations(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Concurrent Operations");
+    group.significance_level(0.1).sample_size(50);
+
+    for thread_count in [1, 4, 8, 16].iter() {
+        group.bench_with_input(
+            BenchmarkId::new("reads", thread_count),
+            thread_count,
+            |b, &thread_count| {
+                let registry = Arc::new(ConfigRegistry::new());
+                let handle = registry.create(BenchConfig::default()).unwrap();
+
+                b.iter(|| {
+                    let handles: Vec<_> = (0..thread_count)
+                        .map(|_| {
+                            let registry = Arc::clone(&registry);
+                            let handle = handle.clone();
+                            thread::spawn(move || {
+                                for _ in 0..100 {
+                                    let _config = registry.read(&handle).unwrap();
+                                }
+                            })
+                        })
+                        .collect();
+
+                    for handle in handles {
+                        handle.join().unwrap();
+                    }
+                });
+            },
+        );
+    }
+
+    group.finish();
+}
+
 criterion_group!(
-    registry_benches,
+    basic_benches,
+    bench_basic_operations,
     bench_create_operations,
     bench_read_operations,
-    bench_update_operations,
+    bench_update_operations
+);
+
+criterion_group!(
+    concurrent_benches,
+    bench_concurrent_operations,
     bench_concurrent_reads,
-    bench_mixed_operations,
+    bench_mixed_operations
+);
+
+criterion_group!(
+    advanced_benches,
     bench_arc_sharing_efficiency,
     bench_handle_serialization,
     bench_memory_efficiency
 );
 
-criterion_main!(registry_benches);
+fn main() {
+    let mut criterion = Criterion::default().configure_from_args();
+
+    // Force color output regardless of terminal detection
+    unsafe {
+        std::env::set_var("CLICOLOR_FORCE", "1");
+        std::env::set_var("FORCE_COLOR", "1");
+    }
+
+    // Run individual benchmark functions directly
+    bench_basic_operations(&mut criterion);
+    bench_create_operations(&mut criterion);
+    bench_read_operations(&mut criterion);
+    bench_update_operations(&mut criterion);
+    bench_concurrent_operations(&mut criterion);
+    bench_concurrent_reads(&mut criterion);
+    bench_mixed_operations(&mut criterion);
+    bench_arc_sharing_efficiency(&mut criterion);
+    bench_handle_serialization(&mut criterion);
+    bench_memory_efficiency(&mut criterion);
+
+    criterion.final_summary();
+}

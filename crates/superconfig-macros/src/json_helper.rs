@@ -78,6 +78,20 @@ impl Parse for JsonHelperArgs {
     }
 }
 
+/// Check if a type is an Arc<T>
+fn is_arc_type(ty: &Type) -> bool {
+    match ty {
+        Type::Path(type_path) => {
+            if let Some(segment) = type_path.path.segments.last() {
+                segment.ident == "Arc"
+            } else {
+                false
+            }
+        }
+        _ => false,
+    }
+}
+
 /// Check if a type is considered "complex" (needs JSON serialization)
 fn is_complex_type(ty: &Type) -> bool {
     match ty {
@@ -87,6 +101,8 @@ fn is_complex_type(ty: &Type) -> bool {
                 match segment.ident.to_string().as_str() {
                     "u8" | "u16" | "u32" | "u64" | "u128" | "usize" | "i8" | "i16" | "i32"
                     | "i64" | "i128" | "isize" | "f32" | "f64" | "bool" | "String" | "str" => false,
+                    // ConfigHandle serializes as just a u64, so it's simple for FFI
+                    "ConfigHandle" => false,
                     _ => true, // All other types are considered complex
                 }
             } else {
@@ -94,11 +110,14 @@ fn is_complex_type(ty: &Type) -> bool {
             }
         }
         Type::Reference(type_ref) => {
-            // &str is simple, other references are complex
+            // &str and &ConfigHandle<T> are simple, other references are complex
             match type_ref.elem.as_ref() {
                 Type::Path(type_path) => {
                     if let Some(segment) = type_path.path.segments.last() {
-                        segment.ident != "str"
+                        match segment.ident.to_string().as_str() {
+                            "str" | "ConfigHandle" => false, // These are simple
+                            _ => true,                       // Other references are complex
+                        }
                     } else {
                         true
                     }
@@ -198,7 +217,17 @@ pub fn generate_json_helper_impl(args: TokenStream, input: TokenStream) -> Token
     // Extract function components
     let fn_name = &input_fn.sig.ident;
     let params = &input_fn.sig.inputs;
+    let generics = &input_fn.sig.generics;
     let vis = &input_fn.vis;
+
+    // Create modified generics with Serialize constraint for JSON methods
+    let mut json_generics = generics.clone();
+    for param in &mut json_generics.params {
+        if let syn::GenericParam::Type(type_param) = param {
+            // Add Serialize bound to each type parameter
+            type_param.bounds.push(syn::parse_quote!(serde::Serialize));
+        }
+    }
 
     // Extract parameter names for method calls
     let param_names: Vec<_> = params
@@ -414,10 +443,44 @@ pub fn generate_json_helper_impl(args: TokenStream, input: TokenStream) -> Token
                                 if let Some(segment) = type_path.path.segments.last() {
                                     if segment.ident == "Result" {
                                         // Result type - handle Ok/Err
+                                        // Check if Result contains Arc<T> and handle dereferencing
+                                        let serialize_expr = if let Type::Path(path) = ty.as_ref() {
+                                            if let Some(segment) = path.path.segments.last() {
+                                                if segment.ident == "Result" {
+                                                    // Check if the Ok type is Arc<T>
+                                                    if let syn::PathArguments::AngleBracketed(
+                                                        args,
+                                                    ) = &segment.arguments
+                                                    {
+                                                        if let Some(syn::GenericArgument::Type(
+                                                            ok_type,
+                                                        )) = args.args.first()
+                                                        {
+                                                            if is_arc_type(ok_type) {
+                                                                quote! { &*result }
+                                                            } else {
+                                                                quote! { &result }
+                                                            }
+                                                        } else {
+                                                            quote! { &result }
+                                                        }
+                                                    } else {
+                                                        quote! { &result }
+                                                    }
+                                                } else {
+                                                    quote! { &result }
+                                                }
+                                            } else {
+                                                quote! { &result }
+                                            }
+                                        } else {
+                                            quote! { &result }
+                                        };
+
                                         quote! {
                                             match self.#fn_name(#(#param_names),*) {
                                                 Ok(result) => {
-                                                    match serde_json::to_value(&result) {
+                                                    match serde_json::to_value(#serialize_expr) {
                                                         Ok(serialized) => serde_json::to_string(&serde_json::json!({
                                                             "success": true,
                                                             "data": serialized
@@ -435,9 +498,15 @@ pub fn generate_json_helper_impl(args: TokenStream, input: TokenStream) -> Token
                                         }
                                     } else {
                                         // Non-Result type - direct serialization
+                                        let serialize_expr = if is_arc_type(ty.as_ref()) {
+                                            quote! { &*result }
+                                        } else {
+                                            quote! { &result }
+                                        };
+
                                         quote! {
                                             let result = self.#fn_name(#(#param_names),*);
-                                            match serde_json::to_value(&result) {
+                                            match serde_json::to_value(#serialize_expr) {
                                                 Ok(serialized) => serde_json::to_string(&serde_json::json!({
                                                     "success": true,
                                                     "data": serialized
@@ -450,9 +519,15 @@ pub fn generate_json_helper_impl(args: TokenStream, input: TokenStream) -> Token
                                     }
                                 } else {
                                     // Fallback for non-Result
+                                    let serialize_expr = if is_arc_type(ty.as_ref()) {
+                                        quote! { &*result }
+                                    } else {
+                                        quote! { &result }
+                                    };
+
                                     quote! {
                                         let result = self.#fn_name(#(#param_names),*);
-                                        match serde_json::to_value(&result) {
+                                        match serde_json::to_value(#serialize_expr) {
                                             Ok(serialized) => serde_json::to_string(&serde_json::json!({
                                                 "success": true,
                                                 "data": serialized
@@ -465,7 +540,7 @@ pub fn generate_json_helper_impl(args: TokenStream, input: TokenStream) -> Token
                                 }
                             }
                             _ => {
-                                // Fallback for non-Result
+                                // Fallback for non-Result - assume non-Arc for unknown types
                                 quote! {
                                     let result = self.#fn_name(#(#param_names),*);
                                     match serde_json::to_value(&result) {
@@ -497,7 +572,7 @@ pub fn generate_json_helper_impl(args: TokenStream, input: TokenStream) -> Token
 
             generated_methods.push(quote! {
                 #[doc = #doc_content]
-                #vis fn #json_out_name(#params) -> String {
+                #vis fn #json_out_name #json_generics (#params) -> String {
                     #method_call
                 }
             });
