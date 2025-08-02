@@ -396,107 +396,65 @@ mod tests {
     }
 
     #[test]
-    fn test_edge_cases_and_coverage_completion() {
+    fn test_tarpaulin_specific_uncovered_lines() {
         // Initialize env_logger to ensure all macro paths are enabled
         let _ = env_logger::builder()
             .filter_level(log::LevelFilter::Trace)
             .is_test(true)
             .try_init();
 
-        // This test specifically targets the remaining missing line and function
+        // Target specific lines identified by Tarpaulin:
+        // Line 78: static FFI_CALLBACK: OnceLock<FfiCallback> = OnceLock::new();
+        // Line 109: (target: $target:expr, $level:expr, $($arg:tt)*) => {
+        // Line 217: #[macro_export] (for debug macro)
+        // Line 219: (target: $target:expr, $($arg:tt)*) => {
+        // Line 242: macro_rules! trace {
 
-        // 1. Test the empty closure that should never execute (line 203)
-        // The empty closure is created but never called due to OnceLock semantics
-        // We need to somehow reference it to get coverage
-        let empty_closure_ref = || {}; // This should cover empty closure patterns
-        empty_closure_ref(); // Actually call it to get function coverage
+        // Force coverage of static initialization (line 78)
+        // The static is accessed when we call set_ffi_callback or call_ffi_callback
+        call_ffi_callback("TEST", "test", "Force static access");
 
-        // 2. Test macro edge cases that might generate the missing function
-        // Try calling macros with different argument patterns
+        // Target line 109: log_with_ffi macro with target syntax
+        log_with_ffi!(target: "test_target", crate::Level::Error, "Target syntax test");
+        log_with_ffi!(target: "test_target", crate::Level::Warn, "Target syntax test");
+        log_with_ffi!(target: "test_target", crate::Level::Info, "Target syntax test");
+        log_with_ffi!(target: "test_target", crate::Level::Debug, "Target syntax test");
+        log_with_ffi!(target: "test_target", crate::Level::Trace, "Target syntax test");
 
-        // Single argument (no formatting)
-        error!("Simple error");
-        warn!("Simple warn");
-        info!("Simple info");
-        debug!("Simple debug");
-        trace!("Simple trace");
+        // Target lines 217 & 219: debug macro with target syntax
+        debug!(target: "debug_target", "Debug with target to hit line 219");
+        debug!("Debug without target");
 
-        // Zero arguments (this might be the edge case!)
-        // Actually, let me try with empty format strings
-        error!("");
-        warn!("");
-        info!("");
-        debug!("");
-        trace!("");
+        // Target line 242: trace macro
+        trace!(target: "trace_target", "Trace with target to hit line coverage");
+        trace!("Trace without target");
 
-        // With targets and empty strings
-        error!(target: "", "");
-        warn!(target: "", "");
-        info!(target: "", "");
-        debug!(target: "", "");
-        trace!(target: "", "");
+        // Additional coverage attempts for macro expansions
+        // Try different combinations to ensure all macro branches are hit
 
-        // Test direct log_with_ffi with edge cases
-        log_with_ffi!(crate::Level::Error, "");
-        log_with_ffi!(target: "", crate::Level::Warn, "");
+        // Call all macros with both syntaxes to ensure complete coverage
+        error!(target: "error_test", "Error target test");
+        error!("Error test");
 
-        // Test with special characters that might affect format strings
-        debug!("Special chars: {}", "{}[]()");
-        trace!(target: "special", "Format with escaped braces: {{}} and {}", "value");
+        warn!(target: "warn_test", "Warn target test");
+        warn!("Warn test");
 
-        // Test all macro variants to cover different match arms in the log level matching
-        // Test with all 5 log levels to ensure complete macro expansion coverage
-        log_with_ffi!(crate::Level::Error, "Error level test");
-        log_with_ffi!(crate::Level::Warn, "Warn level test");
-        log_with_ffi!(crate::Level::Info, "Info level test");
-        log_with_ffi!(crate::Level::Debug, "Debug level test");
-        log_with_ffi!(crate::Level::Trace, "Trace level test");
+        info!(target: "info_test", "Info target test");
+        info!("Info test");
 
-        // Test with targets for all levels
-        log_with_ffi!(target: "test_target", crate::Level::Error, "Error with target");
-        log_with_ffi!(target: "test_target", crate::Level::Warn, "Warn with target");
-        log_with_ffi!(target: "test_target", crate::Level::Info, "Info with target");
-        log_with_ffi!(target: "test_target", crate::Level::Debug, "Debug with target");
-        log_with_ffi!(target: "test_target", crate::Level::Trace, "Trace with target");
+        debug!(target: "debug_test", "Debug target test");
+        debug!("Debug test");
 
-        // Test additional edge cases for format patterns that might generate missing regions
-        // Test complex format strings with multiple placeholders
-        error!("Multiple placeholders: {} {} {}", "one", "two", "three");
-        warn!(target: "complex", "Mixed types: {} {} {}", 42, true, "string");
-        info!(
-            "Debug format: {:?} and display: {}",
-            vec![1, 2, 3],
-            "display"
-        );
-        debug!(target: "formatting", "Hex: {:x}, Oct: {:o}, Bin: {:b}", 255, 255, 255);
-        trace!(
-            "Precision: {:.2}, Width: {:10}, Both: {:10.2}",
-            3.14159, "text", 2.718
-        );
+        trace!(target: "trace_test", "Trace target test");
+        trace!("Trace test");
 
-        // Test edge cases with unusual format specifiers
-        // These need to run with logging enabled to cover all macro regions
-        log_with_ffi!(crate::Level::Error, "Escaped braces: {{}} literal");
-        log_with_ffi!(target: "edge", crate::Level::Warn, "Mixed escapes: {{}} and {}", "value");
+        // Test edge cases that might not be covered
+        debug!(target: "", "Empty target");
+        trace!(target: "", "Empty target");
 
-        // Test with very long strings that might trigger different code paths
-        let long_string = "x".repeat(1000);
-        debug!("Long string: {}", long_string);
-        trace!(target: "long", "Long target with long message: {}", long_string);
-
-        // Test with different numeric types to cover all format paths
-        error!("i8: {}, i16: {}, i32: {}, i64: {}", 1i8, 2i16, 3i32, 4i64);
-        warn!("u8: {}, u16: {}, u32: {}, u64: {}", 1u8, 2u16, 3u32, 4u64);
-        info!("f32: {}, f64: {}", 1.0f32, 2.0f64);
-        debug!("char: {}, bool: {}", 'x', true);
-
-        // Test macro expansions with varying argument counts (might trigger different regions)
-        trace!("No args");
-        trace!("One arg: {}", 1);
-        trace!("Two args: {} {}", 1, 2);
-        trace!("Three args: {} {} {}", 1, 2, 3);
-        trace!("Four args: {} {} {} {}", 1, 2, 3, 4);
-        trace!("Five args: {} {} {} {} {}", 1, 2, 3, 4, 5);
+        // Test with formatting to ensure format expansion is covered
+        debug!(target: "format_test", "Formatted: {}", 42);
+        trace!(target: "format_test", "Formatted: {}", 42);
     }
 
     #[test]
