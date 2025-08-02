@@ -71,6 +71,16 @@ runs:
         export PATH="$HOME/.proto/bin:$PATH"
         proto install rust
         proto use rust
+        # Ensure cargo is available - get the active toolchain name
+        ACTIVE_TOOLCHAIN=$(rustup show active-toolchain | cut -d' ' -f1)
+        echo "Active toolchain: $ACTIVE_TOOLCHAIN"
+        # Add cargo component if not already available
+        if ! cargo --version 2>/dev/null; then
+          echo "Adding cargo component to toolchain: $ACTIVE_TOOLCHAIN"
+          rustup component add --toolchain "$ACTIVE_TOOLCHAIN" cargo
+        else
+          echo "Cargo already available"
+        fi
 
     - name: Cache Cargo registry and git
       uses: actions/cache@v4
