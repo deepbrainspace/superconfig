@@ -246,6 +246,12 @@ mod tests {
 
     #[test]
     fn test_macro_api_compatibility() {
+        // Initialize env_logger to ensure all macro paths are enabled
+        let _ = env_logger::builder()
+            .filter_level(log::LevelFilter::Trace)
+            .is_test(true)
+            .try_init();
+
         // These should compile without errors, proving API compatibility
         error!("Error message");
         warn!("Warning message");
@@ -265,6 +271,7 @@ mod tests {
         debug!(target: "fmt", "Multiple args: {} and {}", "hello", "world");
 
         // Test direct log_with_ffi macro usage to cover all code paths
+        // Ensure these calls execute both the log and FFI callback paths
         log_with_ffi!(crate::Level::Info, "Direct log_with_ffi call");
         log_with_ffi!(target: "direct", crate::Level::Warn, "Direct with target");
     }
@@ -307,6 +314,12 @@ mod tests {
 
     #[test]
     fn test_edge_cases_and_coverage_completion() {
+        // Initialize env_logger to ensure all macro paths are enabled
+        let _ = env_logger::builder()
+            .filter_level(log::LevelFilter::Trace)
+            .is_test(true)
+            .try_init();
+
         // This test specifically targets the remaining missing line and function
 
         // 1. Test the empty closure that should never execute (line 203)
@@ -379,6 +392,7 @@ mod tests {
         );
 
         // Test edge cases with unusual format specifiers
+        // These need to run with logging enabled to cover all macro regions
         log_with_ffi!(crate::Level::Error, "Escaped braces: {{}} literal");
         log_with_ffi!(target: "edge", crate::Level::Warn, "Mixed escapes: {{}} and {}", "value");
 
@@ -434,5 +448,8 @@ mod tests {
         log_with_ffi!(crate::Level::Info, "Disabled log_with_ffi info");
         log_with_ffi!(target: "disabled", crate::Level::Debug, "Disabled log_with_ffi debug");
         log_with_ffi!(crate::Level::Trace, "Disabled log_with_ffi trace");
+
+        // Restore log level for other tests
+        log::set_max_level(log::LevelFilter::Trace);
     }
 }

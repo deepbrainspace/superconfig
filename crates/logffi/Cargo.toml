@@ -1,12 +1,17 @@
 [package]
 name = "logffi"
 version = "0.1.0"
+authors = ["Nayeem Syed <nayeem@deepbrain.ai>"]
 categories = ["development-tools::debugging", "api-bindings"]
+documentation = "https://docs.rs/logffi"
 edition = "2024"
+homepage = "https://github.com/deepbrain/superconfig/tree/main/crates/logffi"
 keywords = ["logging", "ffi", "rust", "python", "nodejs"]
 license = "MIT"
+readme = "README.md"
 repository = "https://github.com/deepbrain/superconfig"
-description = "Drop-in replacement for log crate with FFI callback support"
+rust-version = "1.88"
+description = "Drop-in replacement for log crate with FFI callback support for bridging Rust logs to Python, Node.js, and other languages"
 
 [dependencies]
 log = "0.4.27"
