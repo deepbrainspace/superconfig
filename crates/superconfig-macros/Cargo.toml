@@ -1,12 +1,16 @@
 [package]
 name = "superconfig-macros"
 version = "0.1.0"
+authors = ["Nayeem Syed <nayeem@deepbrain.ai>"]
 categories = ["development-tools::procedural-macros", "config"]
 documentation = "https://docs.rs/superconfig-macros"
 edition = "2024"
+homepage = "https://github.com/deepbrain/superconfig/tree/main/crates/superconfig-macros"
 keywords = ["config", "ffi", "macros", "error-handling", "fluent-api"]
 license = "MIT"
-repository = "https://github.com/deepbrainspace/superconfig"
+readme = "README.md"
+repository = "https://github.com/deepbrain/superconfig"
+rust-version = "1.88"
 description = "Procedural macros for SuperConfig fluent API error handling and FFI integration"
 
 [lib]
