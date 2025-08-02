@@ -1663,6 +1663,10 @@ mod tests {
         assert!(read_result.is_err());
         assert!(read_result.unwrap_err().contains("Wrong type"));
 
+        // Use handle_int to cover the missing function and ensure it works correctly
+        let int_value = registry.read(&handle_int).unwrap();
+        assert_eq!(*int_value, 42i32);
+
         // 3. Test handle not found errors (lines 322, 365, 413) with assertions
         let phantom_handle_string = ConfigHandle::<String>::new(9999);
         let phantom_handle_int = ConfigHandle::<i32>::new(8888);
