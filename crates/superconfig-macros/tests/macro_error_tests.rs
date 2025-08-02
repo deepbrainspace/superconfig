@@ -24,9 +24,8 @@ fn test_arc_detection_path() {
         }
 
         #[generate_json_helper]
-        pub fn test_non_arc_method(mut self) -> Result<Self, String> {
-            self.value += 1;
-            Ok(self)
+        pub fn test_non_arc_method(self) -> Result<Self, String> {
+            Ok(Self { value: self.value + 1 })
         }
     }
 
