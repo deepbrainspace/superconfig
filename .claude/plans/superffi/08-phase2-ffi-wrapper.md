@@ -150,27 +150,27 @@ impl SuperConfig {
 
 #### Task 4: Complex Method Mappings (1-2 hours)
 
-**JSON Parameter Handling for Complex Types**:
+**JSON Parameter Handling for Complex Types** (Reverted to Original Plan):
 
 ```rust
 #[superffi]
 impl SuperConfig {
     /// Configure wildcard file discovery via JSON schema
     pub fn with_wildcard(&self, config: Value) -> Result<Self, String> {
+        // Validate required fields with user-friendly errors
         let pattern = config["pattern"].as_str()
-            .unwrap_or("*")
-            .to_string();
+            .ok_or("SuperConfig wildcard error: 'pattern' field is required and must be a string")?;
             
         let search_strategy = create_search_strategy(&config["search"])?;
         let merge_order = create_merge_order(&config["merge_order"])?;
         
-        let wildcard = Wildcard::from_pattern(&pattern)
+        let wildcard = Wildcard::from_pattern(pattern)
             .with_search_strategy(search_strategy)
             .with_merge_order(merge_order);
             
         self.inner.merge(wildcard)
             .map(|inner| Self { inner })
-            .map_err(|e| e.to_string())
+            .map_err(|e| format!("SuperConfig wildcard error: {}", e))
     }
     
     /// Find configuration value by path
@@ -184,23 +184,39 @@ impl SuperConfig {
 
 // Helper functions for JSON conversion
 fn create_search_strategy(config: &Value) -> Result<SearchStrategy, String> {
-    match config["type"].as_str().unwrap_or("current") {
+    let search_type = config["type"].as_str().unwrap_or("current");
+    
+    match search_type {
         "current" => Ok(SearchStrategy::Current),
-        "recursive" => Ok(SearchStrategy::Recursive {
-            roots: vec![PathBuf::from(config["root"].as_str().unwrap_or("."))],
-            max_depth: config["max_depth"].as_u64().map(|d| d as usize),
-        }),
-        "directories" => {
-            let dirs: Result<Vec<_>, _> = config["directories"]
-                .as_array()
-                .unwrap_or(&vec![])
-                .iter()
-                .map(|v| v.as_str().map(PathBuf::from))
-                .collect::<Option<Vec<_>>>()
-                .ok_or("Invalid directories array")?;
-            Ok(SearchStrategy::Directories(dirs))
+        
+        "recursive" => {
+            let root = config["root"].as_str().unwrap_or(".");
+            let max_depth = config["max_depth"].as_u64().map(|d| d as usize);
+            
+            Ok(SearchStrategy::Recursive {
+                roots: vec![PathBuf::from(root)],
+                max_depth,
+            })
         },
-        invalid => Err(format!("Invalid search strategy: {}", invalid))
+        
+        "directories" => {
+            let dirs_array = config["directories"].as_array()
+                .ok_or("SuperConfig search strategy error: 'directories' type requires a 'directories' array field")?;
+                
+            let dirs: Result<Vec<_>, String> = dirs_array
+                .iter()
+                .enumerate()
+                .map(|(i, v)| {
+                    v.as_str()
+                        .map(PathBuf::from)
+                        .ok_or_else(|| format!("SuperConfig search strategy error: directory at index {} must be a string, got {:?}", i, v))
+                })
+                .collect();
+                
+            Ok(SearchStrategy::Directories(dirs?))
+        },
+        
+        _ => Err(format!("SuperConfig search strategy error: invalid type '{}'. Valid options: 'current', 'recursive', 'directories'", search_type))
     }
 }
 
@@ -336,6 +352,97 @@ fn test_python_feature_compilation() {
 #[test]
 fn test_nodejs_feature_compilation() {
     // Verify Node.js bindings compile correctly
+}
+```
+
+### **Performance Benchmarks** (Retained from Opus Feedback)
+
+**Location**: `crates/superconfig-ffi/benches/performance.rs`\
+**Purpose**: Establish baseline measurements and track performance regressions
+
+```rust
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use superconfig_ffi::SuperConfig;
+use serde_json::json;
+
+fn benchmark_instance_creation(c: &mut Criterion) {
+    c.bench_function("superconfig_new", |b| {
+        b.iter(|| {
+            black_box(SuperConfig::new())
+        });
+    });
+}
+
+fn benchmark_json_methods(c: &mut Criterion) {
+    let wildcard_config = json!({
+        "pattern": "*.toml",
+        "search": {"type": "current"}
+    });
+    
+    c.bench_function("with_wildcard_json", |b| {
+        b.iter(|| {
+            let config = SuperConfig::new();
+            black_box(config.with_wildcard(wildcard_config.clone()))
+        });
+    });
+    
+    c.bench_function("extract_json", |b| {
+        b.iter(|| {
+            let config = SuperConfig::new();
+            black_box(config.extract_json())
+        });
+    });
+}
+
+fn benchmark_simple_methods(c: &mut Criterion) {
+    c.bench_function("with_file", |b| {
+        b.iter(|| {
+            let config = SuperConfig::new();
+            black_box(config.with_file("test.toml".to_string()))
+        });
+    });
+    
+    c.bench_function("with_env", |b| {
+        b.iter(|| {
+            let config = SuperConfig::new();
+            black_box(config.with_env("APP_".to_string()))
+        });
+    });
+}
+
+criterion_group!(benches, 
+    benchmark_instance_creation,
+    benchmark_json_methods,
+    benchmark_simple_methods
+);
+criterion_main!(benches);
+```
+
+**Memory Overhead Tracking**:
+
+```rust
+#[cfg(test)]
+mod memory_tests {
+    use super::*;
+    
+    #[test]
+    fn test_ffi_wrapper_overhead() {
+        use std::mem;
+        
+        // Measure wrapper overhead vs core SuperConfig
+        let core_size = mem::size_of::<superconfig::SuperConfig>();
+        let wrapper_size = mem::size_of::<SuperConfig>();
+        
+        println!("Core SuperConfig size: {} bytes", core_size);
+        println!("FFI wrapper size: {} bytes", wrapper_size);
+        println!("Overhead: {} bytes ({}%)", 
+            wrapper_size - core_size,
+            ((wrapper_size - core_size) as f64 / core_size as f64) * 100.0
+        );
+        
+        // Wrapper should be minimal overhead (just inner field)
+        assert_eq!(wrapper_size, core_size, "FFI wrapper should have zero overhead");
+    }
 }
 ```
 

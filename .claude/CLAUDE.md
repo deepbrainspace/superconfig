@@ -14,22 +14,21 @@
 
 ## Package Manager Preference
 
-**IMPORTANT**: Always use NX commands first, then pnpm. NEVER use npm.
+**IMPORTANT**: Always use Moon commands first, then pnpm. NEVER use npm.
 
-- ✅ `nx build`, `nx test`, `nx lint`, `nx release`
+- ✅ `moon build`, `moon test`, `moon lint`, `moon release`
 - ✅ `pnpm install`
 - ❌ `npm install`, `npm publish` (NEVER use)
 
-## NX Command Preference
+## Moon Command Preference
 
-**PREFER AFFECTED OPERATIONS**: Use `nx affected` for efficiency in CI/CD and
-development.
+**PREFER PROJECT-SPECIFIC OPERATIONS**: Use `moon <project>:<task>` for targeted operations in CI/CD and development.
 
-- ✅ `nx affected --target=build` (only builds changed packages)
-- ✅ `nx affected --target=test` (only tests affected packages)
-- ✅ `nx affected --target=lint` (only lints changed code)
-- ⚠️ `nx run-many --target=build --all` (builds everything, slower)
-- ❌ Individual package commands (defeats monorepo benefits)
+- ✅ `moon <project>:build` (builds specific project)
+- ✅ `moon <project>:test` (tests specific project)
+- ✅ `moon <project>:lint` (lints specific project)
+- ✅ `moon run <project>:build` (alternative syntax)
+- ❌ Individual cargo/npm commands (defeats monorepo benefits)
 
 ## Critical Rule: NEVER Skip Tests or Lints
 

@@ -1,0 +1,9 @@
+{
+  "baseline_name": "phase1-complete",
+  "commit_sha": "45b2fb613e0478e8cd5e6d820074290aaf1b9ea1",
+  "commit_short": "45b2fb6",
+  "branch": "feat/superffi-phase2-wrapper",
+  "timestamp": "2025-08-01T19:10:26Z",
+  "rust_version": "rustc 1.88.0 (6b00bc388 2025-06-23)",
+  "cargo_version": "cargo 1.88.0 (873a06493 2025-05-10)"
+}

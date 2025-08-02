@@ -1,0 +1,5 @@
+error: Expected 'in', 'out', 'incoming', 'outgoing', 'auto', 'bidirectional', or 'handle_mode'
+  --> tests/compile_fail/invalid_attribute.rs:10:28
+   |
+10 |     #[generate_json_helper(invalid_attribute)]
+   |                            ^^^^^^^^^^^^^^^^^

@@ -1,0 +1,871 @@
+  Simple Error Handling Pattern
+
+  impl ConfigRegistry {
+      // All methods return Arc<Self> and just throw internally
+      pub fn enable(self: Arc<Self>, flags: u64) -> Arc<Self> {
+          if !is_valid_runtime_flag(flags) {
+              self.throw_error("Invalid runtime flag", flags);
+          }
+          // Always continue and return self
+          self
+      }
+
+      // Simple error checking - doesn't consume registry
+      pub fn has_errors(&self) -> bool {
+          !self.collected_errors.read().is_empty()
+      }
+
+      // Get and clear errors - doesn't consume registry
+      pub fn catch(&self) -> Vec<SuperConfigError> {
+          self.collected_errors.write().drain(..).collect()
+      }
+
+      // Peek at errors without clearing - doesn't consume registry
+      pub fn errors(&self) -> Vec<SuperConfigError> {
+          self.collected_errors.read().clone()
+      }
+  }
+
+  Client Usage:
+
+  Simple flow:
+
+  let registry = ConfigRegistry::arc_custom(flags)
+      .enable(more_flags)
+      .enable(even_more_flags)
+      .set_verbosity(level);
+
+  // Check for problems when convenient
+  if registry.has_errors() {
+      let errors = registry.catch();  // Get and clear errors
+      println!("Found {} errors:", errors.len());
+      for error in errors {
+          println!("  - {}", error);
+      }
+  }
+
+  // Registry is still available for more operations
+  let registry = registry.enable(final_flags);
+
+  Batch error handling:
+
+  let registry = ConfigRegistry::arc_new()
+      .enable(flags1)
+      .enable(flags2)
+      .enable(flags3);
+
+  // Handle all accumulated errors at once
+  let errors = registry.catch();
+  if !errors.is_empty() {
+      handle_config_errors(errors);
+  }
+
+  // Continue using registry
+  let registry = registry.set_verbosity(level);
+
+  Benefits:
+
+  - ✅ Dead simple: Just has_errors() and catch()
+  - ✅ No type mixing: Everything returns Arc<Self>
+  - ✅ Registry preserved: Never consumed by error checking
+  - ✅ Client choice: Check errors when convenient
+
+  Dynamic Error System (Like ConfigRegistry)
+
+  /// Error handle for type-safe error retrieval (like ConfigHandle<T>)
+  #[derive(Debug, Clone)]
+  pub struct ErrorHandle<T> {
+      error_id: u64,
+      _phantom: std::marker::PhantomData<T>,
+  }
+
+  impl<T> ErrorHandle<T> {
+      pub fn new(error_id: u64) -> Self {
+          Self {
+              error_id,
+              _phantom: std::marker::PhantomData,
+          }
+      }
+
+      pub fn id(&self) -> u64 {
+          self.error_id
+      }
+  }
+
+  /// Internal error entry (like ConfigEntry)
+  #[derive(Debug)]
+  struct ErrorEntry {
+      /// The actual error data (any type)
+      data: Box<dyn std::any::Any + Send + Sync>,
+      /// Type name for runtime type checking
+      type_name: &'static str,
+      /// When this error occurred
+      timestamp: u64,
+      /// Human-readable message
+      message: String,
+      /// Error code (optional)
+      code: u32,
+  }
+
+  /// Main error collection (like ConfigRegistry)
+  pub struct ErrorRegistry {
+      /// Storage for errors by ID
+      errors: DashMap<u64, ErrorEntry>,
+      /// Next error ID
+      next_id: AtomicU64,
+      /// Ordered list of error IDs (for FIFO/LIFO access)
+      error_order: Arc<parking_lot::RwLock<Vec<u64>>>,
+  }
+
+  impl ErrorRegistry {
+      /// Store a typed error and return handle to it
+      pub fn store_error<T: 'static + Send + Sync>(
+          &self,
+          error_data: T,
+          message: impl Into<String>,
+          code: u32,
+      ) -> ErrorHandle<T> {
+          let error_id = self.next_id.fetch_add(1, Ordering::Relaxed);
+
+          let entry = ErrorEntry {
+              data: Box::new(error_data),
+              type_name: std::any::type_name::<T>(),
+              timestamp: current_timestamp(),
+              message: message.into(),
+              code,
+          };
+
+          self.errors.insert(error_id, entry);
+          self.error_order.write().push(error_id);
+
+          ErrorHandle::new(error_id)
+      }
+
+      /// Get typed error data
+      pub fn get_error<T: 'static>(&self, handle: &ErrorHandle<T>) -> Option<Arc<T>> {
+          let entry = self.errors.get(&handle.id())?;
+          entry.data.downcast_ref::<T>().cloned().map(Arc::new)
+      }
+
+      /// Pop all errors of a specific type
+      pub fn catch_type<T: 'static>(&self) -> Vec<(ErrorHandle<T>, Arc<T>, String, u32, u64)> {
+          let target_type = std::any::type_name::<T>();
+          let mut results = Vec::new();
+          let mut order = self.error_order.write();
+
+          order.retain(|&error_id| {
+              if let Some((_, entry)) = self.errors.remove(&error_id) {
+                  if entry.type_name == target_type {
+                      if let Ok(data) = entry.data.downcast::<T>() {
+                          results.push((
+                              ErrorHandle::new(error_id),
+                              Arc::new(*data),
+                              entry.message,
+                              entry.code,
+                              entry.timestamp,
+                          ));
+                          return false; // Remove from order
+                      }
+                  }
+                  // Put back if not matching type
+                  self.errors.insert(error_id, entry);
+              }
+              true // Keep in order
+          });
+
+          results
+      }
+
+      /// Pop the most recent error
+      pub fn pop(&self) -> Option<(u64, String, u32, u64)> {
+          let error_id = self.error_order.write().pop()?;
+          let (_, entry) = self.errors.remove(&error_id)?;
+          Some((error_id, entry.message, entry.code, entry.timestamp))
+      }
+  }
+
+  Usage in ConfigRegistry:
+
+  impl ConfigRegistry {
+      pub fn enable(self: Arc<Self>, flags: u64) -> Arc<Self> {
+          if !is_valid_runtime_flag(flags) {
+              // Client defines their own error type
+              #[derive(Debug, Clone)]
+              struct FlagError {
+                  invalid_flags: u64,
+                  operation: String,
+              }
+
+              self.error_registry.store_error(
+                  FlagError {
+                      invalid_flags: flags,
+                      operation: "enable".to_string(),
+                  },
+                  "Invalid runtime flag",
+                  1001,
+              );
+          }
+          self
+      }
+  }
+
+  Client Usage:
+
+  // Client defines their own error types
+  #[derive(Debug, Clone)]
+  struct MyFlagError {
+      flags: u64,
+      context: String,
+  }
+
+  #[derive(Debug, Clone)]
+  struct MyValidationError {
+      field: String,
+      value: String,
+  }
+
+  let registry = ConfigRegistry::arc_new()
+      .enable(invalid_flags)
+      .set_verbosity(99);
+
+  // Catch only flag errors
+  let flag_errors = registry.catch_type::<MyFlagError>();
+  for (handle, error_data, message, code, timestamp) in flag_errors {
+      println!("Flag error: {:?}", error_data);
+  }
+
+  // Catch only validation errors
+  let validation_errors = registry.catch_type::<MyValidationError>();
+
+  This gives complete type flexibility just like ConfigRegistry! Should I implement this dynamic approach?
+
+> so if its like this we can just predefine the specific structs we want for the errors? the whole error registry can be a crate of its own and the superconfig becomes a client of it defining its own error types, then the 
+  superconfig client just reads those structs defined by superconfig to get visibility on all the different types of errors superconfig can return? maybe the error registry crate can also handle dealing with the error 
+  functionalities?
+
+● BRILLIANT architectural insight! You're absolutely right - this creates a beautiful layered architecture:
+
+  3-Layer Architecture:
+
+  ┌─────────────────────────────────────┐
+  │     SuperConfig Client Code         │  ← Uses predefined error structs
+  │  (Your application using SuperConfig)│
+  └─────────────────────────────────────┘
+                    │
+                    │ imports error types
+                    ▼
+  ┌─────────────────────────────────────┐
+  │         SuperConfig Crate           │  ← Defines domain-specific errors
+  │    (Defines: FlagError, HandleError, │     Uses ErrorRegistry for storage
+  │     ValidationError, etc.)          │
+  └─────────────────────────────────────┘
+                    │
+                    │ uses ErrorRegistry
+                    ▼
+  ┌─────────────────────────────────────┐
+  │       ErrorRegistry Crate           │  ← Generic error collection system
+  │   (Generic error storage & filtering)│     Reusable across projects
+  └─────────────────────────────────────┘
+
+  ErrorRegistry Crate (Generic):
+
+  // error-registry/src/lib.rs
+  pub struct ErrorRegistry {
+      errors: DashMap<u64, ErrorEntry>,
+      next_id: AtomicU64,
+      error_order: Arc<parking_lot::RwLock<Vec<u64>>>,
+  }
+
+  impl ErrorRegistry {
+      pub fn store<T: 'static + Send + Sync>(&self, data: T, message: String) -> ErrorHandle<T> { ... }
+      pub fn catch_type<T: 'static>(&self) -> Vec<(ErrorHandle<T>, Arc<T>, String)> { ... }
+      pub fn pop(&self) -> Option<...> { ... }
+      pub fn has_type<T: 'static>(&self) -> bool { ... }
+      // ... all the generic error handling logic
+  }
+
+  SuperConfig Crate (Domain-Specific):
+
+  // superconfig/src/errors.rs
+  use error_registry::{ErrorRegistry, ErrorHandle};
+
+  /// SuperConfig's domain-specific error types
+  #[derive(Debug, Clone)]
+  pub struct FlagError {
+      pub invalid_flags: u64,
+      pub operation: String,
+      pub flag_type: String, // "runtime" or "startup"
+  }
+
+  #[derive(Debug, Clone)]
+  pub struct HandleError {
+      pub handle_id: u64,
+      pub expected_type: String,
+      pub found_type: String,
+  }
+
+  #[derive(Debug, Clone)]
+  pub struct ValidationError {
+      pub field: String,
+      pub value: String,
+      pub constraint: String,
+  }
+
+  // SuperConfig-specific convenience methods
+  impl ConfigRegistry {
+      pub fn catch_flag_errors(&self) -> Vec<(ErrorHandle<FlagError>, Arc<FlagError>, String)> {
+          self.error_registry.catch_type::<FlagError>()
+      }
+
+      pub fn catch_handle_errors(&self) -> Vec<(ErrorHandle<HandleError>, Arc<HandleError>, String)> {
+          self.error_registry.catch_type::<HandleError>()
+      }
+
+      pub fn has_flag_errors(&self) -> bool {
+          self.error_registry.has_type::<FlagError>()
+      }
+  }
+
+  Client Code:
+
+  // client/src/main.rs
+  use superconfig::{ConfigRegistry, errors::{FlagError, HandleError}};
+
+  let registry = ConfigRegistry::arc_new()
+      .enable(invalid_flags)
+      .create_handle(data);
+
+  // Handle specific error types
+  let flag_errors = registry.catch_flag_errors();
+  for (handle, error, message) in flag_errors {
+      println!("Flag issue: {} with flags 0x{:X}", message, error.invalid_flags);
+  }
+
+  let handle_errors = registry.catch_handle_errors();
+  for (handle, error, message) in handle_errors {
+      println!("Handle issue: expected {}, found {}", error.expected_type, error.found_type);
+  }
+
+
+> i am not sure i like these convenience methods, is there any ways we can let the error registry offer all the methods needed? so from the superconfig client we can do things like error = 
+  registry.errors.pop(filter=ValidationError), print 'invalid string e.message' something like this?
+
+● Absolutely! That's much cleaner - let the ErrorRegistry handle everything directly. Here's how:
+
+  Direct ErrorRegistry Access:
+
+  // ConfigRegistry exposes errors directly
+  impl ConfigRegistry {
+      pub fn errors(&self) -> &ErrorRegistry {
+          &self.error_registry
+      }
+  }
+
+  ErrorRegistry with Filter-Based Methods:
+
+  // error-registry/src/lib.rs
+  impl ErrorRegistry {
+      /// Pop with optional type filter
+      pub fn pop<T: 'static>(&self) -> Option<(Arc<T>, String, u64)> {
+          let target_type = std::any::type_name::<T>();
+          let mut order = self.error_order.write();
+
+          // Find most recent error of type T
+          if let Some(pos) = order.iter().rposition(|&id| {
+              self.errors.get(&id)
+                  .map(|entry| entry.type_name == target_type)
+                  .unwrap_or(false)
+          }) {
+              let error_id = order.remove(pos);
+              if let Some((_, entry)) = self.errors.remove(&error_id) {
+                  if let Ok(data) = entry.data.downcast::<T>() {
+                      return Some((Arc::new(*data), entry.message, entry.timestamp));
+                  }
+              }
+          }
+          None
+      }
+
+      /// Catch all errors of specific type
+      pub fn catch<T: 'static>(&self) -> Vec<(Arc<T>, String, u64)> {
+          // Similar implementation but gets all matching errors
+      }
+
+      /// Check if has errors of specific type
+      pub fn has<T: 'static>(&self) -> bool {
+          let target_type = std::any::type_name::<T>();
+          self.errors.iter().any(|entry| entry.type_name == target_type)
+      }
+
+      /// Count errors of specific type
+      pub fn count<T: 'static>(&self) -> usize {
+          let target_type = std::any::type_name::<T>();
+          self.errors.iter().filter(|entry| entry.type_name == target_type).count()
+      }
+  }
+
+  SuperConfig Error Types (Just Definitions):
+
+  // superconfig/src/errors.rs
+  #[derive(Debug, Clone)]
+  pub struct FlagError {
+      pub invalid_flags: u64,
+      pub operation: String,
+  }
+
+  #[derive(Debug, Clone)]
+  pub struct ValidationError {
+      pub field: String,
+      pub value: String,
+  }
+
+  #[derive(Debug, Clone)]
+  pub struct HandleError {
+      pub handle_id: u64,
+      pub expected_type: String,
+  }
+
+  Client Usage (Clean & Direct):
+
+  use superconfig::{ConfigRegistry, errors::{FlagError, ValidationError, HandleError}};
+
+  let registry = ConfigRegistry::arc_new()
+      .enable(invalid_flags)
+      .set_verbosity(99)
+      .create_handle(data);
+
+  // Direct error registry access
+  if let Some((error, message, timestamp)) = registry.errors().pop::<FlagError>() {
+      println!("Flag error: {} - invalid flags: 0x{:X}", message, error.invalid_flags);
+  }
+
+  if let Some((error, message, _)) = registry.errors().pop::<ValidationError>() {
+      println!("Validation error: {} - field '{}' had value '{}'",
+               message, error.field, error.value);
+  }
+
+  // Check for specific error types
+  if registry.errors().has::<HandleError>() {
+      println!("Registry has handle errors");
+  }
+
+  // Get all flag errors at once
+  let flag_errors = registry.errors().catch::<FlagError>();
+  for (error, message, timestamp) in flag_errors {
+      println!("Flag issue: {}", message);
+  }
+
+  This gives you:
+  - ✅ Direct access: registry.errors().pop::<Type>()
+  - ✅ No convenience methods: ErrorRegistry handles everything
+  - ✅ Clean syntax: Type-based filtering built into the methods
+  - ✅ Full control: All ErrorRegistry functionality available
+
+ pub fn pop_flag_error(&self) -> Option<PyObject> {
+          self.inner.pop_json::<FlagError>()  // ← Direct ErrorRegistry method!
+              .map(json_to_python)
+      }
+
+how is it same as rust? i thought rust is  registry.errors.pop::<FlagError>(); ? and 
+    The pop_by_name implementation requires dynamic dispatch based on TypeId, which is complex but doable with a macro or trait object system.
+
+  is this solvable? can we investigate that first before we delve into any of this?
+
+● You're absolutely right on both points!
+
+  1. Rust vs FFI API Difference:
+
+  // Rust (type-safe generics)
+  registry.errors.pop::<FlagError>();
+
+  // FFI (string-based)  
+  registry.errors.pop("FlagError")
+
+  These are NOT the same. I was wrong - the FFI version loses type safety and uses strings.
+
+  2. The TypeId Dispatch Problem
+
+  Let me investigate if pop_by_name is actually solvable:
+
+  pub fn pop_by_name(&self, type_name: &str) -> Option<String> {
+      let type_id = self.type_names.get(type_name)?;
+
+      // PROBLEM: How do we call pop::<T>() when we only have TypeId?
+      // We need to go from TypeId back to the actual type T
+      // But Rust doesn't allow this - TypeId -> T conversion is impossible!
+  }
+
+  The Fundamental Issue:
+
+  Rust's type system erases generic type information at runtime. Once compiled, there's no way to go from TypeId back to the original type T to call pop::<T>().
+
+  Possible Solutions:
+
+  Option A: Macro-Generated Dispatch Table
+
+  macro_rules! create_dispatch {
+      ($($type:ty => $name:literal),*) => {
+          pub fn pop_by_name(&self, type_name: &str) -> Option<String> {
+              match type_name {
+                  $(
+                      $name => self.pop::<$type>().map(|result| serialize_result(result)),
+                  )*
+                  _ => None,
+              }
+          }
+      };
+  }
+
+  // Usage in SuperConfig:
+  create_dispatch! {
+      FlagError => "FlagError",
+      ValidationError => "ValidationError",
+      HandleError => "HandleError"
+  }
+
+  Option B: Trait Objects (Complex)
+
+  trait ErrorTypeHandler: Send + Sync {
+      fn pop_json(&self, registry: &ErrorRegistry) -> Option<String>;
+      fn has(&self, registry: &ErrorRegistry) -> bool;
+  }
+
+  struct TypedHandler<T: 'static + Serialize> {
+      _phantom: PhantomData<T>,
+  }
+
+  impl<T: 'static + Serialize> ErrorTypeHandler for TypedHandler<T> {
+      fn pop_json(&self, registry: &ErrorRegistry) -> Option<String> {
+          registry.pop::<T>().map(serialize)
+      }
+  }
+
+  Option C: Accept the Difference
+
+  Maybe we should accept that FFI can't be identical to Rust:
+
+  // Rust - type-safe generics
+  registry.errors.pop::<FlagError>();
+
+  // Python - string-based but still clean
+  registry.errors.pop_flag_error()  # Type-specific methods
+  registry.errors.pop_validation_error()
+
+  // Or generic with string
+  registry.errors.pop("FlagError")
+
+1. ErrorRegistry Crate (Pure Generic Error Storage)
+
+  // error-registry/src/lib.rs
+  use dashmap::DashMap;
+  use parking_lot::RwLock;
+  use std::sync::{Arc, atomic::{AtomicU64, Ordering}};
+  use serde::Serialize;
+
+  /// Generic error storage system
+  pub struct ErrorRegistry {
+      /// Storage for errors by ID  
+      errors: DashMap<u64, ErrorEntry>,
+      /// Next error ID
+      next_id: AtomicU64,
+      /// Ordered list of error IDs (for FIFO/LIFO access)
+      error_order: Arc<RwLock<Vec<u64>>>,
+      /// Type name to TypeId mapping for FFI
+      #[cfg(feature = "ffi")]
+      type_registry: Arc<RwLock<std::collections::HashMap<String, std::any::TypeId>>>,
+  }
+
+  /// Internal error entry (like ConfigEntry)
+  #[derive(Debug)]
+  struct ErrorEntry {
+      /// The actual error data (any type)
+      data: Box<dyn std::any::Any + Send + Sync>,
+      /// Type name for runtime type checking
+      type_name: &'static str,
+      /// When this error occurred  
+      timestamp: u64,
+      /// Human-readable message
+      message: String,
+      /// Error code (optional)
+      code: u32,
+  }
+
+  impl ErrorRegistry {
+      pub fn new() -> Self {
+          Self {
+              errors: DashMap::new(),
+              next_id: AtomicU64::new(1),
+              error_order: Arc::new(RwLock::new(Vec::new())),
+              #[cfg(feature = "ffi")]
+              type_registry: Arc::new(RwLock::new(std::collections::HashMap::new())),
+          }
+      }
+
+      /// Store a typed error
+      pub fn store<T: 'static + Send + Sync>(
+          &self,
+          error_data: T,
+          message: impl Into<String>,
+          code: u32,
+      ) {
+          let error_id = self.next_id.fetch_add(1, Ordering::Relaxed);
+
+          let entry = ErrorEntry {
+              data: Box::new(error_data),
+              type_name: std::any::type_name::<T>(),
+              timestamp: current_timestamp(),
+              message: message.into(),
+              code,
+          };
+
+          self.errors.insert(error_id, entry);
+          self.error_order.write().push(error_id);
+      }
+
+      /// Register type for FFI access
+      #[cfg(feature = "ffi")]
+      pub fn register_type<T: 'static>(&self, name: &str) {
+          self.type_registry.write().insert(
+              name.to_string(),
+              std::any::TypeId::of::<T>()
+          );
+      }
+
+      /// Start building a query - returns builder
+      pub fn query(&self) -> ErrorQueryBuilder {
+          ErrorQueryBuilder::new(self)
+      }
+
+      /// Convenience methods (shortcuts to builder)
+      pub fn show<T: 'static>(&self) -> Vec<(Arc<T>, String, u32, u64)> {
+          self.query().of_type::<T>().show()
+      }
+
+      pub fn extract<T: 'static>(&self) -> Vec<(Arc<T>, String, u32, u64)> {
+          self.query().of_type::<T>().extract()
+      }
+
+      pub fn has<T: 'static>(&self) -> bool {
+          self.query().of_type::<T>().count() > 0
+      }
+  }
+
+  fn current_timestamp() -> u64 {
+      std::time::SystemTime::now()
+          .duration_since(std::time::UNIX_EPOCH)
+          .unwrap_or_default()
+          .as_millis() as u64
+  }
+
+  2. ErrorQueryBuilder (The Magic!)
+
+  // error-registry/src/builder.rs
+  pub struct ErrorQueryBuilder<'a> {
+      registry: &'a ErrorRegistry,
+      type_filter: Option<TypeFilter>,
+      limit: Option<usize>,
+      reverse: bool, // For LIFO vs FIFO
+  }
+
+  enum TypeFilter {
+      Generic(std::any::TypeId),
+      #[cfg(feature = "ffi")]
+      ByName(String),
+  }
+
+  impl<'a> ErrorQueryBuilder<'a> {
+      pub fn new(registry: &'a ErrorRegistry) -> Self {
+          Self {
+              registry,
+              type_filter: None,
+              limit: None,
+              reverse: false,
+          }
+      }
+
+      /// Filter by Rust type (type-safe)
+      pub fn of_type<T: 'static>(mut self) -> Self {
+          self.type_filter = Some(TypeFilter::Generic(std::any::TypeId::of::<T>()));
+          self
+      }
+
+      /// Filter by string name (FFI-friendly)
+      #[cfg(feature = "ffi")]
+      pub fn of_type_named(mut self, type_name: &str) -> Self {
+          self.type_filter = Some(TypeFilter::ByName(type_name.to_string()));
+          self
+      }
+
+      /// Limit number of results
+      pub fn limit(mut self, count: usize) -> Self {
+          self.limit = Some(count);
+          self
+      }
+
+      /// Get most recent errors first (LIFO)
+      pub fn newest_first(mut self) -> Self {
+          self.reverse = true;
+          self
+      }
+
+      /// Get oldest errors first (FIFO) - default
+      pub fn oldest_first(mut self) -> Self {
+          self.reverse = false;
+          self
+      }
+
+      /// Count matching errors
+      pub fn count(&self) -> usize {
+          // Implementation counts without extracting
+          let target_type_name = self.get_target_type_name();
+          self.registry.errors.iter()
+              .filter(|entry| target_type_name.as_ref()
+                  .map_or(true, |name| entry.type_name == name))
+              .count()
+      }
+
+      /// Peek at errors without removing (show)
+      pub fn show<T: 'static>(&self) -> Vec<(Arc<T>, String, u32, u64)> {
+          self.get_matching_errors::<T>(false)
+      }
+
+      /// Extract errors and remove from registry
+      pub fn extract<T: 'static>(&self) -> Vec<(Arc<T>, String, u32, u64)> {
+          self.get_matching_errors::<T>(true)
+      }
+
+      /// FFI-friendly show (returns JSON)
+      #[cfg(feature = "ffi")]
+      pub fn show_json(&self) -> String {
+          self.get_matching_errors_json(false)
+      }
+
+      /// FFI-friendly extract (returns JSON)
+      #[cfg(feature = "ffi")]
+      pub fn extract_json(&self) -> String {
+          self.get_matching_errors_json(true)
+      }
+
+      // Internal implementation methods...
+      fn get_matching_errors<T: 'static>(&self, remove: bool) -> Vec<(Arc<T>, String, u32, u64)> {
+          // Complex implementation that handles filtering, limiting, ordering
+          // and optionally removing from registry
+      }
+
+      #[cfg(feature = "ffi")]
+      fn get_matching_errors_json(&self, remove: bool) -> String {
+          // JSON version for FFI
+      }
+
+      fn get_target_type_name(&self) -> Option<&'static str> {
+          // Helper to get type name from filter
+      }
+  }
+
+  3. SuperConfig Integration
+
+  // superconfig/src/errors.rs
+  use error_registry::ErrorRegistry;
+
+  /// SuperConfig-specific error types
+  #[derive(Debug, Clone, serde::Serialize)]
+  pub struct FlagError {
+      pub invalid_flags: u64,
+      pub operation: String,
+  }
+
+  #[derive(Debug, Clone, serde::Serialize)]
+  pub struct ValidationError {
+      pub field: String,
+      pub value: String,
+      pub constraint: String,
+  }
+
+  #[derive(Debug, Clone, serde::Serialize)]
+  pub struct HandleError {
+      pub handle_id: u64,
+      pub expected_type: String,
+      pub found_type: String,
+  }
+
+  // superconfig/src/lib.rs
+  pub struct ConfigRegistry {
+      // ... existing fields
+      pub errors: ErrorRegistry,
+  }
+
+  impl ConfigRegistry {
+      pub fn new() -> Self {
+          let mut errors = ErrorRegistry::new();
+
+          // Register types for FFI
+          #[cfg(feature = "ffi")]
+          {
+              errors.register_type::<FlagError>("FlagError");
+              errors.register_type::<ValidationError>("ValidationError");
+              errors.register_type::<HandleError>("HandleError");
+          }
+
+          Self {
+              errors,
+              // ... other fields
+          }
+      }
+
+      pub fn enable(self: Arc<Self>, flags: u64) -> Arc<Self> {
+          if !is_valid_runtime_flag(flags) {
+              self.errors.store(
+                  FlagError {
+                      invalid_flags: flags,
+                      operation: "enable".to_string(),
+                  },
+                  "Invalid runtime flag",
+                  1001,
+              );
+          } else {
+              // Success logic
+          }
+          self
+      }
+  }
+
+  4. Usage Examples
+
+  Rust (Type-Safe):
+
+  let registry = ConfigRegistry::arc_new()
+      .enable(invalid_flags)
+      .set_verbosity(99);
+
+  // Builder pattern queries
+  let flag_errors = registry.errors
+      .query()
+      .of_type::<FlagError>()
+      .newest_first()
+      .limit(5)
+      .show(); // Peek without removing
+
+  let validation_errors = registry.errors
+      .query()
+      .of_type::<ValidationError>()
+      .extract(); // Remove from registry
+
+  // Convenience shortcuts
+  let has_errors = registry.errors.has::<FlagError>();
+  let all_flag_errors = registry.errors.extract::<FlagError>();
+
+  Python FFI:
+
+  # Same builder pattern!
+  flag_errors = registry.errors.query().of_type_named("FlagError").newest_first().show_json()
+  validation_errors = registry.errors.query().of_type_named("ValidationError").extract_json()
+
+  # Check counts
+  error_count = registry.errors.query().of_type_named("FlagError").count()
+
+  This architecture gives us:
+  - ✅ Unified builder pattern across Rust and FFI
+  - ✅ Type safety in Rust with generics
+  - ✅ String-based FFI that's still generic
+  - ✅ Flexible querying with filtering, limiting, ordering
+  - ✅ Clean separation - ErrorRegistry is pure, SuperConfig defines domain types

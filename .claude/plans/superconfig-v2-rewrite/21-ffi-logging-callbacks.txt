@@ -1,0 +1,318 @@
+ Architecture
+
+  Rust Core:
+  // Core library - dual logging
+  pub fn enable(self: Arc<Self>, flags: u64) -> Arc<Self> {
+      if !is_valid_runtime_flag(flags) {
+          let msg = format!("Invalid runtime flag: 0x{flags:X}");
+
+          // Native Rust logging (for Rust clients)
+          log::warn!(target: "superconfig", "{}", msg);
+
+          // FFI callback (for Python/Node clients)
+          #[cfg(feature = "ffi")]
+          if let Some(logger) = FFI_LOGGER.get() {
+              logger("WARN", "superconfig", &msg);
+          }
+
+          return self;
+      }
+      self
+  }
+
+  Python FFI Integration:
+  // In superconfig-python-ffi crate
+  use pyo3::prelude::*;
+
+  #[pymodule]
+  fn superconfig(_py: Python, m: &PyModule) -> PyResult<()> {
+      // Auto-setup Python logging integration on module import
+      setup_python_logging_bridge()?;
+
+      // ... rest of module setup
+      Ok(())
+  }
+
+  fn setup_python_logging_bridge() -> PyResult<()> {
+      let callback = |level: &str, target: &str, message: &str| {
+          Python::with_gil(|py| {
+              // Get Python's logging module
+              let logging = py.import("logging")?;
+              let logger = logging.call_method1("getLogger", (target,))?;
+
+              // Route to appropriate Python log level
+              match level {
+                  "WARN" => logger.call_method1("warning", (message,))?,
+                  "DEBUG" => logger.call_method1("debug", (message,))?,
+                  "TRACE" => logger.call_method1("debug", (message,))?, // Python doesn't have trace
+                  _ => logger.call_method1("info", (message,))?,
+              };
+              Ok::<(), PyErr>(())
+          }).ok();
+      };
+
+      error_registry::set_ffi_logger(Box::new(callback));
+      Ok(())
+  }
+
+  Python Client Experience:
+  import logging
+  import superconfig
+
+  # Standard Python logging configuration - just like Rust clients!
+  logging.basicConfig(
+      level=logging.DEBUG,
+      format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+      handlers=[
+          logging.FileHandler('superconfig.log'),
+          logging.StreamHandler()
+      ]
+  )
+
+  # Or use any Python logging library
+  import structlog
+  logger = structlog.get_logger("superconfig")
+
+  # Now SuperConfig errors automatically go through Python's logging system
+  registry = superconfig.ConfigRegistry()
+  registry.enable(invalid_flag)  # -> Python logger.warning("Invalid runtime flag: 0xFFFFFFFF")
+
+  Node.js FFI Integration:
+  // In superconfig-node-ffi crate
+  use neon::prelude::*;
+
+  fn setup_node_logging_bridge(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+      let callback = |level: &str, target: &str, message: &str| {
+          // Call Node.js logging from Rust
+          // This is more complex - would need to store JS callback reference
+      };
+      error_registry::set_ffi_logger(Box::new(callback));
+      Ok(cx.undefined())
+  }
+
+  Node.js Client Experience:
+  const winston = require('winston');
+  const superconfig = require('superconfig');
+
+  // Standard Node logging setup
+  const logger = winston.createLogger({
+      level: 'debug',
+      format: winston.format.json(),
+      transports: [
+          new winston.transports.File({ filename: 'superconfig.log' }),
+          new winston.transports.Console()
+      ]
+  });
+
+  // SuperConfig errors automatically route to Winston
+  const registry = new superconfig.ConfigRegistry();
+  registry.enable(invalidFlag);  // -> logger.warn("Invalid runtime flag: 0xFFFFFFFF")
+
+  Benefits
+
+  Rust Clients:
+  - Full log crate ecosystem (env_logger, tracing, etc.)
+  - Zero overhead when logging disabled
+  - Standard Rust patterns
+
+  Python Clients:
+  - Full Python logging module support
+  - Works with structlog, loguru, etc.
+  - Standard Python patterns
+
+  Node.js Clients:
+  - Works with winston, pino, bunyan, etc.
+  - Standard Node.js patterns
+
+  Consistent Experience:
+  - Same logging levels across languages
+  - Same target/module organization
+  - Each language uses its native logging best practices
+
+Python Logging Connection
+
+  The key is that our FFI callback calls Python's logging system directly:
+
+  // In setup_python_logging_bridge()
+  let callback = |level: &str, target: &str, message: &str| {
+      Python::with_gil(|py| {
+          let logging = py.import("logging")?;
+          let logger = logging.call_method1("getLogger", (target,))?;  // Gets "superconfig" logger
+
+          match level {
+              "WARN" => logger.call_method1("warning", (message,))?,  // Calls Python's logger.warning()
+              // ...
+          };
+      });
+  };
+
+  Flow:
+  1. Our Rust code: log::warn!("Invalid flag")
+  2. FFI callback: calls Python's logging.getLogger("superconfig").warning("Invalid flag")
+  3. Python's logging system routes it according to client's configuration
+
+  So when client does:
+  logging.basicConfig(level=logging.DEBUG, handlers=[...])
+  # OR
+  structlog.configure(...)
+
+  Our messages automatically follow their logging setup because we're calling their logging system.
+
+  Node.js Integration Example
+
+  Here's how to connect with popular Node logging libraries:
+
+  Option 1: Winston Integration
+  // In superconfig-node-ffi setup
+  use neon::prelude::*;
+
+  fn setup_winston_bridge(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+      // Get the Winston logger instance from JS
+      let winston_logger = cx.argument::<JsObject>(0)?;
+
+      // Store it as a persistent reference
+      let logger_ref = winston_logger.root(&mut cx);
+
+      let callback = move |level: &str, target: &str, message: &str| {
+          // Call the Winston logger from Rust
+          // This requires storing JS function references - complex but doable
+      };
+
+      error_registry::set_ffi_logger(Box::new(callback));
+      Ok(cx.undefined())
+  }
+
+  Option 2: Simpler Console Bridge (More Practical)
+  // Simpler approach - emit events that Node can handle
+  let callback = |level: &str, target: &str, message: &str| {
+      // Emit a structured log event to Node
+      emit_log_event(level, target, message);
+  };
+
+  Node.js Client Setup:
+  const winston = require('winston');
+  const superconfig = require('superconfig');
+
+  const logger = winston.createLogger({
+      level: 'debug',
+      format: winston.format.combine(
+          winston.format.timestamp(),
+          winston.format.json()
+      ),
+      transports: [
+          new winston.transports.Console(),
+          new winston.transports.File({ filename: 'app.log' })
+      ]
+  });
+
+  // Bridge SuperConfig logs to Winston
+  superconfig.onLogEvent((level, target, message) => {
+      logger.log(level.toLowerCase(), message, { target });
+  });
+
+  // Now all SuperConfig errors go through Winston
+  const registry = new superconfig.ConfigRegistry();
+  registry.enable(invalidFlag);  // -> Winston handles the log
+
+  Performance Impact
+
+  Rust log crate performance:
+  // When logging is DISABLED (most production cases)
+  log::warn!("message");  // ~0ns - compiled away completely
+
+  // When logging is ENABLED
+  log::warn!("message");  // ~10-50ns - just a function call + string format
+
+  FFI Callback Performance:
+  // Python FFI logging
+  Python::with_gil(|py| {
+      logging.getLogger("superconfig").warning("message")
+  });
+  // Cost: ~1-5μs (Python GIL + function call)
+
+  // Node.js FFI logging  
+  emit_log_event("warn", "superconfig", "message");
+  // Cost: ~0.5-2μs (V8 function call)
+
+  Performance Comparison:
+  - Rust native: 10-50ns
+  - Python FFI: 1-5μs (100-500x slower)
+  - Node.js FFI: 0.5-2μs (50-200x slower)
+
+  But consider:
+  - Logging only happens on errors/warnings (rare in production)
+  - For a config library, errors should be infrequent
+  - The flexibility gain is worth the performance cost for error cases
+
+  Recommendation
+
+  Practical Implementation:
+  1. Rust: Use log crate directly (best performance)
+  2. Python: FFI bridge to Python logging (good flexibility, acceptable perf for errors)
+  3. Node.js: Event-based bridge to client's logger (simpler than direct integration)
+
+  The performance hit is acceptable because:
+  - It only affects error/warning cases (should be rare)
+  - Gives clients full native logging flexibility
+  - Avoids reinventing logging infrastructure
+
+
+> ok thats great! so you are saying this is a much better option then rebuilding a whole new error registry as all the clients (rust, python, node etc) all will be able to choose where to send the logs (eg if they have a 
+  consolidated logging configured on log4j, or any of the bigger well known log frameworks such as elasticsearch (ELK stack) or ElF stack etc and it would work seamlessly as we are already doing a callback to a library thats 
+  compatible on each of the ffis and rust native, and all we are doing is adding one function on our ffi crate to facilitate this?
+
+● Exactly! You've nailed it perfectly. This is much better than rebuilding a whole error registry because:
+
+  Why This Approach Wins
+
+  1. Leverages Existing Ecosystem
+  - Rust: log → logback, env_logger, tracing → ELK, Datadog, etc.
+  - Python: logging → structlog, loguru → ELK, Splunk, etc.
+  - Node.js: winston, pino → ELK, New Relic, etc.
+
+  2. Zero Custom Infrastructure
+  - No ErrorRegistry memory management
+  - No custom query builders
+  - No JSON serialization complexity
+  - No performance overhead for storage
+
+  3. Enterprise Integration Ready
+  # Python client with ELK stack
+  import logging
+  from pythonjsonlogger import jsonlogger
+  import superconfig
+
+  # JSON formatter for Elasticsearch
+  handler = logging.StreamHandler()
+  handler.setFormatter(jsonlogger.JsonFormatter())
+  logging.getLogger("superconfig").addHandler(handler)
+
+  # Now SuperConfig errors → JSON → Logstash → Elasticsearch
+  registry = superconfig.ConfigRegistry()
+  registry.enable(invalid_flag)  # Seamlessly flows to ELK
+
+  4. Minimal Implementation Effort
+  - Core: Add log::warn!() calls + FFI callback (maybe 50 lines)
+  - Python FFI: Bridge to logging (maybe 20 lines)
+  - Node FFI: Event emitter bridge (maybe 30 lines)
+  - Total: ~100 lines vs 1000+ lines for ErrorRegistry
+
+  5. Industry Standard Patterns
+  - Developers already know how to configure logging in their language
+  - Works with their existing monitoring/alerting infrastructure
+  - No new APIs to learn
+
+  Implementation Summary
+
+  What we're adding:
+  1. Core superconfig: Replace println! with log::warn! + FFI callback
+  2. Python FFI: One bridge function that calls Python's logging.getLogger().warning()
+  3. Node FFI: One bridge function that emits log events
+
+  What clients get:
+  - Native logging flexibility in their language
+  - Works with all existing logging infrastructure
+  - Professional, enterprise-ready error handling
+  - Zero learning curve
+
+  You're absolutely right - this gives us maximum flexibility with minimum effort, and it integrates seamlessly with any logging infrastructure (ELK, EFK, Datadog, Splunk, etc.) that clients are already using.

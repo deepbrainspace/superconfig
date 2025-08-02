@@ -20,8 +20,8 @@ Our CI pipeline is designed with an **optimized build→test structure** that el
 │   ┌─────────────┐ ┌─────────────┐                   │
 │   │   Quality   │ │  Security   │                   │
 │   │             │ │             │                   │
-│   │ fmt-check   │ │   audit     │                   │
-│   │   clippy    │ │    deny     │                   │
+│   │format-check │ │   audit     │                   │
+│   │    lint     │ │    deny     │                   │
 │   └─────────────┘ └─────────────┘                   │
 └─────────────────────────────────────────────────────┘
            │
@@ -81,8 +81,8 @@ You can run the same checks locally using Moon:
 
 ```bash
 # Quality checks
-moon run superconfig:fmt-check   # Format validation
-moon run superconfig:clippy      # Linting
+moon run superconfig:format-check   # Format validation
+moon run superconfig:lint            # Linting
 
 # Security checks
 moon run superconfig:audit       # Security audit

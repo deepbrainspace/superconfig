@@ -1,0 +1,154 @@
+   Compiling superconfig v0.2.0 (/home/nsm/code/deepbrain/superconfig/crates/superconfig)
+    Finished `bench` profile [optimized] target(s) in 5.54s
+     Running unittests src/lib.rs (target/release/deps/superconfig-819dfa369ff6672c)
+
+running 48 tests
+test config_flags::tests::test_error_display ... ignored
+test config_flags::tests::test_flag_combinations ... ignored
+test config_flags::tests::test_runtime_flag_constants ... ignored
+test config_flags::tests::test_runtime_flag_validation ... ignored
+test config_flags::tests::test_startup_flag_constants ... ignored
+test config_flags::tests::test_startup_flag_validation ... ignored
+test core::errors::tests::test_error_display ... ignored
+test core::handle::tests::test_different_types_different_handles ... ignored
+test core::handle::tests::test_handle_copy ... ignored
+test core::handle::tests::test_handle_creation ... ignored
+test core::handle::tests::test_handle_debug ... ignored
+test core::handle::tests::test_handle_equality ... ignored
+test core::handle::tests::test_handle_hash ... ignored
+test core::handle::tests::test_handle_json_roundtrip ... ignored
+test core::handle::tests::test_handle_serialization ... ignored
+test core::handle::tests::test_phantom_data_zero_cost ... ignored
+test core::registry::tests::test_arc_catch_and_errors ... ignored
+test core::registry::tests::test_arc_creation_methods ... ignored
+test core::registry::tests::test_arc_enable_chaining ... ignored
+test core::registry::tests::test_arc_enable_error_handling ... ignored
+test core::registry::tests::test_arc_enable_success ... ignored
+test core::registry::tests::test_arc_mixed_chaining ... ignored
+test core::registry::tests::test_arc_reference_behavior ... ignored
+test core::registry::tests::test_arc_sharing ... ignored
+test core::registry::tests::test_builder_pattern ... ignored
+test core::registry::tests::test_clear_registry ... ignored
+test core::registry::tests::test_concurrent_access ... ignored
+test core::registry::tests::test_create_and_read ... ignored
+test core::registry::tests::test_delete ... ignored
+test core::registry::tests::test_enable_as_json_error ... ignored
+test core::registry::tests::test_enable_as_json_success ... ignored
+test core::registry::tests::test_enable_as_json_with_chaining ... ignored
+test core::registry::tests::test_enable_chaining ... ignored
+test core::registry::tests::test_flag_operations ... ignored
+test core::registry::tests::test_global_registry ... ignored
+test core::registry::tests::test_handle_id_generation ... ignored
+test core::registry::tests::test_handle_not_found ... ignored
+test core::registry::tests::test_macro_generated_enable_as_json ... ignored
+test core::registry::tests::test_macro_generated_enable_as_json_error ... ignored
+test core::registry::tests::test_memory_cleanup ... ignored
+test core::registry::tests::test_statistics ... ignored
+test core::registry::tests::test_update ... ignored
+test core::registry::tests::test_wrong_type ... ignored
+test core::stats::tests::test_memory_tracking ... ignored
+test core::stats::tests::test_overflow_protection ... ignored
+test core::stats::tests::test_reset ... ignored
+test core::stats::tests::test_stats_new_and_default ... ignored
+test core::stats::tests::test_stats_operations ... ignored
+
+test result: ok. 0 passed; 0 failed; 48 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running benches/registry_bench.rs (target/release/deps/registry_bench-1b27f24812af096d)
+Gnuplot not found, using plotters backend
+Benchmarking registry_create
+Benchmarking registry_create: Warming up for 3.0000 s
+Benchmarking registry_create: Collecting 100 samples in estimated 5.0021 s (4.9M iterations)
+Benchmarking registry_create: Analyzing
+registry_create         time:   [989.10 ns 1.2210 µs 1.6235 µs]
+                        change: [−50.246% −11.781% +49.372%] (p = 0.80 > 0.05)
+                        No change in performance detected.
+Found 3 outliers among 100 measurements (3.00%)
+  1 (1.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking registry_read
+Benchmarking registry_read: Warming up for 3.0000 s
+Benchmarking registry_read: Collecting 100 samples in estimated 5.0000 s (62M iterations)
+Benchmarking registry_read: Analyzing
+registry_read           time:   [76.432 ns 79.694 ns 83.142 ns]
+                        change: [+7.2035% +13.137% +19.646%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 3 outliers among 100 measurements (3.00%)
+  2 (2.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking registry_update
+Benchmarking registry_update: Warming up for 3.0000 s
+Benchmarking registry_update: Collecting 100 samples in estimated 5.0001 s (20M iterations)
+Benchmarking registry_update: Analyzing
+registry_update         time:   [248.97 ns 262.47 ns 277.58 ns]
+                        change: [+2.2931% +9.8505% +18.054%] (p = 0.01 < 0.05)
+                        Performance has regressed.
+Found 5 outliers among 100 measurements (5.00%)
+  5 (5.00%) high mild
+
+Benchmarking concurrent_reads_10_threads
+Benchmarking concurrent_reads_10_threads: Warming up for 3.0000 s
+Benchmarking concurrent_reads_10_threads: Collecting 100 samples in estimated 8.0650 s (10k iterations)
+Benchmarking concurrent_reads_10_threads: Analyzing
+concurrent_reads_10_threads
+                        time:   [757.97 µs 840.92 µs 921.46 µs]
+                        change: [+35.286% +52.914% +72.228%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+
+Benchmarking mixed_operations
+Benchmarking mixed_operations: Warming up for 3.0000 s
+Benchmarking mixed_operations: Collecting 100 samples in estimated 5.0144 s (449k iterations)
+Benchmarking mixed_operations: Analyzing
+mixed_operations        time:   [10.859 µs 11.306 µs 11.779 µs]
+                        change: [+0.7565% +7.2270% +14.434%] (p = 0.03 < 0.05)
+                        Change within noise threshold.
+Found 8 outliers among 100 measurements (8.00%)
+  4 (4.00%) high mild
+  4 (4.00%) high severe
+
+Benchmarking arc_sharing_100_refs
+Benchmarking arc_sharing_100_refs: Warming up for 3.0000 s
+Benchmarking arc_sharing_100_refs: Collecting 100 samples in estimated 5.0202 s (606k iterations)
+Benchmarking arc_sharing_100_refs: Analyzing
+arc_sharing_100_refs    time:   [7.3531 µs 7.6620 µs 8.0684 µs]
+                        change: [−1.6764% +2.8842% +7.4887%] (p = 0.25 > 0.05)
+                        No change in performance detected.
+Found 5 outliers among 100 measurements (5.00%)
+  3 (3.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking handle_serialize
+Benchmarking handle_serialize: Warming up for 3.0000 s
+Benchmarking handle_serialize: Collecting 100 samples in estimated 5.0001 s (243M iterations)
+Benchmarking handle_serialize: Analyzing
+handle_serialize        time:   [21.199 ns 22.602 ns 24.248 ns]
+                        change: [+2.1348% +10.818% +20.111%] (p = 0.01 < 0.05)
+                        Performance has regressed.
+Found 8 outliers among 100 measurements (8.00%)
+  5 (5.00%) high mild
+  3 (3.00%) high severe
+
+Benchmarking handle_deserialize
+Benchmarking handle_deserialize: Warming up for 3.0000 s
+Benchmarking handle_deserialize: Collecting 100 samples in estimated 5.0001 s (243M iterations)
+Benchmarking handle_deserialize: Analyzing
+handle_deserialize      time:   [19.412 ns 20.358 ns 21.406 ns]
+                        change: [−6.6541% −1.4417% +3.4823%] (p = 0.59 > 0.05)
+                        No change in performance detected.
+Found 8 outliers among 100 measurements (8.00%)
+  6 (6.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking memory_usage_1000_configs
+Benchmarking memory_usage_1000_configs: Warming up for 3.0000 s
+Benchmarking memory_usage_1000_configs: Collecting 100 samples in estimated 5.7010 s (10k iterations)
+Benchmarking memory_usage_1000_configs: Analyzing
+memory_usage_1000_configs
+                        time:   [616.50 µs 653.42 µs 691.09 µs]
+                        change: [+4.5887% +13.106% +21.722%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 6 outliers among 100 measurements (6.00%)
+  6 (6.00%) high mild
+

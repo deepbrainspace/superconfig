@@ -117,10 +117,10 @@ jobs:
         uses: ./.github/actions/setup-moon
 
       - name: Check formatting for ${{ matrix.crate }}
-        run: moon run ${{ matrix.crate }}:fmt-check
+        run: moon run ${{ matrix.crate }}:format-check
 
-      - name: Run clippy for ${{ matrix.crate }}
-        run: moon run ${{ matrix.crate }}:clippy
+      - name: Run linting for ${{ matrix.crate }}
+        run: moon run ${{ matrix.crate }}:lint
 
       - name: Check for outdated dependencies for ${{ matrix.crate }}
         run: moon run ${{ matrix.crate }}:outdated

@@ -5,18 +5,19 @@ pre-commit:
   parallel: true
   commands:
     # Rust formatting using Moon tasks
-    rust-fmt:
+    rust-format:
       glob: "*.rs"
-      run: moon run :fmt
+      run: moon run --affected :format
       stage_fixed: true
 
-    rust-clippy:
+    rust-lint:
       glob: "*.rs"
-      run: moon run :clippy
+      run: moon run --affected :lint
 
     # Python formatting and linting - only changed files
     python-fmt:
       glob: "*.py"
+      exclude: "crates-archive/**/*"
       run: python -m black {staged_files}
       stage_fixed: true
       skip:
@@ -25,6 +26,7 @@ pre-commit:
 
     python-lint:
       glob: "*.py"
+      exclude: "crates-archive/**/*"
       run: python -m ruff check {staged_files}
       skip:
         - merge
@@ -69,9 +71,9 @@ pre-push:
     #   run: moon run --affected :test
 
     # Ensure clean formatting using Moon
-    rust-fmt-check:
+    rust-format-check:
       glob: "*.rs"
-      run: moon run :fmt-check
+      run: moon run --affected :format-check
 
     # Check for outdated dependencies
     rust-outdated:

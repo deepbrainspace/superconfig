@@ -1,0 +1,9 @@
+{
+  "group_id": "registry_read",
+  "function_id": null,
+  "value_str": null,
+  "throughput": null,
+  "full_id": "registry_read",
+  "directory_name": "registry_read",
+  "title": "registry_read"
+}

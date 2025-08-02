@@ -1,0 +1,47 @@
+{
+  "mean": {
+    "confidence_interval": {
+      "confidence_level": 0.95,
+      "lower_bound": 78.5813529579601,
+      "upper_bound": 85.8867572228668
+    },
+    "point_estimate": 82.07956887924519,
+    "standard_error": 1.864986977703307
+  },
+  "median": {
+    "confidence_interval": {
+      "confidence_level": 0.95,
+      "lower_bound": 73.80763031809363,
+      "upper_bound": 82.39321792810031
+    },
+    "point_estimate": 76.54229916018873,
+    "standard_error": 2.2656314025249187
+  },
+  "median_abs_dev": {
+    "confidence_interval": {
+      "confidence_level": 0.95,
+      "lower_bound": 11.237515716721513,
+      "upper_bound": 18.790243279292223
+    },
+    "point_estimate": 14.694292224228143,
+    "standard_error": 1.9328896342633606
+  },
+  "slope": {
+    "confidence_interval": {
+      "confidence_level": 0.95,
+      "lower_bound": 76.43224369490342,
+      "upper_bound": 83.14225426660202
+    },
+    "point_estimate": 79.69376791172986,
+    "standard_error": 1.7074556782703587
+  },
+  "std_dev": {
+    "confidence_interval": {
+      "confidence_level": 0.95,
+      "lower_bound": 13.812236845875129,
+      "upper_bound": 23.530108571687478
+    },
+    "point_estimate": 18.811653942073598,
+    "standard_error": 2.5035793462724216
+  }
+}

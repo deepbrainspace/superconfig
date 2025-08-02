@@ -1,0 +1,73 @@
+[package]
+name = "superconfig"
+version = "0.1.0"
+authors = ["Nayeem Syed <hello@superconfig.dev>"]
+categories = ["config", "development-tools"]
+documentation = "https://docs.rs/superconfig"
+edition = "2024"
+homepage = "https://superconfig.dev"
+keywords = ["config", "configuration", "figment", "settings", "env"]
+license = "MIT"
+readme = "../../README.md"
+repository = "https://github.com/deepbrainspace/superconfig"
+description = "Advanced configuration management built on Figment with hierarchical loading, array merging, and smart format detection"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+default-theme = "ayu"
+
+[features]
+default = ["core"]
+
+# Core features
+core = []
+providers = ["core"]
+
+# Future features (when we implement them)
+# cli = ["core", "clap"]
+# mcp = ["core", "tokio"]
+# api = ["core", "axum", "tokio", "tower"]
+# database = ["core", "sqlx", "tokio"]
+# remote = ["core", "reqwest", "tokio"]
+# vault = ["core", "vaultrs", "tokio"]
+# wasm = ["core", "wasm-bindgen"]
+
+# Convenience feature for everything
+all = ["providers"]
+
+[dependencies]
+# Core dependencies (always included)
+dirs = "6.0"
+figment = { version = "0.10.19", features = ["json", "toml", "yaml", "env"] }
+lazy_static = "1.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_yml = "0.0.12"
+toml = "0.8"
+
+# Optional core dependencies (used by features)
+anyhow = "1.0"
+globset = "0.4.16"
+serde_json = "1.0"
+walkdir = "2.5"
+
+# Future optional dependencies (when we implement them)
+# clap = { version = "4", optional = true, features = ["derive"] }
+# tokio = { version = "1", optional = true, features = ["full"] }
+# axum = { version = "0.8", optional = true }
+# tower = { version = "0.5", optional = true }
+# sqlx = { version = "0.8", optional = true, features = ["runtime-tokio", "postgres", "sqlite"] }
+# reqwest = { version = "0.12", optional = true, features = ["json"] }
+# vaultrs = { version = "0.7", optional = true }
+# wasm-bindgen = { version = "0.2", optional = true }
+
+[lints.clippy]
+# Allow large error types to maintain 100% Figment compatibility.
+# Figment's Error type is 208+ bytes, but changing to Box<Error> would break API compatibility.
+# Users expect seamless integration between SuperConfig traits and standard Figment methods.
+result_large_err = "allow"
+
+[dev-dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serial_test = "3.2.0"
+tempfile = "3.10"

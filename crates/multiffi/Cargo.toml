@@ -1,0 +1,42 @@
+[package]
+name = "multiffi"
+version = "0.2.0"
+categories = ["development-tools", "api-bindings"]
+edition = "2024" # Using the latest stable edition
+keywords = ["ffi", "macro", "python", "nodejs", "wasm"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/deepbrainspace/superconfig"
+description = "Procedural macro for generating multi-language FFI bindings"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+serde = { version = "1.0", features = ["derive"], optional = true }
+serde_json = { version = "1.0", optional = true }
+syn = { version = "2.0", features = ["full", "extra-traits"] }
+
+# Optional FFI dependencies - latest versions as of 2025
+js-sys = { version = "0.3", optional = true }
+napi = { version = "3.0", optional = true }
+napi-derive = { version = "3.0", optional = true }
+pyo3 = { version = "0.25", optional = true }
+serde-wasm-bindgen = { version = "0.6", optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
+
+[features]
+default = []
+python = ["pyo3", "serde", "serde_json"]
+nodejs = ["napi", "napi-derive", "serde", "serde_json"]
+wasm = ["wasm-bindgen", "js-sys", "serde-wasm-bindgen", "serde", "serde_json"]
+all = ["python", "nodejs", "wasm"]
+
+[dev-dependencies]
+trybuild = "1.0"
+
+[package.metadata.docs.rs]
+all-features = true
+targets = ["x86_64-unknown-linux-gnu"]
+rustdoc-args = ["--default-theme=ayu"]
