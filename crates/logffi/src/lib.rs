@@ -1,12 +1,19 @@
-//! Drop-in replacement for log crate with FFI callback support
+//! # LogFFI
 //!
-//! This crate provides identical macros to the `log` crate (`warn!`, `debug!`, etc.)
-//! but adds FFI callback support for bridging Rust logging to Python, Node.js, and
-//! other languages.
+//! Drop-in replacement for the `log` crate with FFI callback support for bridging Rust logs
+//! to Python, Node.js, and other languages.
 //!
-//! # Usage
+//! ## Features
 //!
-//! Replace `log` with `logffi` in your dependencies:
+//! - **100% API compatibility** with the standard `log` crate
+//! - **FFI callback support** for bridging logs to other languages  
+//! - **Zero overhead** when FFI callbacks are not used
+//! - **Thread-safe** callback management with `OnceLock`
+//! - **Respects log filtering** - callbacks only called for enabled log levels
+//!
+//! ## Quick Start
+//!
+//! Add to your `Cargo.toml`:
 //!
 //! ```toml
 //! [dependencies]
@@ -23,16 +30,40 @@
 //! debug!(target: "my_target", "Debug message with target");
 //! ```
 //!
-//! For FFI integration, set a callback:
+//! ## FFI Integration
+//!
+//! Set a callback to bridge Rust logs to other languages:
 //!
 //! ```rust
 //! use logffi::set_ffi_callback;
 //!
+//! // Bridge to Python logging
 //! set_ffi_callback(Box::new(|level, target, message| {
-//!     // Bridge to Python logging.getLogger(target).warning(message)
-//!     // or Node.js winston.log(level, message, { target })
+//!     // Call Python: logging.getLogger(target).log(level, message)
+//!     python_log_bridge(level, target, message);
+//! }));
+//!
+//! // Bridge to Node.js winston  
+//! set_ffi_callback(Box::new(|level, target, message| {
+//!     // Call Node.js: winston.log(level, message, { target })
+//!     nodejs_log_bridge(level, target, message);
 //! }));
 //! ```
+//!
+//! ## How It Works
+//!
+//! 1. **Standard Logging**: All macros first call the standard `log!` macro, respecting all filtering
+//! 2. **FFI Check**: If `log_enabled!` returns true for the target/level, the FFI callback is invoked
+//! 3. **Thread Safety**: FFI callback is stored in a `OnceLock` for thread-safe access
+//! 4. **Zero Overhead**: When no FFI callback is set, performance is identical to the standard `log` crate
+//!
+//! ## Use Cases
+//!
+//! - **Python Extensions**: Bridge Rust logs to Python's `logging` module
+//! - **Node.js Addons**: Forward Rust logs to Winston or other Node.js loggers
+//! - **WebAssembly**: Send logs from WASM modules to JavaScript console  
+//! - **Mobile Apps**: Bridge Rust logs to platform-specific logging (iOS/Android)
+//! - **Microservices**: Centralized logging across polyglot service architectures
 
 use std::sync::OnceLock;
 
@@ -103,6 +134,15 @@ macro_rules! log_with_ffi {
 /// Log an error message with FFI callback support
 ///
 /// Identical API to `log::error!` with added FFI bridging.
+///
+/// # Examples
+///
+/// ```rust
+/// use logffi::error;
+///
+/// error!("Connection failed");
+/// error!(target: "database", "Failed to connect: {}", err_msg);
+/// ```
 #[macro_export]
 macro_rules! error {
     (target: $target:expr, $($arg:tt)*) => {
