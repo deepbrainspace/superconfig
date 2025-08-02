@@ -4,8 +4,8 @@
 [![Documentation](https://docs.rs/superconfig-macros/badge.svg)](https://docs.rs/superconfig-macros)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/deepbrain/superconfig/ci.yml?branch=main)](https://github.com/deepbrain/superconfig/actions)
-[![Coverage](https://img.shields.io/badge/coverage-82.72%25%20lines-green.svg)](#coverage-and-testing)
-[![Region Coverage](https://img.shields.io/badge/region%20coverage-87.98%25-green.svg)](#coverage-and-testing)
+[![Coverage](https://img.shields.io/badge/coverage-85.27%25%20lines-green.svg)](#coverage-and-testing)
+[![Region Coverage](https://img.shields.io/badge/region%20coverage-90.35%25-green.svg)](#coverage-and-testing)
 
 Procedural macros for SuperConfig fluent API error handling and FFI integration.
 
@@ -254,7 +254,7 @@ These macros are designed specifically for the SuperConfig ecosystem but can be 
 
 ## Coverage and Testing
 
-SuperConfig Macros maintains **87.98% region coverage** with comprehensive testing:
+SuperConfig Macros maintains **90.35% region coverage** with comprehensive testing:
 
 - ✅ All procedural macro code paths tested
 - ✅ Complex type detection algorithms verified
@@ -264,11 +264,15 @@ SuperConfig Macros maintains **87.98% region coverage** with comprehensive testi
 
 | Coverage Type         | Percentage | Details                             |
 | --------------------- | ---------- | ----------------------------------- |
-| **Region Coverage**   | 87.98%     | 66 missing out of 549 total regions |
+| **Region Coverage**   | 90.35%     | 53 missing out of 549 total regions |
 | **Function Coverage** | 100.00%    | 23 functions fully covered          |
-| **Line Coverage**     | 82.72%     | 61 missing out of 353 total lines   |
+| **Line Coverage**     | 85.27%     | 52 missing out of 353 total lines   |
 
-The high region coverage ensures that all critical macro expansion paths are tested and validated.
+📊 **[View Interactive Coverage Report](coverage-report/index.html)** - Detailed line-by-line coverage analysis
+
+For detailed coverage analysis and methodology, see [COVERAGE_ANALYSIS.md](COVERAGE_ANALYSIS.md).
+
+The excellent region coverage ensures that all critical macro expansion paths are tested and validated.
 
 ## Requirements
 
