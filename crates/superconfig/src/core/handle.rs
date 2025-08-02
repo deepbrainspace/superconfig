@@ -1,6 +1,6 @@
 //! Type-safe handles for accessing configuration data
 
-use super::errors::HandleId;
+use super::registry::HandleId;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
@@ -212,5 +212,19 @@ mod tests {
         // These should be different types (won't compile if we try to compare them)
         assert_eq!(handle_string.id(), handle_int.id()); // IDs are same
         // handle_string == handle_int; // This won't compile - good!
+    }
+
+    #[test]
+    fn test_handle_deserialize_error_path() {
+        // Test the error path in deserialize (line 85)
+        // This triggers the `?` operator when HandleId::deserialize fails
+        let invalid_json = "\"not_a_number\""; // String instead of number for HandleId
+        let result: Result<ConfigHandle<TestConfig>, _> = serde_json::from_str(invalid_json);
+        assert!(result.is_err());
+
+        // Also test with completely malformed JSON
+        let malformed_json = "{invalid}";
+        let result2: Result<ConfigHandle<TestConfig>, _> = serde_json::from_str(malformed_json);
+        assert!(result2.is_err());
     }
 }

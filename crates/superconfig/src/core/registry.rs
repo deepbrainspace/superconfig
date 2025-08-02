@@ -2,7 +2,6 @@
 
 use dashmap::DashMap;
 use parking_lot::RwLock;
-use serde::Serialize;
 use std::{
     sync::{
         Arc,
@@ -12,12 +11,11 @@ use std::{
 };
 use superconfig_macros::generate_json_helper;
 
-use super::{
-    errors::{FluentError, HandleId, RegistryError},
-    handle::ConfigHandle,
-    stats::RegistryStats,
-};
-use logffi::warn;
+use super::{handle::ConfigHandle, stats::RegistryStats};
+use logffi::error;
+
+/// Unique identifier for configuration handles
+pub type HandleId = u64;
 
 /// Internal entry stored in the registry
 #[derive(Debug)]
@@ -52,24 +50,19 @@ impl ConfigEntry {
         }
     }
 
-    fn get_arc_data<T: 'static>(&self) -> Result<Arc<T>, RegistryError> {
+    fn get_arc_data<T: 'static>(&self) -> Result<Arc<T>, String> {
         let expected_type = std::any::type_name::<T>();
         if self.type_name != expected_type {
-            return Err(RegistryError::WrongType {
-                handle_id: 0, // Will be filled in by caller
-                expected: expected_type,
-                found: self.type_name,
-            });
+            let error_msg = format!(
+                "superconfig.registry: Wrong type, expected {}, found {}",
+                expected_type, self.type_name
+            );
+            error!(target: "superconfig.registry", "Wrong type, expected {}, found {}", expected_type, self.type_name);
+            return Err(error_msg);
         }
 
-        self.data
-            .downcast_ref::<Arc<T>>()
-            .cloned() // Clone the Arc (cheap - just increment counter)
-            .ok_or(RegistryError::WrongType {
-                handle_id: 0, // Will be filled in by caller
-                expected: expected_type,
-                found: self.type_name,
-            })
+        // If we get here, downcast must succeed
+        Ok(self.data.downcast_ref::<Arc<T>>().unwrap().clone())
     }
 }
 
@@ -104,9 +97,6 @@ pub struct ConfigRegistry {
     startup_flags: u32,
     /// Runtime flags - mutable at runtime
     runtime_flags: Arc<parking_lot::RwLock<u64>>,
-    /// Collected errors from try_* methods for permissive error handling
-    #[allow(dead_code)] // Used by fluent API patterns (future implementation)
-    collected_errors: Arc<parking_lot::RwLock<Vec<FluentError>>>,
 }
 
 impl ConfigRegistry {
@@ -155,7 +145,6 @@ impl ConfigRegistry {
             stats: Arc::new(RwLock::new(RegistryStats::default())),
             startup_flags,
             runtime_flags: Arc::new(parking_lot::RwLock::new(0)),
-            collected_errors: Arc::new(parking_lot::RwLock::new(Vec::new())),
         })
     }
 
@@ -178,7 +167,7 @@ impl ConfigRegistry {
     pub fn enable(self: Arc<Self>, flags: u64) -> Arc<Self> {
         // Validate flags - check if it's a known runtime flag
         if !crate::config_flags::is_valid_runtime_flag(flags) {
-            warn!(target: "superconfig.flags", "Invalid runtime flag: 0x{:X}", flags);
+            error!(target: "superconfig.flags", "Invalid runtime flag: 0x{:X}", flags);
             return self;
         }
 
@@ -207,7 +196,7 @@ impl ConfigRegistry {
     pub fn disable(self: Arc<Self>, flags: u64) -> Arc<Self> {
         // Validate flags - check if it's a known runtime flag
         if !crate::config_flags::is_valid_runtime_flag(flags) {
-            warn!(target: "superconfig.flags", "Invalid runtime flag: 0x{:X}", flags);
+            error!(target: "superconfig.flags", "Invalid runtime flag: 0x{:X}", flags);
             return self;
         }
 
@@ -278,10 +267,7 @@ impl ConfigRegistry {
     /// let handle = registry.create("my config".to_string()).unwrap();
     /// assert_eq!(handle.id(), 1);
     /// ```
-    pub fn create<T: 'static + Send + Sync>(
-        &self,
-        data: T,
-    ) -> Result<ConfigHandle<T>, RegistryError> {
+    pub fn create<T: 'static + Send + Sync>(&self, data: T) -> Result<ConfigHandle<T>, String> {
         let id = self.next_id.fetch_add(1, Ordering::Relaxed);
         let entry = ConfigEntry::new(data);
         let data_size = entry.data_size;
@@ -307,8 +293,7 @@ impl ConfigRegistry {
     ///
     /// # Errors
     ///
-    /// Returns `RegistryError::HandleNotFound` if the handle doesn't exist in the registry.
-    /// Returns `RegistryError::WrongType` if the handle points to data of a different type.
+    /// Returns error message if the handle doesn't exist or points to wrong type.
     ///
     /// # Performance Notes
     ///
@@ -327,13 +312,13 @@ impl ConfigRegistry {
     /// let data = registry.read(&handle).unwrap();
     /// assert_eq!(*data, "test");
     /// ```
-    pub fn read<T: 'static>(&self, handle: &ConfigHandle<T>) -> Result<Arc<T>, RegistryError> {
-        let entry_ref =
-            self.entries
-                .get(&handle.id())
-                .ok_or_else(|| RegistryError::HandleNotFound {
-                    handle_id: handle.id(),
-                })?;
+    #[generate_json_helper(auto)]
+    pub fn read<T: 'static>(&self, handle: &ConfigHandle<T>) -> Result<Arc<T>, String> {
+        let entry_ref = self.entries.get(&handle.id()).ok_or_else(|| {
+            let error_msg = format!("superconfig.registry: Handle {} not found", handle.id());
+            error!(target: "superconfig.registry", "Handle {} not found", handle.id());
+            error_msg
+        })?;
 
         // Update statistics
         {
@@ -341,28 +326,7 @@ impl ConfigRegistry {
             stats.increment_reads();
         }
 
-        entry_ref.get_arc_data::<T>().map_err(|mut e| {
-            if let RegistryError::WrongType { handle_id, .. } = &mut e {
-                *handle_id = handle.id();
-            }
-            e
-        })
-    }
-
-    /// Read data as JSON string (internal helper for FFI crates)
-    ///
-    /// This method is used by FFI wrappers (Phase 4: Python/Node.js bindings) to provide
-    /// consistent JSON serialization across all language bindings while maintaining
-    /// the same `read()` function name.
-    #[allow(dead_code)] // Used by FFI crates in Phase 4
-    pub(crate) fn read_as_json<T: Serialize + 'static>(
-        &self,
-        handle: &ConfigHandle<T>,
-    ) -> Result<String, RegistryError> {
-        let arc = self.read(handle)?;
-        serde_json::to_string(&*arc).map_err(|e| RegistryError::SerializationError {
-            message: e.to_string(),
-        })
+        entry_ref.get_arc_data::<T>()
     }
 
     /// Update data in a configuration handle
@@ -372,7 +336,7 @@ impl ConfigRegistry {
     ///
     /// # Errors
     ///
-    /// Returns `RegistryError::HandleNotFound` if the handle doesn't exist in the registry.
+    /// Returns error message if the handle doesn't exist in the registry.
     ///
     /// # Examples
     ///
@@ -390,14 +354,16 @@ impl ConfigRegistry {
         &self,
         handle: &ConfigHandle<T>,
         new_data: T,
-    ) -> Result<(), RegistryError> {
+    ) -> Result<(), String> {
         // Remove old entry to get its size
-        let old_entry =
-            self.entries
-                .remove(&handle.id())
-                .ok_or_else(|| RegistryError::HandleNotFound {
-                    handle_id: handle.id(),
-                })?;
+        let old_entry = self.entries.remove(&handle.id()).ok_or_else(|| {
+            let error_msg = format!(
+                "superconfig.registry: Handle {} not found for update",
+                handle.id()
+            );
+            error!(target: "superconfig.registry", "Handle {} not found for update", handle.id());
+            error_msg
+        })?;
 
         let old_size = old_entry.1.data_size;
 
@@ -426,8 +392,7 @@ impl ConfigRegistry {
     ///
     /// # Errors
     ///
-    /// Returns `RegistryError::HandleNotFound` if the handle doesn't exist in the registry.
-    /// Returns `RegistryError::WrongType` if the handle points to data of a different type.
+    /// Returns error message if the handle doesn't exist or points to wrong type.
     ///
     /// # Examples
     ///
@@ -441,25 +406,24 @@ impl ConfigRegistry {
     /// assert_eq!(*data, "test");
     /// assert!(!registry.contains_handle(&handle));
     /// ```
-    pub fn delete<T: 'static>(&self, handle: &ConfigHandle<T>) -> Result<Arc<T>, RegistryError> {
-        let (_, entry) =
-            self.entries
-                .remove(&handle.id())
-                .ok_or_else(|| RegistryError::HandleNotFound {
-                    handle_id: handle.id(),
-                })?;
+    pub fn delete<T: 'static>(&self, handle: &ConfigHandle<T>) -> Result<Arc<T>, String> {
+        let (_, entry) = self.entries.remove(&handle.id()).ok_or_else(|| {
+            let error_msg = format!(
+                "superconfig.registry: Handle {} not found for delete",
+                handle.id()
+            );
+            error!(target: "superconfig.registry", "Handle {} not found for delete", handle.id());
+            error_msg
+        })?;
 
         let data_size = entry.data_size;
 
         // Extract the Arc<T> directly
-        let arc = entry
-            .data
-            .downcast::<Arc<T>>()
-            .map_err(|_| RegistryError::WrongType {
-                handle_id: handle.id(),
-                expected: std::any::type_name::<T>(),
-                found: entry.type_name,
-            })?;
+        let arc = entry.data.downcast::<Arc<T>>().map_err(|_| {
+            let error_msg = format!("superconfig.registry: Wrong type for delete, expected {}, found {}", std::any::type_name::<T>(), entry.type_name);
+            error!(target: "superconfig.registry", "Wrong type for delete, expected {}, found {}", std::any::type_name::<T>(), entry.type_name);
+            error_msg
+        })?;
 
         // Update statistics
         {
@@ -561,75 +525,6 @@ impl ConfigRegistry {
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
-
-    // Error handling methods for try/catch/throw pattern
-
-    /// Catch and clear all collected errors from try_* methods
-    ///
-    /// This method returns all errors that have been collected by try_* methods
-    /// and clears the internal error collection (like Java's catch behavior).
-    /// Use `errors()` method if you want to peek without clearing.
-    ///
-    /// # Examples
-    /// ```
-    /// use superconfig::{ConfigRegistry, config_flags::runtime};
-    ///
-    /// let registry = ConfigRegistry::new()
-    ///     .enable(runtime::STRICT_MODE)   // Success
-    ///     .enable(0xFFFFFFFF);            // Invalid flag - error printed but continues
-    ///
-    /// let errors = registry.catch(); // Get and clear errors
-    /// assert_eq!(errors.len(), 0); // No errors collected for println approach
-    ///
-    /// let no_errors = registry.catch(); // Should be empty now
-    /// assert_eq!(no_errors.len(), 0);
-    /// ```
-    pub fn catch(&self) -> Vec<FluentError> {
-        let mut errors = self.collected_errors.write();
-        std::mem::take(&mut *errors) // Move out, leave empty vec
-    }
-
-    /// Peek at collected errors without clearing them
-    ///
-    /// This method returns a copy of all collected errors without clearing
-    /// the internal collection. Use `catch()` if you want to clear the errors.
-    ///
-    /// # Examples
-    /// ```
-    /// use superconfig::{ConfigRegistry, config_flags::runtime};
-    ///
-    /// let registry = ConfigRegistry::new()
-    ///     .enable(runtime::STRICT_MODE);  // Valid flag
-    ///
-    /// let errors = registry.errors(); // Peek at errors
-    /// assert_eq!(errors.len(), 0); // No errors with valid flags
-    ///
-    /// let same_errors = registry.errors(); // Still there
-    /// assert_eq!(same_errors.len(), 0);
-    ///
-    /// registry.catch(); // Clear them anyway
-    /// let no_errors = registry.errors(); // Should be empty
-    /// assert_eq!(no_errors.len(), 0);
-    /// ```
-    pub fn errors(&self) -> Vec<FluentError> {
-        self.collected_errors.read().clone()
-    }
-
-    /// Check if any errors have been collected
-    ///
-    /// # Examples
-    /// ```
-    /// use superconfig::{ConfigRegistry, config_flags::runtime};
-    ///
-    /// let registry = ConfigRegistry::new();
-    /// assert!(!registry.has_errors());
-    ///
-    /// let registry = registry.enable(runtime::STRICT_MODE); // Valid flag
-    /// assert!(!registry.has_errors()); // No errors with valid flags
-    /// ```
-    pub fn has_errors(&self) -> bool {
-        !self.collected_errors.read().is_empty()
-    }
 }
 
 // Global registry instance - defined here to be close to the implementation
@@ -668,7 +563,7 @@ mod tests {
         timeout_ms: u32,
     }
 
-    #[derive(Debug, Clone, PartialEq)]
+    #[derive(Debug, Clone, PartialEq, Serialize)]
     struct SimpleConfig {
         value: i32,
     }
@@ -764,15 +659,43 @@ mod tests {
     }
 
     #[test]
-    fn test_handle_not_found() {
+    fn test_invalid_handle_operations() {
         let registry = ConfigRegistry::new();
-        let fake_handle = ConfigHandle::<TestConfig>::new(999);
 
-        let result = registry.read(&fake_handle);
-        assert!(matches!(
-            result,
-            Err(RegistryError::HandleNotFound { handle_id: 999 })
-        ));
+        // Test various error scenarios that can occur during normal operations
+
+        // Scenario 1: Delete with non-existent handle
+        let phantom_delete_handle = ConfigHandle::<TestConfig>::new(999);
+        let result = registry.delete(&phantom_delete_handle);
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .contains("Handle 999 not found for delete")
+        );
+
+        // Scenario 2: Update with non-existent handle
+        let phantom_config = TestConfig {
+            host: "phantom".to_string(),
+            port: 888,
+            timeout_ms: 5000,
+        };
+        let phantom_update_handle = ConfigHandle::<TestConfig>::new(888);
+        let result = registry.update(&phantom_update_handle, phantom_config);
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .contains("Handle 888 not found for update")
+        );
+
+        // Scenario 3: Read with non-existent handle for different type
+        let phantom_string_handle = ConfigHandle::<String>::new(777);
+        let result = registry.read(&phantom_string_handle);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Handle 777 not found"));
+
+        println!("✅ Invalid handle operations: all error paths covered comprehensively");
     }
 
     #[test]
@@ -790,9 +713,11 @@ mod tests {
         let wrong_handle = ConfigHandle::<SimpleConfig>::new(handle.id());
         let result = registry.read(&wrong_handle);
 
-        assert!(
-            matches!(result, Err(RegistryError::WrongType { handle_id, .. }) if handle_id == handle.id())
-        );
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err();
+        assert!(error_msg.contains("Wrong type"));
+        assert!(error_msg.contains("expected"));
+        assert!(error_msg.contains("found"));
     }
 
     #[test]
@@ -1037,21 +962,6 @@ mod tests {
         println!("✅ JSON output matches expected format exactly");
     }
 
-    /// Test chaining behavior with enable method
-    #[test]
-    fn test_enable_chaining() {
-        use crate::config_flags::runtime;
-
-        let registry = ConfigRegistry::new();
-
-        // Should not panic and should enable the flag
-        let result = registry.enable(runtime::STRICT_MODE);
-
-        // Verify the flag was actually enabled
-        assert!(result.runtime_enabled(runtime::STRICT_MODE));
-        println!("✅ enable chaining: flag was enabled correctly");
-    }
-
     // Old try_enable tests removed - replaced by Arc-based tests below
 
     /// Test the macro-generated `enable_as_json` method error case
@@ -1083,9 +993,9 @@ mod tests {
 
     // ===== Arc-based chaining pattern tests =====
 
-    /// Test Arc-based enable success case
+    /// Test enable success case
     #[test]
-    fn test_arc_enable_success() {
+    fn test_enable_success() {
         use crate::config_flags::runtime;
 
         let registry = ConfigRegistry::new();
@@ -1096,32 +1006,33 @@ mod tests {
         // Verify the flag was actually enabled
         assert!(result.runtime_enabled(runtime::STRICT_MODE));
 
-        // Should have no errors in error collection
-        assert!(!result.has_errors());
-        let errors = result.catch();
-        assert_eq!(errors.len(), 0);
+        // Registry continues chain successfully
 
-        println!("✅ Arc enable success: flag enabled, no errors collected");
+        println!("✅ Enable success: flag enabled correctly");
     }
 
-    /// Test Arc-based enable with invalid flag (error handling)
+    /// Test enable with invalid flag (error handling)
     #[test]
-    fn test_arc_enable_error_handling() {
+    fn test_enable_error_handling() {
         let registry = ConfigRegistry::new();
 
-        // Use an invalid flag that should cause a println error but continue chain
+        // Use an invalid flag that should cause a logffi error but continue chain
         let result = registry.enable(0xFFFFFFFF); // Invalid flag
 
         // Should continue chain even with invalid flag
-        // The error is printed but chain continues
-        assert!(!result.has_errors()); // Error collection mechanism exists
+        // The error is logged but chain continues
 
-        println!("✅ Arc enable error handling: invalid flag handled gracefully");
+        // Verify registry still works after invalid flag
+        let handle = result.create("test".to_string()).unwrap();
+        let data = result.read(&handle).unwrap();
+        assert_eq!(*data, "test");
+
+        println!("✅ Enable error handling: invalid flag handled gracefully");
     }
 
-    /// Test Arc-based enable chaining
+    /// Test enable method chaining
     #[test]
-    fn test_arc_enable_chaining() {
+    fn test_enable_method_chaining() {
         use crate::config_flags::runtime;
 
         let registry = ConfigRegistry::new();
@@ -1137,15 +1048,14 @@ mod tests {
         assert!(result.runtime_enabled(runtime::PARALLEL));
         assert!(result.runtime_enabled(runtime::ENV_EXPANSION));
 
-        // Should have no errors with valid flags
-        assert!(!result.has_errors());
+        // All flags enabled successfully
 
-        println!("✅ Arc enable chaining: all flags enabled correctly");
+        println!("✅ Enable chaining: all flags enabled correctly");
     }
 
-    /// Test Arc-based mixed chaining with enable and disable
+    /// Test mixed chaining with enable and disable
     #[test]
-    fn test_arc_mixed_chaining() {
+    fn test_enable_disable_chaining() {
         use crate::config_flags::runtime;
 
         let registry = ConfigRegistry::new();
@@ -1160,7 +1070,7 @@ mod tests {
         assert!(!result.runtime_enabled(runtime::STRICT_MODE)); // Disabled
         assert!(result.runtime_enabled(runtime::PARALLEL)); // Still enabled
 
-        println!("✅ Arc mixed chaining: enable and disable work together");
+        println!("✅ Enable/disable chaining: methods work together");
     }
 
     /// Test catch and errors methods
@@ -1168,32 +1078,18 @@ mod tests {
     fn test_arc_catch_and_errors() {
         let registry = ConfigRegistry::new();
 
-        // Initially no errors
-        assert!(!registry.has_errors());
-        assert_eq!(registry.errors().len(), 0);
-        assert_eq!(registry.catch().len(), 0);
-
-        // After valid operations, still no errors
+        // Test valid operations work correctly
         let registry = registry.enable(crate::config_flags::runtime::STRICT_MODE);
-        assert!(!registry.has_errors());
 
-        // Test errors() doesn't clear
-        let errors1 = registry.errors();
-        let errors2 = registry.errors();
-        assert_eq!(errors1.len(), errors2.len());
+        // Verify flag was enabled
+        assert!(registry.runtime_enabled(crate::config_flags::runtime::STRICT_MODE));
 
-        // Test catch() clears
-        let caught = registry.catch();
-        let after_catch = registry.catch();
-        assert_eq!(caught.len(), 0); // Should be 0 since no errors were added
-        assert_eq!(after_catch.len(), 0); // Should be empty after catch
-
-        println!("✅ Arc catch and errors: methods work correctly");
+        println!("✅ Arc operations: methods work correctly");
     }
 
-    /// Test Arc creation methods
+    /// Test registry creation methods
     #[test]
-    fn test_arc_creation_methods() {
+    fn test_registry_creation_methods() {
         use crate::config_flags::startup;
 
         // Test new
@@ -1209,12 +1105,12 @@ mod tests {
         let _: std::sync::Arc<ConfigRegistry> = registry1;
         let _: std::sync::Arc<ConfigRegistry> = registry2;
 
-        println!("✅ Arc creation methods: new and custom work correctly");
+        println!("✅ Registry creation methods: new and custom work correctly");
     }
 
-    /// Test Arc reference counting behavior
+    /// Test registry reference behavior
     #[test]
-    fn test_arc_reference_behavior() {
+    fn test_registry_reference_behavior() {
         use crate::config_flags::runtime;
 
         let registry1 = ConfigRegistry::new();
@@ -1233,7 +1129,7 @@ mod tests {
         assert!(result2.runtime_enabled(runtime::STRICT_MODE));
         assert!(result2.runtime_enabled(runtime::PARALLEL));
 
-        println!("✅ Arc reference behavior: shared state works correctly");
+        println!("✅ Registry reference behavior: shared state works correctly");
     }
 
     #[test]
@@ -1284,5 +1180,525 @@ mod tests {
         assert!(registry_clone.runtime_enabled(runtime::PARALLEL));
 
         println!("✅ enable_as_json chaining: {json_result}");
+    }
+
+    #[test]
+    fn test_read_as_json_success() {
+        let registry = ConfigRegistry::new();
+        let config = SimpleConfig { value: 42 };
+        let handle = registry.create(config).unwrap();
+
+        let json_result = registry.read_as_json(&handle);
+        let result: serde_json::Value = serde_json::from_str(&json_result).unwrap();
+
+        assert_eq!(result["success"], true);
+        assert!(result["data"].is_object());
+        assert_eq!(result["data"]["value"], 42);
+
+        // Should NOT be a string containing JSON
+        assert!(!result["data"].is_string());
+
+        println!("✅ read_as_json success: {json_result}");
+    }
+
+    #[test]
+    fn test_read_as_json_error() {
+        let registry = ConfigRegistry::new();
+        let invalid_handle = ConfigHandle::<SimpleConfig>::new(999); // Non-existent handle
+
+        let json_result = registry.read_as_json(&invalid_handle);
+        let result: serde_json::Value = serde_json::from_str(&json_result).unwrap();
+
+        assert_eq!(result["success"], false);
+        assert!(result["error"].is_string());
+        assert!(
+            result["error"]
+                .as_str()
+                .unwrap()
+                .contains("Handle 999 not found")
+        );
+        assert!(result.get("data").is_none());
+
+        println!("✅ read_as_json error: {json_result}");
+    }
+
+    #[test]
+    fn test_read_as_json_with_string_data() {
+        let registry = ConfigRegistry::new();
+        let config = "test string".to_string();
+        let handle = registry.create(config).unwrap();
+
+        let json_result = registry.read_as_json(&handle);
+        let result: serde_json::Value = serde_json::from_str(&json_result).unwrap();
+
+        assert_eq!(result["success"], true);
+        assert_eq!(result["data"], "test string");
+        assert!(result["data"].is_string());
+
+        println!("✅ read_as_json string data: {json_result}");
+    }
+
+    #[test]
+    fn test_read_as_json_with_complex_data() {
+        #[derive(Debug, Clone, PartialEq, serde::Serialize)]
+        struct ComplexConfig {
+            name: String,
+            settings: Vec<String>,
+            nested: NestedConfig,
+        }
+
+        #[derive(Debug, Clone, PartialEq, serde::Serialize)]
+        struct NestedConfig {
+            enabled: bool,
+            count: u32,
+        }
+
+        let registry = ConfigRegistry::new();
+        let config = ComplexConfig {
+            name: "test config".to_string(),
+            settings: vec!["opt1".to_string(), "opt2".to_string()],
+            nested: NestedConfig {
+                enabled: true,
+                count: 5,
+            },
+        };
+        let handle = registry.create(config.clone()).unwrap();
+
+        let json_result = registry.read_as_json(&handle);
+        let result: serde_json::Value = serde_json::from_str(&json_result).unwrap();
+
+        assert_eq!(result["success"], true);
+        assert!(result["data"].is_object());
+        assert_eq!(result["data"]["name"], "test config");
+        assert!(result["data"]["settings"].is_array());
+        assert_eq!(result["data"]["settings"][0], "opt1");
+        assert_eq!(result["data"]["nested"]["enabled"], true);
+        assert_eq!(result["data"]["nested"]["count"], 5);
+
+        // Test error closure for ComplexConfig - handle not found
+        let fake_handle = ConfigHandle::<ComplexConfig>::new(999);
+        assert!(registry.read(&fake_handle).is_err());
+
+        println!("✅ read_as_json complex data: {json_result}");
+    }
+
+    #[test]
+    fn test_read_as_json_serialize_constraint() {
+        // This test verifies that the macro correctly adds T: Serialize constraint
+        let registry = ConfigRegistry::new();
+        let config = SimpleConfig { value: 123 };
+        let handle = registry.create(config).unwrap();
+
+        // SimpleConfig implements Serialize, so this should work
+        let _json_result = registry.read_as_json(&handle);
+
+        // If we tried to use a non-Serialize type, it would fail at compile time
+        // This is automatically verified by the compiler when the macro generates
+        // the T: 'static + serde::Serialize constraint
+        println!("✅ read_as_json Serialize constraint enforced at compile time");
+    }
+
+    #[test]
+    fn test_read_as_json_arc_dereferencing() {
+        let registry = ConfigRegistry::new();
+        let config = SimpleConfig { value: 999 };
+        let handle = registry.create(config).unwrap();
+
+        let json_result = registry.read_as_json(&handle);
+        let result: serde_json::Value = serde_json::from_str(&json_result).unwrap();
+
+        assert_eq!(result["success"], true);
+        assert_eq!(result["data"]["value"], 999);
+
+        // If Arc<T> wasn't properly dereferenced with &*result,
+        // serialization would fail. The fact we get valid JSON proves it works.
+        println!("✅ read_as_json Arc dereferencing works correctly");
+    }
+
+    // ===== Missing tests for 100% coverage =====
+
+    #[test]
+    fn test_disable_success() {
+        use crate::config_flags::runtime;
+
+        let registry = ConfigRegistry::new()
+            .enable(runtime::STRICT_MODE)
+            .enable(runtime::PARALLEL);
+
+        // Verify flags are enabled first
+        assert!(registry.runtime_enabled(runtime::STRICT_MODE));
+        assert!(registry.runtime_enabled(runtime::PARALLEL));
+
+        // Test disable
+        let registry = registry.disable(runtime::STRICT_MODE);
+
+        // Verify STRICT_MODE is disabled, PARALLEL still enabled
+        assert!(!registry.runtime_enabled(runtime::STRICT_MODE));
+        assert!(registry.runtime_enabled(runtime::PARALLEL));
+
+        println!("✅ Disable success: flag disabled correctly");
+    }
+
+    #[test]
+    fn test_disable_error_handling() {
+        let registry = ConfigRegistry::new();
+
+        // Use an invalid flag that should cause a logffi error but continue chain
+        let result = registry.disable(0xFFFFFFFF); // Invalid flag
+
+        // Should continue chain even with invalid flag
+        // The error is logged but chain continues
+
+        // Verify registry still works after invalid flag
+        let handle = result.create("test".to_string()).unwrap();
+        let data = result.read(&handle).unwrap();
+        assert_eq!(*data, "test");
+
+        println!("✅ Disable error handling: invalid flag handled gracefully");
+    }
+
+    #[test]
+    fn test_disable_as_json_success() {
+        use crate::config_flags::runtime;
+
+        let registry = ConfigRegistry::new().enable(runtime::STRICT_MODE);
+
+        let json_result = registry.disable_as_json(runtime::STRICT_MODE);
+
+        let result: serde_json::Value = serde_json::from_str(&json_result).unwrap();
+        assert_eq!(result["success"], true);
+        // handle_mode should not include data field
+        assert!(result.get("data").is_none());
+
+        println!("✅ disable_as_json success: {json_result}");
+    }
+
+    #[test]
+    fn test_disable_as_json_error() {
+        let registry = ConfigRegistry::new();
+        let json_result = registry.disable_as_json(0xFFFFFFFF); // Invalid flag
+
+        let result: serde_json::Value = serde_json::from_str(&json_result).unwrap();
+        assert_eq!(result["success"], true); // Should still be true since our disable method continues chain
+
+        println!("✅ disable_as_json with invalid flag: {json_result}");
+    }
+
+    #[test]
+    fn test_get_runtime_flags() {
+        use crate::config_flags::runtime;
+
+        let registry = ConfigRegistry::new();
+
+        // Initially no flags
+        assert_eq!(registry.get_runtime_flags(), 0);
+
+        // Enable some flags
+        let registry = registry
+            .enable(runtime::STRICT_MODE)
+            .enable(runtime::PARALLEL);
+
+        let flags = registry.get_runtime_flags();
+        assert_ne!(flags, 0);
+        assert_eq!(flags & runtime::STRICT_MODE, runtime::STRICT_MODE);
+        assert_eq!(flags & runtime::PARALLEL, runtime::PARALLEL);
+
+        // Disable one flag
+        let registry = registry.disable(runtime::STRICT_MODE);
+        let flags = registry.get_runtime_flags();
+        assert_eq!(flags & runtime::STRICT_MODE, 0);
+        assert_eq!(flags & runtime::PARALLEL, runtime::PARALLEL);
+
+        println!("✅ get_runtime_flags: returns correct flag values");
+    }
+
+    #[test]
+    fn test_update_handle_not_found() {
+        let registry = ConfigRegistry::new();
+        let fake_handle = ConfigHandle::<SimpleConfig>::new(999);
+
+        let result = registry.update(&fake_handle, SimpleConfig { value: 42 });
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err();
+        assert!(error_msg.contains("Handle 999 not found for update"));
+
+        println!("✅ Update error handling: handle not found");
+    }
+
+    #[test]
+    fn test_delete_handle_not_found() {
+        let registry = ConfigRegistry::new();
+        let fake_handle = ConfigHandle::<SimpleConfig>::new(999);
+
+        let result = registry.delete(&fake_handle);
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err();
+        assert!(error_msg.contains("Handle 999 not found for delete"));
+
+        println!("✅ Delete error handling: handle not found");
+    }
+
+    #[test]
+    fn test_delete_wrong_type() {
+        let registry = ConfigRegistry::new();
+        let config = TestConfig {
+            host: "localhost".to_string(),
+            port: 8080,
+            timeout_ms: 5000,
+        };
+
+        let handle = registry.create(config).unwrap();
+
+        // Try to delete as wrong type
+        let wrong_handle = ConfigHandle::<SimpleConfig>::new(handle.id());
+        let result = registry.delete(&wrong_handle);
+
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err();
+        assert!(error_msg.contains("Wrong type for delete"));
+        assert!(error_msg.contains("expected"));
+        assert!(error_msg.contains("found"));
+
+        println!("✅ Delete wrong type: error handled correctly");
+    }
+
+    #[test]
+    fn test_get_arc_data_success_path() {
+        let registry = ConfigRegistry::new();
+        let config = SimpleConfig { value: 123 };
+
+        let handle = registry.create(config.clone()).unwrap();
+
+        // This tests the success path in get_arc_data (line 65)
+        let data = registry.read(&handle).unwrap();
+        assert_eq!(data.value, 123);
+
+        // Multiple reads should return same Arc
+        let data2 = registry.read(&handle).unwrap();
+        assert!(Arc::ptr_eq(&data, &data2));
+
+        println!("✅ get_arc_data success path: downcast succeeds");
+    }
+
+    #[test]
+    fn test_comprehensive_crud_operations() {
+        // This test specifically targets uncovered lines in CRUD operations
+        let registry = ConfigRegistry::new();
+
+        // Test create operation with complex data to hit all paths
+        let complex_config = TestConfig {
+            host: "localhost".to_string(),
+            port: 8080,
+            timeout_ms: 5000,
+        };
+
+        let handle = registry.create(complex_config.clone()).unwrap();
+
+        // Test read operation to hit stats increment and get_arc_data success path (lines 328-329, 332, 65)
+        let data1 = registry.read(&handle).unwrap();
+        let data2 = registry.read(&handle).unwrap();
+        assert_eq!(*data1, complex_config);
+        assert!(Arc::ptr_eq(&data1, &data2)); // Test line 65 success path
+
+        // Test update operation to hit all success paths (lines 369, 372-373, 376, 380-383, 386)
+        let updated_config = TestConfig {
+            host: "remote".to_string(),
+            port: 9090,
+            timeout_ms: 10000,
+        };
+        registry.update(&handle, updated_config.clone()).unwrap();
+
+        let updated_data = registry.read(&handle).unwrap();
+        assert_eq!(*updated_data, updated_config);
+
+        // Test delete operation to hit all success paths (lines 417, 424, 430-432, 435)
+        let deleted_data = registry.delete(&handle).unwrap();
+        assert_eq!(*deleted_data, updated_config);
+
+        // Verify handle no longer exists
+        assert!(!registry.contains_handle(&handle));
+
+        // Check statistics were properly updated
+        let stats = registry.stats();
+        assert!(stats.total_creates > 0);
+        assert!(stats.total_reads > 0);
+        assert!(stats.total_updates > 0);
+        assert!(stats.total_deletes > 0);
+
+        println!("✅ Comprehensive CRUD: all internal paths exercised");
+    }
+
+    #[test]
+    fn test_multiple_operations_for_coverage() {
+        // Additional test to ensure we hit every possible code path
+        let registry = ConfigRegistry::new();
+
+        // Create multiple handles to exercise different scenarios
+        let handle1 = registry.create(SimpleConfig { value: 1 }).unwrap();
+        let handle2 = registry.create(SimpleConfig { value: 2 }).unwrap();
+        let handle3 = registry
+            .create(TestConfig {
+                host: "test".to_string(),
+                port: 3000,
+                timeout_ms: 1000,
+            })
+            .unwrap();
+
+        // Multiple reads to ensure statistics paths are hit
+        let _data1a = registry.read(&handle1).unwrap();
+        let _data1b = registry.read(&handle1).unwrap();
+        let _data2 = registry.read(&handle2).unwrap();
+        let _data3 = registry.read(&handle3).unwrap();
+
+        // Update operations
+        registry
+            .update(&handle1, SimpleConfig { value: 11 })
+            .unwrap();
+        registry
+            .update(&handle2, SimpleConfig { value: 22 })
+            .unwrap();
+
+        // More reads after updates
+        let _updated1 = registry.read(&handle1).unwrap();
+        let _updated2 = registry.read(&handle2).unwrap();
+
+        // Delete operations
+        let _deleted1 = registry.delete(&handle1).unwrap();
+        let _deleted2 = registry.delete(&handle2).unwrap();
+        let _deleted3 = registry.delete(&handle3).unwrap();
+
+        // Final statistics check
+        let stats = registry.stats();
+        assert_eq!(stats.total_creates, 3);
+        assert!(stats.total_reads >= 6);
+        assert_eq!(stats.total_updates, 2);
+        assert_eq!(stats.total_deletes, 3);
+
+        println!("✅ Multiple operations: comprehensive path coverage");
+    }
+
+    #[test]
+    fn test_delete_wrong_type_explicit_logging() {
+        // This test specifically targets line 424 - the error logging in delete wrong type path
+        let registry = ConfigRegistry::new();
+
+        // Create a TestConfig entry
+        let config = TestConfig {
+            host: "test".to_string(),
+            port: 1234,
+            timeout_ms: 2000,
+        };
+        let handle = registry.create(config).unwrap();
+
+        // Now try to delete it as SimpleConfig (wrong type)
+        // This should trigger both the error message formatting AND the error logging
+        let wrong_handle = ConfigHandle::<SimpleConfig>::new(handle.id());
+        let result = registry.delete(&wrong_handle);
+
+        // Verify the error path was taken
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err();
+
+        // This should ensure both lines 423 AND 424 are executed
+        assert!(error_msg.contains("Wrong type for delete"));
+        assert!(error_msg.contains("SimpleConfig"));
+        assert!(error_msg.contains("TestConfig"));
+
+        // Force the error to be processed to ensure logging actually happens
+        eprintln!("Expected error occurred: {}", error_msg);
+
+        println!("✅ Delete wrong type explicit logging: line 424 covered");
+    }
+
+    #[test]
+    fn test_delete_testconfig_wrong_type_closure() {
+        // This test specifically targets the missing closure for TestConfig delete wrong type
+        let registry = ConfigRegistry::new();
+
+        // Create a SimpleConfig entry
+        let simple_config = SimpleConfig { value: 42 };
+        let handle = registry.create(simple_config).unwrap();
+
+        // Try to delete it as TestConfig (wrong type) - this exercises the missing closure
+        let wrong_handle = ConfigHandle::<TestConfig>::new(handle.id());
+        let result = registry.delete(&wrong_handle);
+
+        // Verify the error path was taken
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err();
+        assert!(error_msg.contains("Wrong type for delete"));
+        assert!(error_msg.contains("TestConfig"));
+        assert!(error_msg.contains("SimpleConfig"));
+
+        println!("✅ Delete TestConfig wrong type closure: missing function coverage achieved");
+    }
+
+    #[test]
+    fn test_logging_macro_coverage() {
+        // This test specifically exercises the error! macro paths to cover missing regions
+
+        // Set up a logger to capture the error messages (helps trigger macro internals)
+        let _ = env_logger::builder().is_test(true).try_init();
+
+        let registry = ConfigRegistry::new();
+
+        // 1. Test invalid flag logging (lines 170, 199) with proper assertions
+        let invalid_flag = 0xFFFFFFFF;
+        let registry_clone = Arc::clone(&registry);
+        let result1 = registry_clone.enable(invalid_flag);
+        let result2 = result1.disable(invalid_flag);
+
+        // Verify the registry still works after invalid flag operations
+        assert_eq!(result2.get_runtime_flags(), 0);
+
+        // Create some test data
+        let test_string = String::from("test_logging");
+        let test_int = 42i32;
+        let handle_string = registry.create(test_string.clone()).unwrap();
+        let handle_int = registry.create(test_int).unwrap();
+
+        // 2. Test wrong type error logging (line 60) with assertion
+        let wrong_handle = ConfigHandle::<i32>::new(handle_string.id());
+        let read_result = registry.read(&wrong_handle);
+        assert!(read_result.is_err());
+        assert!(read_result.unwrap_err().contains("Wrong type"));
+
+        // 3. Test handle not found errors (lines 322, 365, 413) with assertions
+        let phantom_handle_string = ConfigHandle::<String>::new(9999);
+        let phantom_handle_int = ConfigHandle::<i32>::new(8888);
+
+        // Read non-existent handle
+        let read_result = registry.read(&phantom_handle_string);
+        assert!(read_result.is_err());
+        assert!(read_result.unwrap_err().contains("not found"));
+
+        // Update non-existent handle
+        let update_result = registry.update(&phantom_handle_int, 999);
+        assert!(update_result.is_err());
+        assert!(update_result.unwrap_err().contains("not found for update"));
+
+        // Delete non-existent handle
+        let delete_result = registry.delete(&phantom_handle_string);
+        assert!(delete_result.is_err());
+        assert!(delete_result.unwrap_err().contains("not found for delete"));
+
+        // Verify the valid operations still work before more destructive tests
+        let valid_data = registry.read(&handle_string).unwrap();
+        assert_eq!(*valid_data, "test_logging");
+
+        // 4. Test wrong type for delete (line 422) with assertion
+        let wrong_delete = registry.delete(&wrong_handle);
+        assert!(wrong_delete.is_err());
+        assert!(wrong_delete.unwrap_err().contains("Wrong type for delete"));
+
+        // Force different argument patterns to trigger different macro expansion paths
+        let complex_string = format!("complex_{}_string_{}", 123, "test");
+        let complex_handle = registry.create(complex_string).unwrap();
+        let very_wrong_handle = ConfigHandle::<TestConfig>::new(complex_handle.id());
+        let complex_wrong_read = registry.read(&very_wrong_handle);
+        assert!(complex_wrong_read.is_err());
+        assert!(complex_wrong_read.unwrap_err().contains("Wrong type"));
+
+        println!("✅ Logging macro coverage test completed with assertions");
     }
 }
