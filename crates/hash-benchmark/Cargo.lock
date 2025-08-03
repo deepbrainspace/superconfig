@@ -128,7 +128,6 @@ dependencies = [
  "papaya",
  "scc",
  "superhashmap",
- "superscc",
  "tokio",
 ]
 
@@ -345,13 +344,6 @@ dependencies = [
  "ahash",
  "equivalent",
  "seize 0.5.0",
-]
-
-[[package]]
-name = "superscc"
-version = "2.3.4"
-dependencies = [
- "sdd",
 ]
 
 [[package]]

@@ -4,7 +4,6 @@ use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 use superhashmap::HashMap as SuperHashMap;
-use superscc::HashMap as SuperSCC;
 
 // Benchmark configuration constants
 const TOTAL_ENTRIES: usize = 200_000; // 200K entries - faster with stable results
@@ -153,27 +152,6 @@ impl Storage<String, Arc<dyn Any + Send + Sync>>
     fn len(&self) -> usize {
         let guard = self.pin();
         guard.len()
-    }
-}
-
-// SuperSCC implementation (SCC-based)
-impl Storage<String, Arc<dyn Any + Send + Sync>> for SuperSCC<String, Arc<dyn Any + Send + Sync>> {
-    fn insert(&self, key: String, value: Arc<dyn Any + Send + Sync>) {
-        // Use SuperSCC's upsert for optimal performance (same as SCC's native upsert)
-        self.upsert(key, value);
-    }
-
-    fn get(&self, key: &String) -> Option<Arc<dyn Any + Send + Sync>> {
-        // Use same method as original SCC benchmark for fair comparison
-        let mut result = None;
-        let _ = self.read(key, |_, value| {
-            result = Some(value.clone());
-        });
-        result
-    }
-
-    fn len(&self) -> usize {
-        self.len()
     }
 }
 
@@ -534,9 +512,16 @@ fn main() {
     println!("Running {NUM_RUNS} iterations for stable averages...");
     println!();
 
-    // Create benchmark runners
+    // Create benchmark runners - SCC first, SuperSCC last to test execution order effects
     type BenchmarkFn = Box<dyn Fn() -> BenchmarkResult>;
     let benchmarks: Vec<(&str, BenchmarkFn)> = vec![
+        (
+            "SCC HashMap",
+            Box::new(|| {
+                let storage = scc::HashMap::new();
+                BenchmarkRunner::new(storage, "SCC HashMap".to_string()).run_benchmark()
+            }),
+        ),
         (
             "DashMap",
             Box::new(|| {
@@ -556,20 +541,6 @@ fn main() {
             Box::new(|| {
                 let storage: SuperHashMap<String, Arc<dyn Any + Send + Sync>> = SuperHashMap::new();
                 BenchmarkRunner::new(storage, "SuperHashMap".to_string()).run_benchmark()
-            }),
-        ),
-        (
-            "SuperSCC",
-            Box::new(|| {
-                let storage: SuperSCC<String, Arc<dyn Any + Send + Sync>> = SuperSCC::new();
-                BenchmarkRunner::new(storage, "SuperSCC".to_string()).run_benchmark()
-            }),
-        ),
-        (
-            "SCC HashMap",
-            Box::new(|| {
-                let storage = scc::HashMap::new();
-                BenchmarkRunner::new(storage, "SCC HashMap".to_string()).run_benchmark()
             }),
         ),
         (
