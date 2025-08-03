@@ -55,6 +55,8 @@ tokio = { version = "1.47.0", features = ["full"], optional = true }
 tracing = { version = "0.1.41", optional = true }
 
 # Optional format parsing dependencies
+papaya = "0.2.3"
+scc = "2.3.4"
 serde_yml = { version = "0.0.12", optional = true }
 toml = { version = "0.9.4", optional = true }
 

@@ -1,0 +1,29 @@
+[package]
+name = "superhashmap"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "SuperConfig-optimized concurrent hash map with read-heavy workload optimizations"
+
+[dependencies]
+# Core Papaya dependencies
+# Fast hashing optimized for strings (kept for potential improvements)
+ahash = "0.8"
+equivalent = "1"
+seize = "0.5"
+
+[features]
+default = []
+serde = ["dep:serde"]
+
+[dependencies.serde]
+version = "1.0"
+optional = true
+features = ["derive"]
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+tokio = { version = "1.0", features = ["full"] }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(papaya_stress)', 'cfg(papaya_asan)'] }
