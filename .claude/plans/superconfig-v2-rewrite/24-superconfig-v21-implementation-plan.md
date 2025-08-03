@@ -504,7 +504,7 @@ crates/superconfig/
 
 ## Implementation Plan
 
-### Phase 0: LogFFI Universal Architecture Implementation
+### Phase 0: LogFFI 0.2.0 Universal Architecture Implementation
 
 **Duration**: 2-3 hours\
 **Goal**: Implement the revolutionary LogFFI universal logging system with runtime backend switching
@@ -513,6 +513,7 @@ crates/superconfig/
 #### Tasks:
 
 1. **Update LogFFI Crate Structure**
+   - [ ] update cargo.toml with any needee versions (ensuring latest versions) and
    - [ ] Add universal backend dependencies to `crates/logffi/Cargo.toml`
    - [ ] Add tracing, tracing-subscriber, slog, slog-term, slog-json, paste, thiserror
    - [ ] Update version constraints to latest stable versions
