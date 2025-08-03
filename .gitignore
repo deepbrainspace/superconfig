@@ -34,3 +34,6 @@ lcov.info
 coverage/
 **/coverage/
 .coverage/
+
+
+**/target

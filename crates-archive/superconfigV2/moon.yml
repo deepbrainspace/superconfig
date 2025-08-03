@@ -1,0 +1,35 @@
+type: 'library'
+language: 'rust'
+platform: 'system'
+stack: 'backend'
+
+# Project metadata  
+tags: ['configuration', 'performance', 'zero-copy', 'handle-registry', 'multi-language']
+
+# Environment variables for consistent affected detection
+env:
+  CI: 'true'
+  MOON_BASE: 'origin/main'
+
+fileGroups:
+  sources: ['src/**/*']
+  tests: ['tests/**/*']
+  benches: ['benches/**/*']
+
+# Project-specific tasks (inherits common tasks from .moon/tasks.yml)
+tasks:
+  # Project-specific publishing with dependencies
+  publish-dry:
+    command: 'cargo publish --dry-run --allow-dirty'
+    deps: ['build', 'test', 'lint', 'format-check']
+  
+  # Benchmark baseline management
+  bench-save:
+    command: './benchmarks/scripts/save-baseline.sh'
+    platform: 'system'
+    inputs: ['benchmarks/scripts/save-baseline.sh']
+    
+  bench-compare:
+    command: './benchmarks/scripts/compare-baseline.sh'
+    platform: 'system'  
+    inputs: ['benchmarks/scripts/compare-baseline.sh']

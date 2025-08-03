@@ -18,47 +18,22 @@ rustdoc-args = ["--cfg", "docsrs"]
 default-theme = "ayu"
 
 [features]
-default = ["core"]
+default = []
 
-# Core features
-core = []
-providers = ["core"]
-
-# Optional performance features
-hot_reload = ["tokio", "notify"]
-parallel = ["rayon"]
-simd = ["simd-json"]
-profiling = ["tracing"]
-extended_formats = ["toml", "serde_yml"]
-
-# Convenience feature for everything
-all = ["providers", "hot_reload", "parallel", "simd", "profiling", "extended_formats"]
+# Feature flags will be added during v2.1 implementation phases
+# Features from v2.0 preserved in crates-archive/superconfigV2/ for reference
 
 [dependencies]
-# Core performance dependencies (always included)
-dashmap = "7.0.0-rc2"
-dirs = "6.0.0"
-globset = "0.4.16"
+# Core dependencies for v2.1 rewrite
 logffi = { path = "../logffi" }
-memmap2 = "0.9.7"
-parking_lot = "0.12.4"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.141", features = ["raw_value"] }
-superconfig-macros = { path = "../superconfig-macros" }
 thiserror = "2.0.12"
 
-# Optional performance dependencies
-notify = { version = "8.1.0", optional = true }
-rayon = { version = "1.10.0", optional = true }
-simd-json = { version = "0.15.1", optional = true }
-tokio = { version = "1.47.0", features = ["full"], optional = true }
-tracing = { version = "0.1.41", optional = true }
-
-# Optional format parsing dependencies
-papaya = "0.2.3"
+# Core data structures (kept from v2.0)
 scc = "2.3.4"
-serde_yml = { version = "0.0.12", optional = true }
-toml = { version = "0.9.4", optional = true }
+
+# Additional dependencies will be added during implementation phases
 
 [dev-dependencies]
 criterion = { version = "0.7.0", features = ["html_reports"] }
@@ -68,9 +43,10 @@ tempfile = "3.15.0"
 tokio-test = "0.4.4"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 
-[[bench]]
-name = "registry_bench"
-harness = false
+# Benchmarks disabled during v2.1 rewrite
+# [[bench]]
+# name = "registry_bench"
+# harness = false
 
 [lints.clippy]
 # Performance-focused lints (with proper priorities)
