@@ -65,15 +65,15 @@ for_each!([error, warn, info, debug, trace], |level| {
 });
 
 
-/// Enhanced `define_errors!` macro with LogFFI integration and field support
+/// Enhanced `define_errors!` macro with LogFFI integration, field support, log levels, and targets
 #[macro_export]
 macro_rules! define_errors {
-    // Handle both simple variants and variants with fields
+    // Enhanced pattern with log level and target support
     (
         $(#[$enum_meta:meta])*
         $vis:vis enum $name:ident {
             $(
-                $(#[$variant_meta:meta])*
+                #[error($msg:literal $(, level = $level:ident)? $(, target = $target:literal)? $(, code = $code:literal)?)]
                 $variant:ident $({
                     $(
                         $field_name:ident: $field_type:ty,
@@ -87,7 +87,7 @@ macro_rules! define_errors {
         $(#[$enum_meta])*
         $vis enum $name {
             $(
-                $(#[$variant_meta])*
+                #[error($msg)]
                 $variant $({
                     $(
                         $field_name: $field_type,
@@ -101,7 +101,7 @@ macro_rules! define_errors {
             pub fn code(&self) -> &'static str {
                 match self {
                     $(
-                        Self::$variant { .. } => stringify!($variant),
+                        Self::$variant { .. } => define_errors!(@code $(code = $code,)? variant = $variant),
                     )*
                 }
             }
@@ -120,10 +120,77 @@ macro_rules! define_errors {
                 self.to_string()
             }
 
-            /// Automatically log this error using LogFFI with full backend support
+            /// Automatically log this error using LogFFI with appropriate level and target
             pub fn log(&self) {
-                $crate::error!("Error [{}]: {}", self.code(), self.full_message_chain());
+                match self {
+                    $(
+                        Self::$variant { $($($field_name,)*)? .. } => {
+                            let code = self.code();
+                            let message = self.full_message_chain();
+                            
+                            // Generate logging call with compile-time level and target resolution
+                            define_errors!(@do_log $(level = $level,)? $(target = $target,)? code, message);
+                        },
+                    )*
+                }
             }
         }
+    };
+    
+    // Helper macro for error code resolution
+    (@code code = $code:literal, variant = $variant:ident) => { $code };
+    (@code variant = $variant:ident) => { stringify!($variant) };
+    
+    // Helper macro for log level resolution with default
+    (@level level = error,) => { $crate::LogLevel::Error };
+    (@level level = warn,) => { $crate::LogLevel::Warn };
+    (@level level = info,) => { $crate::LogLevel::Info };
+    (@level level = debug,) => { $crate::LogLevel::Debug };
+    (@level level = trace,) => { $crate::LogLevel::Trace };
+    (@level) => { $crate::LogLevel::Error }; // Default level
+    
+    // Helper macro for target resolution with default
+    (@target target = $target:literal,) => { $target };
+    (@target) => { "app" }; // Default target
+    
+    // Helper macro for generating the actual logging calls with all combinations
+    (@do_log level = error, target = $target:literal, $code:expr, $message:expr) => {
+        $crate::error!(target: $target, "[{}] {}", $code, $message);
+    };
+    (@do_log level = warn, target = $target:literal, $code:expr, $message:expr) => {
+        $crate::warn!(target: $target, "[{}] {}", $code, $message);
+    };
+    (@do_log level = info, target = $target:literal, $code:expr, $message:expr) => {
+        $crate::info!(target: $target, "[{}] {}", $code, $message);
+    };
+    (@do_log level = debug, target = $target:literal, $code:expr, $message:expr) => {
+        $crate::debug!(target: $target, "[{}] {}", $code, $message);
+    };
+    (@do_log level = trace, target = $target:literal, $code:expr, $message:expr) => {
+        $crate::trace!(target: $target, "[{}] {}", $code, $message);
+    };
+    // Level only (default target)
+    (@do_log level = error, $code:expr, $message:expr) => {
+        $crate::error!(target: "app", "[{}] {}", $code, $message);
+    };
+    (@do_log level = warn, $code:expr, $message:expr) => {
+        $crate::warn!(target: "app", "[{}] {}", $code, $message);
+    };
+    (@do_log level = info, $code:expr, $message:expr) => {
+        $crate::info!(target: "app", "[{}] {}", $code, $message);
+    };
+    (@do_log level = debug, $code:expr, $message:expr) => {
+        $crate::debug!(target: "app", "[{}] {}", $code, $message);
+    };
+    (@do_log level = trace, $code:expr, $message:expr) => {
+        $crate::trace!(target: "app", "[{}] {}", $code, $message);
+    };
+    // Target only (default level = error)
+    (@do_log target = $target:literal, $code:expr, $message:expr) => {
+        $crate::error!(target: $target, "[{}] {}", $code, $message);
+    };
+    // Neither (both defaults)
+    (@do_log $code:expr, $message:expr) => {
+        $crate::error!(target: "app", "[{}] {}", $code, $message);
     };
 }

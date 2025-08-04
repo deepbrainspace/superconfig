@@ -340,6 +340,7 @@ dependencies = [
  "log",
  "meta-rust",
  "paste",
+ "serde_json",
  "serial_test",
  "slog",
  "slog-async",

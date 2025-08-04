@@ -57,18 +57,106 @@ fn test_all_log_levels_generated() {
 }
 
 #[test]
-fn test_define_errors() {
-    // Test define_errors! macro functionality
+fn test_define_errors_basic() {
+    // Test define_errors! macro basic functionality
     define_errors! {
         pub enum TestError {
-            #[error("Test error occurred")]
+            #[error("Test error occurred", level = error, target = "test::macro")]
             TestFailed,
+
+            #[error("Missing value", level = warn)]
+            MissingValue,
         }
     }
 
-    // Test that we can create the error
-    let error = TestError::TestFailed;
+    // Test that we can create errors
+    let error1 = TestError::TestFailed;
+    let error2 = TestError::MissingValue;
 
-    // Test basic functionality
-    assert_eq!(error.to_string(), "Test error occurred");
+    // Test Display trait
+    assert_eq!(error1.to_string(), "Test error occurred");
+    assert_eq!(error2.to_string(), "Missing value");
+
+    // Test code() method
+    assert_eq!(error1.code(), "TestFailed");
+    assert_eq!(error2.code(), "MissingValue");
+
+    // Test kind() method
+    assert_eq!(error1.kind(), "TestFailed");
+    assert_eq!(error2.kind(), "MissingValue");
+
+    // Test log() method - should not panic
+    error1.log();
+    error2.log();
+}
+
+#[test]
+fn test_define_errors_with_fields() {
+    // Test errors with fields
+    define_errors! {
+        #[derive(Clone)]
+        pub enum FieldError {
+            #[error("Key '{key}' not found", level = warn, target = "test::fields")]
+            KeyNotFound {
+                key: String,
+            },
+
+            #[error("Operation '{op}' failed: {reason}", level = error, code = "OP_001")]
+            OperationFailed {
+                op: String,
+                reason: String,
+            },
+        }
+    }
+
+    let error1 = FieldError::KeyNotFound {
+        key: "database.host".to_string(),
+    };
+
+    let error2 = FieldError::OperationFailed {
+        op: "save".to_string(),
+        reason: "disk full".to_string(),
+    };
+
+    // Test error messages include field values
+    assert!(error1.to_string().contains("database.host"));
+    assert!(error2.to_string().contains("save"));
+    assert!(error2.to_string().contains("disk full"));
+
+    // Test custom error code
+    assert_eq!(error2.code(), "OP_001");
+
+    // Test logging
+    error1.log();
+    error2.log();
+}
+
+#[test]
+fn test_define_errors_all_log_levels() {
+    // Test all log levels work
+    define_errors! {
+        pub enum LogLevelTest {
+            #[error("Error level", level = error)]
+            ErrorLevel,
+
+            #[error("Warn level", level = warn)]
+            WarnLevel,
+
+            #[error("Info level", level = info)]
+            InfoLevel,
+
+            #[error("Debug level", level = debug)]
+            DebugLevel,
+
+            #[error("Trace level", level = trace)]
+            TraceLevel,
+        }
+    }
+
+    // Test all levels - should not panic
+    LogLevelTest::ErrorLevel.log();
+    LogLevelTest::WarnLevel.log();
+    LogLevelTest::InfoLevel.log();
+    LogLevelTest::DebugLevel.log();
+    LogLevelTest::TraceLevel.log();
 }
