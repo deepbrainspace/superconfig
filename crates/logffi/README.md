@@ -3,123 +3,227 @@
 [![Crates.io](https://img.shields.io/crates/v/logffi.svg)](https://crates.io/crates/logffi)
 [![Documentation](https://docs.rs/logffi/badge.svg)](https://docs.rs/logffi)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/deepbrain/superconfig/ci.yml?branch=main)](https://github.com/deepbrain/superconfig/actions)
-[![Coverage](https://img.shields.io/badge/coverage-100%25%20lines-brightgreen.svg)](https://github.com/deepbrain/superconfig/tree/main/crates/logffi/COVERAGE_ANALYSIS.md)
-[![Region Coverage](https://img.shields.io/badge/region%20coverage-94.33%25-green.svg)](https://github.com/deepbrain/superconfig/tree/main/crates/logffi/COVERAGE_ANALYSIS.md)
 
-Drop-in replacement for the `log` crate with FFI callback support for bridging Rust logs to Python, Node.js, and other languages.
+Universal logging for Rust with FFI support, backend flexibility, and advanced error handling.
 
-## Features
+## ✨ Features
 
-- **100% API compatibility** with the standard `log` crate
-- **FFI callback support** for bridging logs to other languages
-- **Zero overhead** when FFI callbacks are not used
-- **Thread-safe** callback management with `OnceLock`
-- **Respects log filtering** - callbacks only called for enabled log levels
+- 🔄 **Universal Logging** - Works with `log`, `tracing`, and `slog` backends
+- 🌉 **FFI Support** - Bridge Rust logs to Python, Node.js, C/C++, and more
+- 🎯 **Advanced Error Handling** - `define_errors!` macro with automatic logging
+- 🔗 **Error Chaining** - Full support for source errors with `#[source]`
+- 🚀 **Zero Overhead** - No performance cost when features aren't used
+- 🛡️ **Type Safe** - Leverage Rust's type system for error handling
+- 📊 **Structured Logging** - Support for structured data with `slog` and `tracing`
 
-## Quick Start
+## 📚 Documentation
+
+- **[API Documentation](https://docs.rs/logffi)** - Full API reference
+- **[Cookbook](cookbook/)** - Real-world examples and patterns
+- **[Examples](examples/)** - Runnable example code
+
+## 🚀 Quick Start
 
 Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-logffi = "0.1"
+logffi = "0.2"
 ```
 
-Use identical syntax to the `log` crate:
+### Basic Logging
 
 ```rust
-use logffi::{warn, debug, info, error, trace};
+use logffi::{error, warn, info, debug, trace};
 
 fn main() {
-    let value = 42;
-    warn!("This is a warning: {}", value);
-    debug!(target: "my_target", "Debug message with target");
+    // Initialize env_logger (or any log-compatible backend)
+    env_logger::init();
+    
+    // Use like standard log macros
+    info!("Starting application");
+    debug!("Configuration loaded: {:?}", config);
+    
+    if let Err(e) = dangerous_operation() {
+        error!("Operation failed: {}", e);
+    }
 }
 ```
 
-## FFI Integration
-
-Set a callback to bridge Rust logs to other languages:
+### Error Handling with Automatic Logging
 
 ```rust
-use logffi::set_ffi_callback;
+use logffi::define_errors;
+
+define_errors! {
+    pub enum AppError {
+        #[error("Configuration not found: {path}", level = error)]
+        ConfigNotFound {
+            path: String,
+        },
+        
+        #[error("Failed to connect to database", level = error, target = "db")]
+        DatabaseConnection,
+        
+        #[error("Invalid user input: {field}", level = warn)]
+        ValidationError {
+            field: String,
+        },
+    }
+}
+
+// Use the generated constructor methods - they automatically log!
+fn load_config(path: &str) -> Result<Config, AppError> {
+    if !Path::new(path).exists() {
+        // This creates the error AND logs it automatically
+        return Err(AppError::new_config_not_found(path.to_string()));
+    }
+    // ...
+}
+```
+
+### Source Error Chaining
+
+```rust
+use logffi::define_errors;
+use std::io;
+
+define_errors! {
+    pub enum DataError {
+        #[error("Failed to read file: {path}")]
+        ReadError {
+            path: String,
+            #[source]
+            source: io::Error,  // Proper error chaining!
+        },
+        
+        #[error("Failed to parse JSON")]
+        ParseError {
+            #[source]
+            source: serde_json::Error,
+        },
+    }
+}
+
+// Errors maintain the full chain for debugging
+fn load_data(path: &str) -> Result<Data, DataError> {
+    let content = std::fs::read_to_string(path)
+        .map_err(|source| DataError::ReadError {
+            path: path.to_string(),
+            source,  // Original IO error is preserved
+        })?;
+    
+    serde_json::from_str(&content)
+        .map_err(|source| DataError::ParseError { source })
+}
+```
+
+### FFI Integration
+
+```rust
+use logffi::set_callback;
 
 // Bridge to Python logging
-set_ffi_callback(Box::new(|level, target, message| {
-    // Call Python: logging.getLogger(target).log(level, message)
-    python_log_bridge(level, target, message);
+set_callback(Box::new(|level, target, message| {
+    Python::with_gil(|py| {
+        let logging = py.import("logging").unwrap();
+        let logger = logging.call_method1("getLogger", (target,)).unwrap();
+        logger.call_method1(level.to_lowercase(), (message,)).unwrap();
+    });
 }));
 
-// Bridge to Node.js winston
-set_ffi_callback(Box::new(|level, target, message| {
-    // Call Node.js: winston.log(level, message, { target })
-    nodejs_log_bridge(level, target, message);
+// Now all Rust logs appear in Python!
+```
+
+## 🎯 Key Benefits
+
+### For Library Authors
+
+- Provide rich error types with zero boilerplate
+- Automatic logging at error creation sites
+- FFI-friendly error codes and messages
+- Works with any logging backend your users prefer
+
+### For Application Developers
+
+- Structured errors with proper context
+- Automatic error logging with appropriate levels
+- Easy integration with monitoring systems
+- Flexible backend configuration
+
+### For FFI Users
+
+- Bridge Rust logs to any language
+- Preserve error context across language boundaries
+- Structured error information for better debugging
+
+## 📖 Learn More
+
+Check out the **[Cookbook](cookbook/)** for detailed guides:
+
+- [Basic Logging Patterns](cookbook/01-basic-logging.md)
+- [Advanced Error Handling](cookbook/02-error-handling.md)
+- [Source Error Chaining](cookbook/03-source-error-chaining.md)
+- [FFI Integration Examples](cookbook/04-ffi-integration.md)
+- [Backend Configuration](cookbook/05-backend-configuration.md)
+
+## 🔧 Advanced Usage
+
+### Multiple Backends
+
+```rust
+use logffi::{set_backend, Backend};
+
+// Switch backends at runtime
+set_backend(Backend::Tracing);  // Use tracing
+set_backend(Backend::Slog);      // Use slog
+set_backend(Backend::Log);       // Use log (default)
+```
+
+### Dual-Mode Logging
+
+```rust
+use logffi::{set_callback, FORCE_NATIVE_BACKENDS};
+
+// Enable both FFI callback AND native Rust logging
+set_callback(Box::new(|level, target, msg| {
+    send_to_monitoring_system(level, target, msg);
 }));
+FORCE_NATIVE_BACKENDS.store(true, Ordering::Relaxed);
+
+// Now logs go to both FFI callback AND native backend!
 ```
 
-## API Reference
-
-### Logging Macros
-
-All standard `log` crate macros are supported:
-
-- `error!(...)` - Log error messages
-- `warn!(...)` - Log warning messages
-- `info!(...)` - Log info messages
-- `debug!(...)` - Log debug messages
-- `trace!(...)` - Log trace messages
-
-Each macro supports both simple and targeted logging:
+### Custom Error Codes
 
 ```rust
-error!("Simple error message");
-error!(target: "database", "Database connection failed: {}", err);
+define_errors! {
+    pub enum ApiError {
+        #[error("Authentication failed", code = "AUTH_001")]
+        AuthFailed,
+        
+        #[error("Rate limit exceeded", code = "RATE_001")]
+        RateLimited,
+        
+        #[error("Invalid request", code = "REQ_001")]
+        BadRequest,
+    }
+}
+
+// Use error codes for monitoring
+match api_call() {
+    Err(e) => {
+        metric_counter!("api.errors", "code" => e.code());
+        Err(e)
+    }
+    Ok(result) => Ok(result),
+}
 ```
 
-### FFI Functions
+## 🤝 Contributing
 
-- `set_ffi_callback(callback)` - Set the global FFI callback function
-- `call_ffi_callback(level, target, message)` - Manually call the FFI callback
+Contributions are welcome! Please feel free to submit a Pull Request. This crate is part of the [SuperConfig](https://github.com/deepbrain/superconfig) project.
 
-### Callback Signature
+## 📄 License
 
-```rust
-pub type FfiCallback = Box<dyn Fn(&str, &str, &str) + Send + Sync>;
-//                              level  target  message
-```
-
-## How It Works
-
-1. **Standard Logging**: All macros first call the standard `log!` macro, respecting all filtering and configuration
-2. **FFI Check**: If `log_enabled!` returns true for the target/level, the FFI callback is invoked
-3. **Thread Safety**: FFI callback is stored in a `OnceLock` for thread-safe access
-4. **Zero Overhead**: When no FFI callback is set, performance is identical to the standard `log` crate
-
-## Use Cases
-
-- **Python Extensions**: Bridge Rust logs to Python's `logging` module
-- **Node.js Addons**: Forward Rust logs to Winston or other Node.js loggers
-- **WebAssembly**: Send logs from WASM modules to JavaScript console
-- **Mobile Apps**: Bridge Rust logs to platform-specific logging (iOS/Android)
-- **Microservices**: Centralized logging across polyglot service architectures
-
-## Coverage and Testing
-
-LogFFI maintains **94.33% region coverage** with comprehensive testing:
-
-- ✅ All public APIs tested
-- ✅ Edge cases and error conditions covered
-- ✅ Thread safety verified
-- ✅ Macro expansion testing
-- ✅ FFI callback behavior validated
-
-See [COVERAGE_ANALYSIS.md](COVERAGE_ANALYSIS.md) for detailed coverage analysis.
-
-## License
-
-MIT License - see [LICENSE](../../LICENSE) for details.
-
-## Contributing
-
-Contributions welcome! This crate is part of the [SuperConfig](https://github.com/deepbrain/superconfig) monorepo.
+This project is licensed under the MIT License - see the [LICENSE](../../LICENSE) file for details.
