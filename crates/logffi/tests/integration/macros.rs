@@ -160,3 +160,40 @@ fn test_define_errors_all_log_levels() {
     LogLevelTest::DebugLevel.log();
     LogLevelTest::TraceLevel.log();
 }
+
+#[test]
+fn test_constructor_methods() {
+    // Test the new_variant_name constructor methods
+    define_errors! {
+        pub enum ConstructorTest {
+            #[error("Simple error", level = error)]
+            SimpleError,
+
+            #[error("Error with field: {value}", level = warn, target = "test::constructor")]
+            WithField {
+                value: String,
+            },
+
+            #[error("Multiple fields: {name} = {count}", level = info, code = "MULTI_001")]
+            MultipleFields {
+                name: String,
+                count: u32,
+            },
+        }
+    }
+
+    // Test simple constructor (no fields)
+    let error1 = ConstructorTest::new_simple_error();
+    assert_eq!(error1.to_string(), "Simple error");
+    assert_eq!(error1.code(), "SimpleError");
+
+    // Test constructor with single field
+    let error2 = ConstructorTest::new_with_field("test_value".to_string());
+    assert_eq!(error2.to_string(), "Error with field: test_value");
+    assert_eq!(error2.code(), "WithField");
+
+    // Test constructor with multiple fields
+    let error3 = ConstructorTest::new_multiple_fields("counter".to_string(), 42);
+    assert_eq!(error3.to_string(), "Multiple fields: counter = 42");
+    assert_eq!(error3.code(), "MULTI_001");
+}

@@ -134,6 +134,20 @@ macro_rules! define_errors {
                     )*
                 }
             }
+            
+            // Generate constructor methods for each variant
+            $(
+                paste::paste! {
+                    /// Create and log a new error instance
+                    pub fn [<new_ $variant:snake>]($($($field_name: $field_type),*)?) -> Self {
+                        let error = $name::$variant $({
+                            $($field_name,)*
+                        })?;
+                        error.log();
+                        error
+                    }
+                }
+            )*
         }
     };
     
