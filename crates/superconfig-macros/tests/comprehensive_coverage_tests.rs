@@ -1,6 +1,6 @@
 //! Comprehensive tests to achieve 100% coverage of all uncovered lines
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use superconfig_macros::generate_json_helper;
 
 #[test]
@@ -97,7 +97,11 @@ fn test_non_arc_type_detection() {
     assert!(result.contains("success"));
 
     let test2 = TestStruct { value: 42 };
-    let result2 = test2.test_option_type_json(serde_json::to_string(&Some("test".to_string())).unwrap().as_str());
+    let result2 = test2.test_option_type_json(
+        serde_json::to_string(&Some("test".to_string()))
+            .unwrap()
+            .as_str(),
+    );
     assert!(result2.contains("success"));
 }
 

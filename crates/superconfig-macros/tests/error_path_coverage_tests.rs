@@ -1,8 +1,8 @@
 // Tests designed to cover error paths and edge cases for maximum coverage
 
-use superconfig_macros::{generate_try_method, generate_json_helper};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
+use superconfig_macros::{generate_json_helper, generate_try_method};
 
 // Define test structures for method implementations
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -27,7 +27,7 @@ impl TestBuilder {
         // This should trigger the "non-Result method" path and early return
     }
 
-    #[generate_try_method] 
+    #[generate_try_method]
     pub fn non_result_with_string(&self) -> String {
         "test".to_string()
     }
@@ -69,13 +69,17 @@ impl TestBuilder {
     #[generate_try_method]
     pub fn complex_params(self, tuple_param: (i32, i32)) -> Result<Self, String> {
         // This should test parameter name extraction for complex types
-        Ok(Self { value: tuple_param.0 + tuple_param.1 })
+        Ok(Self {
+            value: tuple_param.0 + tuple_param.1,
+        })
     }
 
     // Test pattern parameters that don't extract to simple identifiers
-    #[generate_try_method] 
+    #[generate_try_method]
     pub fn pattern_params(self, data: &str) -> Result<Self, String> {
-        Ok(Self { value: data.len() as i32 })
+        Ok(Self {
+            value: data.len() as i32,
+        })
     }
 
     // Test methods to cover JSON helper type detection
@@ -108,22 +112,34 @@ impl TestBuilder {
     }
 
     #[generate_json_helper(auto)]
-    pub fn option_complex_param(self, _maybe_config: Option<ComplexStruct>) -> Result<Self, String> {
+    pub fn option_complex_param(
+        self,
+        _maybe_config: Option<ComplexStruct>,
+    ) -> Result<Self, String> {
         Ok(self)
     }
 
     #[generate_json_helper(auto)]
-    pub fn result_complex_param(self, _result: Result<ComplexStruct, String>) -> Result<Self, String> {
+    pub fn result_complex_param(
+        self,
+        _result: Result<ComplexStruct, String>,
+    ) -> Result<Self, String> {
         Ok(self)
     }
 
     #[generate_json_helper(auto)]
-    pub fn hashmap_complex_param(self, _data: HashMap<String, ComplexStruct>) -> Result<Self, String> {
+    pub fn hashmap_complex_param(
+        self,
+        _data: HashMap<String, ComplexStruct>,
+    ) -> Result<Self, String> {
         Ok(self)
     }
 
     #[generate_json_helper(auto)]
-    pub fn nested_complex_param(self, _data: HashMap<String, Vec<ComplexStruct>>) -> Result<Self, String> {
+    pub fn nested_complex_param(
+        self,
+        _data: HashMap<String, Vec<ComplexStruct>>,
+    ) -> Result<Self, String> {
         Ok(self)
     }
 
@@ -147,7 +163,11 @@ impl TestBuilder {
 
     // Test multiple complex parameters
     #[generate_json_helper(auto)]
-    pub fn multiple_complex_params(self, _config1: ComplexStruct, _config2: HashMap<String, String>) -> Result<Self, String> {
+    pub fn multiple_complex_params(
+        self,
+        _config1: ComplexStruct,
+        _config2: HashMap<String, String>,
+    ) -> Result<Self, String> {
         Ok(self)
     }
 
@@ -190,7 +210,7 @@ impl EdgeCaseBuilder {
     }
 }
 
-// Note: Standalone functions with these macros cause compilation errors 
+// Note: Standalone functions with these macros cause compilation errors
 // because the macros expect methods with self parameters
 // These would be good to test macro error handling, but they prevent compilation
 
@@ -201,7 +221,7 @@ mod tests {
     #[test]
     fn test_non_result_methods() {
         let builder = TestBuilder::new();
-        
+
         // These should compile and work - no try_ variants should be generated
         builder.non_result_method();
         let _ = builder.non_result_with_string();
@@ -214,18 +234,18 @@ mod tests {
     #[test]
     fn test_result_methods_and_try_variants() {
         let builder = TestBuilder::new();
-        
+
         // Test normal Result method
         let result = builder.clone().normal_result_method(42);
         assert!(result.is_ok());
-        
+
         let result = builder.clone().normal_result_method(-1);
         assert!(result.is_err());
-        
+
         // Test complex parameter patterns
         let result = builder.clone().complex_params((1, 2));
         assert!(result.is_ok());
-        
+
         let result = builder.clone().pattern_params("test");
         assert!(result.is_ok());
     }
@@ -233,7 +253,7 @@ mod tests {
     #[test]
     fn test_json_helper_simple_types() {
         let builder = TestBuilder::new();
-        
+
         // These should compile - JSON helpers should NOT be generated for simple types
         let _ = builder.clone().simple_int_param(42);
         let _ = builder.clone().simple_string_param("test".to_string());
@@ -249,30 +269,32 @@ mod tests {
             field: "test".to_string(),
             number: 42,
         };
-        
+
         // These should compile - testing that the basic methods work
         let _ = builder.clone().complex_struct_param(complex.clone());
         let _ = builder.clone().option_complex_param(Some(complex.clone()));
         let _ = builder.clone().result_complex_param(Ok(complex.clone()));
-        
+
         let mut hashmap = HashMap::new();
         hashmap.insert("key".to_string(), complex.clone());
         let _ = builder.clone().hashmap_complex_param(hashmap);
-        
+
         let mut nested_map = HashMap::new();
         nested_map.insert("key".to_string(), vec![complex.clone()]);
         let _ = builder.clone().nested_complex_param(nested_map);
-        
+
         // Test different directions
         let _ = builder.clone().json_in_direction(complex.clone());
         let _ = builder.clone().json_out_direction(complex.clone());
         let _ = builder.clone().json_both_directions(complex.clone());
-        
+
         // Test multiple complex parameters
         let mut simple_map = HashMap::new();
         simple_map.insert("key".to_string(), "value".to_string());
-        let _ = builder.clone().multiple_complex_params(complex.clone(), simple_map);
-        
+        let _ = builder
+            .clone()
+            .multiple_complex_params(complex.clone(), simple_map);
+
         // Test different return type
         let _ = builder.clone().different_return_type(complex);
     }
@@ -295,7 +317,7 @@ mod tests {
     fn test_error_paths() {
         // Test that error handling works correctly
         let builder = TestBuilder::new();
-        
+
         // This should return an error
         let result = builder.normal_result_method(-1);
         assert!(result.is_err());

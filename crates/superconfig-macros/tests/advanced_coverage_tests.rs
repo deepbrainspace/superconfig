@@ -13,7 +13,7 @@ fn test_trailing_comma_parsing() {
 
     impl TestStruct {
         // This should parse successfully with trailing comma
-        #[generate_json_helper(auto,)]
+        #[generate_json_helper(auto)]
         pub fn test_trailing_comma(self, data: Vec<String>) -> Result<Self, String> {
             if data.is_empty() {
                 Err("Empty data".to_string())
@@ -47,7 +47,7 @@ fn test_non_path_types_for_arc_detection() {
             }
         }
 
-        // Use tuple type (not a Path type) 
+        // Use tuple type (not a Path type)
         #[generate_json_helper]
         pub fn test_tuple_type(self, data: (i32, String)) -> Result<Self, String> {
             if data.0 > 0 && !data.1.is_empty() {
@@ -69,12 +69,17 @@ fn test_non_path_types_for_arc_detection() {
     }
 
     let test = TestStruct { value: 42 };
-    
+
     // These should generate methods even though types are non-Path
     let result1 = test.test_array_type_json(serde_json::to_string(&[1, 2, 3]).unwrap().as_str());
-    let result2 = TestStruct { value: 42 }.test_tuple_type_json(serde_json::to_string(&(1, "test".to_string())).unwrap().as_str());
-    let result3 = TestStruct { value: 42 }.test_box_type_json(serde_json::to_string(&vec![1, 2, 3]).unwrap().as_str());
-    
+    let result2 = TestStruct { value: 42 }.test_tuple_type_json(
+        serde_json::to_string(&(1, "test".to_string()))
+            .unwrap()
+            .as_str(),
+    );
+    let result3 = TestStruct { value: 42 }
+        .test_box_type_json(serde_json::to_string(&vec![1, 2, 3]).unwrap().as_str());
+
     // Should not panic and produce some output
     assert!(!result1.is_empty());
     assert!(!result2.is_empty());
@@ -85,11 +90,11 @@ fn test_non_path_types_for_arc_detection() {
 fn test_explicit_macro_on_simple_types_error() {
     // Test lines 207-213: Error case when explicitly using macro on simple-only types
     // This test verifies the error path by using a macro that should trigger the error
-    
+
     // Note: This test is tricky because it tests compile-time behavior
     // We can't directly test compile errors in regular tests, but we can test
     // the logic path by ensuring our other tests don't hit this case
-    
+
     #[derive(Serialize)]
     struct SimpleStruct {
         value: i32,
@@ -101,7 +106,7 @@ fn test_explicit_macro_on_simple_types_error() {
         pub fn test_explicit_complex_return(self) -> Result<Vec<String>, String> {
             Ok(vec!["test".to_string()])
         }
-        
+
         // This should work because it has complex parameter
         #[generate_json_helper(incoming)]
         pub fn test_explicit_complex_param(self, data: Vec<i32>) -> Result<Self, String> {
@@ -116,13 +121,13 @@ fn test_explicit_macro_on_simple_types_error() {
     let test = SimpleStruct { value: 42 };
     let result = test.test_explicit_complex_return_as_json();
     assert!(result.contains("success"));
-    
+
     let test2 = SimpleStruct { value: 42 };
     let result2 = test2.test_explicit_complex_param_from_json(r#"{"data": [1, 2, 3]}"#);
     assert!(result2.contains("success") || result2.contains("\"value\":"));
 }
 
-#[test] 
+#[test]
 fn test_auto_detected_no_json_helpers_needed() {
     // Test line 200: Auto-detection returns empty (no JSON helpers needed)
     #[derive(Serialize)]
@@ -163,8 +168,8 @@ fn test_complex_parameter_pattern_matching() {
         // Test with complex nested generic types to exercise pattern matching
         #[generate_json_helper]
         pub fn test_nested_complex(
-            self, 
-            data: HashMap<String, Vec<Option<HashMap<i32, String>>>>
+            self,
+            data: HashMap<String, Vec<Option<HashMap<i32, String>>>>,
         ) -> Result<Self, String> {
             if data.is_empty() {
                 Err("Empty nested data".to_string())
@@ -179,7 +184,7 @@ fn test_complex_parameter_pattern_matching() {
             self,
             map_data: HashMap<String, i32>,
             vec_data: Vec<Option<String>>,
-            nested: Option<Vec<HashMap<String, i32>>>
+            nested: Option<Vec<HashMap<String, i32>>>,
         ) -> Result<Self, String> {
             if map_data.is_empty() && vec_data.is_empty() && nested.is_none() {
                 Err("All data empty".to_string())
@@ -192,10 +197,8 @@ fn test_complex_parameter_pattern_matching() {
     let test = TestStruct { value: 42 };
     let mut map: HashMap<String, Vec<Option<HashMap<i32, String>>>> = HashMap::new();
     map.insert("key".to_string(), vec![Some(HashMap::new())]);
-    
-    let result = test.test_nested_complex_json(
-        &serde_json::to_string(&map).unwrap()
-    );
+
+    let result = test.test_nested_complex_json(&serde_json::to_string(&map).unwrap());
     assert!(result.contains("success") || result.contains("error"));
 
     let test2 = TestStruct { value: 42 };
@@ -242,11 +245,17 @@ fn test_try_method_non_result_types() {
         }
     }
 
-    let test = TestStruct { value: 42, errors: vec![] };
+    let test = TestStruct {
+        value: 42,
+        errors: vec![],
+    };
     let result = test.test_non_result_return(5);
     assert_eq!(result.value, 47);
 
-    let test2 = TestStruct { value: 42, errors: vec![] };
+    let test2 = TestStruct {
+        value: 42,
+        errors: vec![],
+    };
     let result2 = test2.test_complex_result(vec![1, 2, 3]).unwrap();
     assert_eq!(result2.value, 45);
 }
@@ -288,7 +297,7 @@ fn test_handle_mode_combinations() {
 
     impl TestStruct {
         fn collect_error(&mut self, method_name: &str, error: String, _context: Option<String>) {
-            // Error collection implementation 
+            // Error collection implementation
             self.errors.push(format!("{}: {}", method_name, error));
         }
     }
@@ -308,22 +317,34 @@ fn test_handle_mode_combinations() {
             if x < 0 {
                 Err("Negative value".to_string())
             } else {
-                Ok(TestStruct { value: self.value + x, errors: self.errors })
+                Ok(TestStruct {
+                    value: self.value + x,
+                    errors: self.errors,
+                })
             }
         }
     }
 
     use std::collections::HashMap;
-    let test = TestStruct { value: 42, errors: vec![] };
+    let test = TestStruct {
+        value: 42,
+        errors: vec![],
+    };
     let result = test.test_handle_mode_auto_json(r#"{"data": {"key": 123}}"#);
     assert!(result.contains("success") || result.contains("error"));
 
-    let test2 = TestStruct { value: 42, errors: vec![] };
+    let test2 = TestStruct {
+        value: 42,
+        errors: vec![],
+    };
     let result2 = test2.test_handle_mode_out_as_json(10);
     assert!(result2.contains("success"));
 
     // Test the collect_error method separately
-    let mut test3 = TestStruct { value: 42, errors: vec![] };
+    let mut test3 = TestStruct {
+        value: 42,
+        errors: vec![],
+    };
     test3.collect_error("test_method", "test error".to_string(), None);
     assert!(!test3.errors.is_empty());
     assert!(test3.errors[0].contains("test_method"));
