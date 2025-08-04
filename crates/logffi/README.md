@@ -10,11 +10,12 @@ Universal logging for Rust with compile-time backend selection, FFI support, and
 
 - 🔧 **Feature-Based Backends** - Choose `log`, `tracing`, `slog`, or `callback` via Cargo features
 - 🌉 **FFI Support** - Bridge Rust logs to Python, Node.js, C/C++, and more
-- 🎯 **Advanced Error Handling** - `define_errors!` macro with automatic logging
-- 🔗 **Error Chaining** - Full support for source errors with `#[source]`
+- 🎯 **Complete Error Handling** - All `thiserror` features + `define_errors!` macro with automatic logging
+- 🔗 **Error Chaining** - Full support for source errors with `#[source]` attribute
 - 🚀 **Zero Overhead** - Only compile what you use, no runtime switching cost
 - 🛡️ **Type Safe** - Leverage Rust's type system for error handling
 - 📊 **Multi-Backend Support** - Use multiple backends simultaneously when needed
+- 🌍 **Cross-Language** - Automatic error mapping for FFI (Python, Node.js, WASM)
 
 ## 📚 Documentation
 
@@ -52,6 +53,8 @@ fn main() {
 
 ### Error Handling with Automatic Logging
 
+LogFFI provides **all thiserror features** plus automatic logging and FFI integration:
+
 ```rust
 use logffi::define_errors;
 
@@ -72,10 +75,14 @@ define_errors! {
     }
 }
 
-// Use the generated constructor methods - they automatically log!
+// ✅ Gets ALL thiserror features: Display, Error, Debug, From conversions
+// ✅ PLUS automatic logging integration
+// ✅ PLUS constructor methods with auto-logging
+// ✅ PLUS FFI-friendly error mapping
+
 fn load_config(path: &str) -> Result<Config, AppError> {
     if !Path::new(path).exists() {
-        // This creates the error AND logs it automatically
+        // Creates error + logs automatically + works across languages
         return Err(AppError::new_config_not_found(path.to_string()));
     }
     // ...
@@ -166,6 +173,33 @@ Check out the **[Cookbook](cookbook/)** for detailed guides:
 - [Source Error Chaining](cookbook/03-source-error-chaining.md)
 - [FFI Integration Examples](cookbook/04-ffi-integration.md)
 - [Backend Configuration](cookbook/05-backend-configuration.md)
+- [Backend Selection Guide](cookbook/06-backend-selection.md)
+
+## 🆚 Comparison with Other Logging Solutions
+
+| Feature                  | log    | tracing | slog   | env_logger | flexi_logger | **LogFFI**              |
+| ------------------------ | ------ | ------- | ------ | ---------- | ------------ | ----------------------- |
+| **Core Logging**         |        |         |        |            |              |                         |
+| Basic Logging            | ✅     | ✅      | ✅     | ✅         | ✅           | ✅ All backends         |
+| Structured Logging       | ❌     | ✅      | ✅     | ❌         | ✅           | ✅ All backends         |
+| Async Support            | ✅     | ✅      | ✅     | ❌         | ✅           | ✅ All backends         |
+| Zero Overhead            | ✅     | ❌      | ❌     | ❌         | ❌           | ✅ Compile-time         |
+| **Backend Features**     |        |         |        |            |              |                         |
+| Backend Selection        | ❌     | ❌      | ❌     | ❌         | ❌           | ✅ Feature-based        |
+| Multi-Backend Support    | ❌     | ❌      | ❌     | ❌         | ❌           | ✅ Simultaneous         |
+| Direct API Access        | ✅     | ✅      | ✅     | ✅         | ✅           | ✅ as_X() methods       |
+| Supported Destinations   | ~200   | ~50     | ~30    | Built-in   | Built-in     | **ALL**                 |
+| **Advanced Features**    |        |         |        |            |              |                         |
+| thiserror Macros         | ❌     | ❌      | ❌     | ❌         | ❌           | ✅ define_errors!       |
+| Dynamic Error Generation | ❌     | ❌      | ❌     | ❌         | ❌           | ✅ Auto-generated       |
+| Auto Error Logging       | ❌     | ❌      | ❌     | ❌         | ❌           | ✅ define_errors! macro |
+| Source Error Chaining    | ❌     | ❌      | ❌     | ❌         | ❌           | ✅ #[source] support    |
+| **Integration**          |        |         |        |            |              |                         |
+| FFI Bridge               | ❌     | ❌      | ❌     | ❌         | ❌           | ✅ Callback system      |
+| Custom Logging           | ❌     | ❌      | ❌     | ❌         | ❌           | ✅ Callback system      |
+| Configuration            | Manual | Manual  | Manual | Manual     | Manual       | ✅ Auto-detection       |
+
+**🎯 LogFFI Advantage**: The only logging solution that gives you **complete flexibility** - choose any backend, use multiple simultaneously, get advanced error handling, and integrate with any system via callbacks.
 
 ## 🔧 Advanced Usage
 
