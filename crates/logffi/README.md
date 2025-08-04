@@ -4,17 +4,17 @@
 [![Documentation](https://docs.rs/logffi/badge.svg)](https://docs.rs/logffi)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Universal logging for Rust with FFI support, backend flexibility, and advanced error handling.
+Universal logging for Rust with compile-time backend selection, FFI support, and advanced error handling.
 
 ## ✨ Features
 
-- 🔄 **Universal Logging** - Works with `log`, `tracing`, and `slog` backends
+- 🔧 **Feature-Based Backends** - Choose `log`, `tracing`, `slog`, or `callback` via Cargo features
 - 🌉 **FFI Support** - Bridge Rust logs to Python, Node.js, C/C++, and more
 - 🎯 **Advanced Error Handling** - `define_errors!` macro with automatic logging
 - 🔗 **Error Chaining** - Full support for source errors with `#[source]`
-- 🚀 **Zero Overhead** - No performance cost when features aren't used
+- 🚀 **Zero Overhead** - Only compile what you use, no runtime switching cost
 - 🛡️ **Type Safe** - Leverage Rust's type system for error handling
-- 📊 **Structured Logging** - Support for structured data with `slog` and `tracing`
+- 📊 **Multi-Backend Support** - Use multiple backends simultaneously when needed
 
 ## 📚 Documentation
 
