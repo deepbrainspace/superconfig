@@ -56,11 +56,12 @@ fn main() {
     println!("4. code() method for error codes");
     println!("5. kind() method for FFI error type mapping");
     println!("6. full_message_chain() method");
-    println!("7. log() method with proper level and target\n");
+    println!("7. log() method with proper level and target");
+    println!("8. new_<variant_name>() constructor methods that auto-log\n");
 
-    println!("=== Example Usage ===\n");
+    println!("=== Example Usage - Manual Creation ===\n");
 
-    // Example 1: Simple error
+    // Example 1: Simple error (manual creation)
     let error = ConfigError::KeyNotFound {
         key: "database.host".to_string(),
         profile: "production".to_string(),
@@ -76,58 +77,70 @@ fn main() {
     // - Message: "[KeyNotFound] Key 'database.host' not found in profile 'production'"
     error.log();
 
-    println!("\n=== IO Error Pattern ===\n");
+    println!("\n=== NEW: Constructor Methods (Recommended) ===\n");
 
-    // Example 2: IO error handling in SuperConfig
+    // Much cleaner! The constructor automatically logs the error
+    let error = ConfigError::new_key_not_found(
+        "database.port".to_string(),
+        "staging".to_string(),
+    );
+    println!("Created and logged: {}", error);
+
+    // Profile not found - constructor handles everything
+    let error = ConfigError::new_profile_not_found("development".to_string());
+    println!("Created and logged: {}", error);
+
+    println!("\n=== IO Error Pattern - Constructor Method ===\n");
+
+    // Example 2: IO error handling with constructor
     let file_path = "/etc/app/config.toml";
     let io_result = std::fs::read_to_string(file_path);
 
     if let Err(io_err) = io_result {
-        let error = ConfigError::FileReadError {
-            path: file_path.to_string(),
-            io_error: io_err.to_string(), // Convert source error to string
-        };
+        // One line creates AND logs the error!
+        let error = ConfigError::new_file_read_error(
+            file_path.to_string(),
+            io_err.to_string(),
+        );
 
         println!("Error: {}", error);
         println!("Code: {}", error.code());
-
-        // Logs at ERROR level to "superconfig::io"
-        error.log();
+        // No need to call error.log() - constructor already did it!
     }
 
-    println!("\n=== JSON Parse Error Pattern ===\n");
+    println!("\n=== JSON Parse Error - Constructor Method ===\n");
 
-    // Example 3: Parse error handling
+    // Example 3: Parse error handling with constructor
     let json_result = serde_json::from_str::<serde_json::Value>("invalid json");
 
     if let Err(parse_err) = json_result {
-        let error = ConfigError::JsonParseError {
-            file: "app.json".to_string(),
-            details: format!(
-                "at line {}, column {}",
-                parse_err.line(),
-                parse_err.column()
-            ),
-        };
+        // Constructor creates, logs, and returns the error
+        let error = ConfigError::new_json_parse_error(
+            "app.json".to_string(),
+            format!("at line {}, column {}", parse_err.line(), parse_err.column()),
+        );
 
         println!("Error: {}", error);
-        // Custom error code if specified
         println!("Code: {} (auto-generated)", error.code());
-
-        error.log();
     }
 
-    println!("\n=== YAML Error with Custom Code ===\n");
+    println!("\n=== YAML Error with Custom Code - Constructor ===\n");
 
-    let error = ConfigError::YamlParseError {
-        file: "config.yaml".to_string(),
-        details: "invalid indentation at line 5".to_string(),
-    };
+    // Constructor automatically logs at INFO level to "superconfig::parse"
+    let error = ConfigError::new_yaml_parse_error(
+        "config.yaml".to_string(),
+        "invalid indentation at line 5".to_string(),
+    );
 
     println!("Error: {}", error);
     println!("Code: {} (custom)", error.code()); // Will show "YAML_001"
 
-    error.log();
+    println!("\n=== Constructor Benefits ===\n");
+    println!("1. Single line error creation and logging");
+    println!("2. Method names are snake_case versions of variant names");
+    println!("3. No need to remember to call .log() - it's automatic");
+    println!("4. Type-safe parameter passing");
+    println!("5. IDE autocomplete for constructor methods");
 
     println!("\n=== What Gets Logged ===\n");
     println!("All errors are logged to the configured backend (log/tracing/slog)");
@@ -144,3 +157,5 @@ fn main() {
 // 6. ✅ FFI-friendly error identification via kind()
 // 7. ✅ No complex source error chaining to manage
 // 8. ✅ Simple, explicit error creation patterns
+// 9. ✅ NEW: Constructor methods (new_variant_name) that auto-log errors
+// 10. ✅ NEW: Single-line error creation and logging for better ergonomics
