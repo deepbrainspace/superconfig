@@ -65,24 +65,25 @@ for_each!([error, warn, info, debug, trace], |level| {
 });
 
 
-/// Enhanced `define_errors!` macro with LogFFI integration, field support, log levels, and targets
+/// Enhanced `define_errors!` macro with LogFFI integration, field support, log levels, targets, and source error chaining
 #[macro_export]
 macro_rules! define_errors {
-    // Enhanced pattern with log level and target support
+    // Enhanced pattern with log level, target support, and source error chaining
     (
         $(#[$enum_meta:meta])*
         $vis:vis enum $name:ident {
             $(
-                #[error($msg:literal $(, level = $level:ident)? $(, target = $target:literal)? $(, code = $code:literal)?)]
+                #[error($msg:literal $(, level = $level:ident)? $(, target = $target:literal)? $(, code = $code:literal)? $(, source)?)]
                 $variant:ident $({
                     $(
+                        $(#[$field_meta:meta])*
                         $field_name:ident: $field_type:ty,
                     )*
                 })?,
             )*
         }
     ) => {
-        // Generate thiserror Error enum with field support
+        // Generate thiserror Error enum with field support and source chaining
         #[derive(thiserror::Error, Debug)]
         $(#[$enum_meta])*
         $vis enum $name {
@@ -90,6 +91,7 @@ macro_rules! define_errors {
                 #[error($msg)]
                 $variant $({
                     $(
+                        $(#[$field_meta])*
                         $field_name: $field_type,
                     )*
                 })?,

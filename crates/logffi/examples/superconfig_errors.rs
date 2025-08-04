@@ -4,9 +4,8 @@
 
 use logffi::define_errors;
 
-// Define SuperConfig's errors using the current working macro
+// Define SuperConfig's errors with proper source error chaining
 define_errors! {
-    #[derive(Clone)]
     pub enum ConfigError {
         // Simple errors - these work perfectly
         #[error("Key '{key}' not found in profile '{profile}'", level = warn, target = "superconfig::registry")]
@@ -20,19 +19,22 @@ define_errors! {
             profile: String,
         },
 
-        // For errors with source context, we store the error details as strings
-        #[error("Failed to read config file '{path}': {io_error}", level = error, target = "superconfig::io")]
+        // NEW: Errors with source chaining using #[source] attribute
+        #[error("Failed to read config file '{path}'", level = error, target = "superconfig::io")]
         FileReadError {
             path: String,
-            io_error: String,  // Store IO error details as string
+            #[source]
+            source: std::io::Error,  // Proper source error chaining
         },
 
-        #[error("Failed to parse JSON from '{file}': {details}", level = error, target = "superconfig::parse")]
+        #[error("Failed to parse JSON from '{file}'", level = error, target = "superconfig::parse")]
         JsonParseError {
             file: String,
-            details: String,  // Parse error details
+            #[source]
+            source: serde_json::Error,  // Chain parse errors
         },
 
+        // For backwards compatibility, you can still use string details
         #[error("Failed to parse YAML from '{file}': {details}", level = error, target = "superconfig::parse", code = "YAML_001")]
         YamlParseError {
             file: String,
@@ -80,14 +82,11 @@ fn main() {
     println!("   ↳ ⚠️  Log output appears above (WARN level)");
 
     println!("\n┌─────────────────────────────────────────────────────────────┐");
-    println!("│ Example 2: Constructor Methods (NEW Recommended Way) 🎉     │");
+    println!("│ Example 2: Constructor Methods (Recommended Way) 🎉         │");
     println!("└─────────────────────────────────────────────────────────────┘\n");
 
     println!("🚀 Using new_key_not_found() constructor:");
-    let error = ConfigError::new_key_not_found(
-        "database.port".to_string(),
-        "staging".to_string(),
-    );
+    let error = ConfigError::new_key_not_found("database.port".to_string(), "staging".to_string());
     println!("   ✓ Created: {}", error);
     println!("   ✓ Automatically logged! (see WARN above)");
 
@@ -97,7 +96,7 @@ fn main() {
     println!("   ✓ Automatically logged! (see WARN above)");
 
     println!("\n┌─────────────────────────────────────────────────────────────┐");
-    println!("│ Example 3: Real-World IO Error Handling                     │");
+    println!("│ Example 3: Real-World IO Error Handling with Source Chain   │");
     println!("└─────────────────────────────────────────────────────────────┘\n");
 
     let file_path = "/etc/app/config.toml";
@@ -106,15 +105,24 @@ fn main() {
 
     if let Err(io_err) = io_result {
         println!("   ❌ IO operation failed!");
-        println!("\n🚀 Using new_file_read_error() constructor:");
-        let error = ConfigError::new_file_read_error(
-            file_path.to_string(),
-            io_err.to_string(),
-        );
-        println!("   ✓ Error created and logged in one line!");
-        println!("   ✓ Error: {}", error);
-        println!("   ✓ Code: {}", error.code());
-        println!("   ✓ Check ERROR log above");
+        println!("\n🚀 Creating error with source chaining:");
+        let error = ConfigError::FileReadError {
+            path: file_path.to_string(),
+            source: io_err,
+        };
+
+        println!("   ✓ Primary error: {}", error);
+        println!("   ✓ Error code: {}", error.code());
+
+        // Show error chain
+        use std::error::Error;
+        if let Some(source) = error.source() {
+            println!("   ✓ Source error: {}", source);
+        }
+
+        println!("\n📤 Logging the error:");
+        error.log();
+        println!("   ↳ Check ERROR log above");
     }
 
     println!("\n┌─────────────────────────────────────────────────────────────┐");
@@ -126,14 +134,23 @@ fn main() {
 
     if let Err(parse_err) = json_result {
         println!("   ❌ JSON parsing failed!");
-        println!("\n🚀 Using new_json_parse_error() constructor:");
-        let error = ConfigError::new_json_parse_error(
-            "app.json".to_string(),
-            format!("at line {}, column {}", parse_err.line(), parse_err.column()),
-        );
-        println!("   ✓ Error: {}", error);
+        println!("\n🚀 Creating error with source chaining:");
+        // With source errors, create directly (constructor methods need updating)
+        let error = ConfigError::JsonParseError {
+            file: "app.json".to_string(),
+            source: parse_err,
+        };
+
+        println!("   ✓ Primary error: {}", error);
         println!("   ✓ Code: {} (auto-generated)", error.code());
-        println!("   ✓ Already logged! (see ERROR above)");
+
+        use std::error::Error;
+        if let Some(source) = error.source() {
+            println!("   ✓ Source error: {}", source);
+        }
+
+        println!("\n📤 Logging the error:");
+        error.log();
     }
 
     println!("\n┌─────────────────────────────────────────────────────────────┐");
@@ -165,7 +182,7 @@ fn main() {
     println!("  📝 Format: [ERROR_CODE] Error message");
     println!("  🎯 Target: Module-specific (e.g., superconfig::io)");
     println!("  📈 Level: Configured per error (ERROR/WARN/INFO/DEBUG/TRACE)");
-    
+
     println!("\n✨ Example complete! Check the log output above to see all the automatic logging.");
 }
 
@@ -176,7 +193,7 @@ fn main() {
 // 4. ✅ Proper log levels (warn for missing keys, error for IO/parse failures)
 // 5. ✅ Target-based filtering for debugging specific modules
 // 6. ✅ FFI-friendly error identification via kind()
-// 7. ✅ No complex source error chaining to manage
+// 7. ✅ Proper source error chaining with #[source] attribute
 // 8. ✅ Simple, explicit error creation patterns
-// 9. ✅ NEW: Constructor methods (new_variant_name) that auto-log errors
-// 10. ✅ NEW: Single-line error creation and logging for better ergonomics
+// 9. ✅ Constructor methods (new_variant_name) that auto-log errors
+// 10. ✅ Full error context via .source() method for debugging

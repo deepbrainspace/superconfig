@@ -197,3 +197,71 @@ fn test_constructor_methods() {
     assert_eq!(error3.to_string(), "Multiple fields: counter = 42");
     assert_eq!(error3.code(), "MULTI_001");
 }
+
+#[test]
+fn test_source_error_chaining() {
+    use std::error::Error;
+    use std::io;
+
+    // Test errors with source chaining using thiserror's #[source] attribute
+    define_errors! {
+        pub enum SourceTest {
+            #[error("IO operation failed for {path}", level = error)]
+            IoError {
+                path: String,
+                #[source]
+                source: io::Error,
+            },
+
+            #[error("Parse error in {file}", level = error, target = "test::parse")]
+            ParseError {
+                file: String,
+                #[source]
+                source: serde_json::Error,
+            },
+
+            #[error("No source error", level = warn)]
+            NoSource {
+                message: String,
+            },
+        }
+    }
+
+    // Test IO error with source
+    let io_err = io::Error::new(io::ErrorKind::NotFound, "file not found");
+    let error1 = SourceTest::IoError {
+        path: "/tmp/test.txt".to_string(),
+        source: io_err,
+    };
+
+    // Check error message
+    assert_eq!(error1.to_string(), "IO operation failed for /tmp/test.txt");
+
+    // Check source chain
+    assert!(error1.source().is_some());
+    let source = error1.source().unwrap();
+    assert_eq!(source.to_string(), "file not found");
+
+    // Test parse error with source
+    let json_err = serde_json::from_str::<serde_json::Value>("invalid").unwrap_err();
+    let error2 = SourceTest::ParseError {
+        file: "config.json".to_string(),
+        source: json_err,
+    };
+
+    assert_eq!(error2.to_string(), "Parse error in config.json");
+    assert!(error2.source().is_some());
+
+    // Test error without source
+    let error3 = SourceTest::NoSource {
+        message: "test message".to_string(),
+    };
+
+    assert_eq!(error3.to_string(), "No source error");
+    assert!(error3.source().is_none());
+
+    // Test that errors can be logged
+    error1.log();
+    error2.log();
+    error3.log();
+}
