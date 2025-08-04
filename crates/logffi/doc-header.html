@@ -1,0 +1,184 @@
+<style>
+/* Force ayu theme as default */
+:root {
+    --main-background-color: #0f1419;
+    --main-color: #c5c5c5;
+    --settings-input-color: #ffb44c;
+    --settings-input-border-color: #999;
+    --settings-button-color: #fff;
+    --settings-button-border-focus: #ffb44c;
+    --sidebar-background-color: #14191f;
+    --sidebar-background-color-hover: rgba(70, 70, 70, 0.33);
+    --code-block-background-color: #191f26;
+    --scrollbar-track-background-color: transparent;
+    --scrollbar-thumb-background-color: #5c6773;
+    --scrollbar-color: #5c6773 #24292f;
+    --headings-border-bottom-color: #5c6773;
+    --border-color: #5c6773;
+    --button-background-color: #141920;
+    --right-side-color: grey;
+    --code-attribute-color: #999;
+    --toggles-color: #999;
+    --toggle-filter: invert(100%);
+    --mobile-sidebar-menu-filter: invert(100%);
+    --search-input-focused-border-color: #008dfd;
+    --copy-path-button-color: #fff;
+    --copy-path-img-filter: invert(70%);
+    --copy-path-img-hover-filter: invert(100%);
+    --codeblock-error-hover-color: rgb(255, 0, 0);
+    --codeblock-error-color: rgba(255, 0, 0, .5);
+    --codeblock-ignore-hover-color: rgb(255, 142, 0);
+    --codeblock-ignore-color: rgba(255, 142, 0, .6);
+    --warning-border-color: rgb(255, 142, 0);
+    --type-link-color: #ffa0a5;
+    --trait-link-color: #39afd7;
+    --assoc-item-link-color: #39afd7;
+    --function-link-color: #fdd687;
+    --macro-link-color: #a37acc;
+    --module-link-color: #39afd7;
+    --link-color: #39afd7;
+    --sidebar-link-color: #53b1db;
+    --sidebar-current-link-background-color: transparent;
+    --search-result-link-focus-background-color: #4169e1;
+    --search-result-border-color: #aaa3;
+    --search-color: #fff;
+    --search-bg-color: #141920;
+    --search-results-alias-color: #c5c5c5;
+    --search-results-grey-color: #999;
+    --search-tab-title-count-color: #888;
+    --search-tab-button-not-selected-border-top-color: none;
+    --search-tab-button-not-selected-background: transparent;
+    --search-tab-button-selected-border-top-color: none;
+    --search-tab-button-selected-background: #141920;
+    --stab-background-color: #314559;
+    --stab-code-color: #e6e1cf;
+    --code-highlight-kw-color: #ff7733;
+    --code-highlight-kw-2-color: #ff7733;
+    --code-highlight-lifetime-color: #ff7733;
+    --code-highlight-prelude-color: #69f2df;
+    --code-highlight-prelude-val-color: #ff7733;
+    --code-highlight-number-color: #b8cc52;
+    --code-highlight-string-color: #b8cc52;
+    --code-highlight-literal-color: #ff7733;
+    --code-highlight-attribute-color: #e6e1cf;
+    --code-highlight-self-color: #36a3d9;
+    --code-highlight-macro-color: #a37acc;
+    --code-highlight-question-mark-color: #ff9011;
+    --code-highlight-comment-color: #788797;
+    --code-highlight-doc-comment-color: #a1ac88;
+    --src-line-numbers-span-color: #5c6773;
+    --src-line-number-highlighted-background-color: rgba(255, 236, 164, 0.06);
+    --test-arrow-color: #788797;
+    --test-arrow-background-color: rgba(57, 175, 215, 0.09);
+    --test-arrow-hover-color: #c5c5c5;
+    --test-arrow-hover-background-color: rgba(57, 175, 215, 0.368);
+    --target-background-color: rgba(255, 236, 164, 0.06);
+    --target-border-color: rgba(255, 180, 76, 0.85);
+    --kbd-color: #c5c5c5;
+    --kbd-background: #314559;
+    --kbd-box-shadow-color: #5c6773;
+    --rust-logo-filter: drop-shadow(1px 0 0px #fff) drop-shadow(0 1px 0 #fff) drop-shadow(-1px 0 0 #fff) drop-shadow(0 -1px 0 #fff);
+    --crate-search-div-filter: invert(94%) sepia(0%) saturate(721%) hue-rotate(255deg) brightness(90%) contrast(90%);
+    --crate-search-div-hover-filter: invert(69%) sepia(60%) saturate(6613%) hue-rotate(184deg) brightness(100%) contrast(91%);
+    --crate-search-hover-border: #2196f3;
+    --src-sidebar-background-selected: #14191f;
+    --src-sidebar-background-hover: #14191f;
+    --table-alt-row-background-color: #191f26;
+    --codeblock-link-background: #333;
+    --scrape-example-toggle-line-background: #999;
+    --scrape-example-toggle-line-hover-background: #c5c5c5;
+    --scrape-example-code-line-highlight: rgb(91, 59, 1);
+    --scrape-example-code-line-highlight-focus: rgb(124, 75, 15);
+    --scrape-example-help-border-color: #aaa;
+    --scrape-example-help-color: #eee;
+    --scrape-example-help-hover-border-color: #fff;
+    --scrape-example-help-hover-color: #fff;
+    --scrape-example-code-wrapper-background-start: rgba(15, 20, 25, 1);
+    --scrape-example-code-wrapper-background-end: rgba(15, 20, 25, 0);
+    --sidebar-resizer-hover: hsl(207, 30%, 54%);
+    --sidebar-resizer-active: hsl(207, 90%, 54%);
+}
+
+/* Custom LogFFI branding */
+.main-heading h1 a {
+    color: #ffb44c !important;
+    font-weight: bold;
+}
+
+/* Enhanced code blocks */
+.docblock pre {
+    background-color: #191f26;
+    border-left: 3px solid #ffb44c;
+    padding: 1em;
+    margin: 1em 0;
+}
+
+/* Feature badges styling */
+.stab {
+    background-color: #314559 !important;
+    color: #e6e1cf !important;
+    border: 1px solid #5c6773;
+}
+
+/* Table styling for comparison charts */
+.docblock table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+}
+
+.docblock table th,
+.docblock table td {
+    border: 1px solid #5c6773;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.docblock table th {
+    background-color: #314559;
+    font-weight: bold;
+}
+
+.docblock table tr:nth-child(even) {
+    background-color: #191f26;
+}
+
+/* Highlight LogFFI columns in tables */
+.docblock table th:last-child,
+.docblock table td:last-child {
+    background-color: rgba(255, 180, 76, 0.1);
+    font-weight: bold;
+}
+
+/* Make checkmarks and X marks more visible */
+.docblock table td:contains("✅") {
+    color: #b8cc52;
+}
+
+.docblock table td:contains("❌") {
+    color: #ff7733;
+}
+</style>
+
+<script>
+// Force ayu theme on load
+document.addEventListener('DOMContentLoaded', function() {
+    // Set ayu theme in localStorage
+    localStorage.setItem('rustdoc-theme', 'ayu');
+    
+    // Apply theme class to body
+    document.body.classList.add('ayu');
+    
+    // Remove other theme classes
+    document.body.classList.remove('dark', 'light');
+    
+    // Update theme picker if it exists
+    const themePicker = document.querySelector('#theme-picker');
+    if (themePicker) {
+        const ayuOption = themePicker.querySelector('button[title="Ayu"]');
+        if (ayuOption) {
+            ayuOption.click();
+        }
+    }
+});
+</script>

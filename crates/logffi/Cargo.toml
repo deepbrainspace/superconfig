@@ -11,7 +11,12 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/deepbrain/superconfig"
 rust-version = "1.88"
-description = "Drop-in replacement for log crate with FFI callback support for bridging Rust logs to Python, Node.js, and other languages"
+description = "Multi-Backend (log/tracing/slog/callback) Logging and Error Handling (thiserror+define_error!) with FFI Integration Support"
+
+[package.metadata.docs.rs]
+default-target = "x86_64-unknown-linux-gnu"
+features = ["all"]
+rustdoc-args = ["--html-in-header", "doc-header.html"]
 
 [features]
 default = ["tracing"]
