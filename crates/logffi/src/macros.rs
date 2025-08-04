@@ -24,37 +24,30 @@ for_each!([error, warn, info, debug, trace], |level| {
     macro_rules! %{level} {
         (target: $target:expr, $($arg:tt)*) => {
             {
-                let has_callback = $crate::CALLBACK.get().is_some();
-                let force_native = $crate::FORCE_NATIVE_BACKENDS.load(std::sync::atomic::Ordering::Relaxed);
+                // Initialize logger to ensure backends are set up
+                let _ = $crate::logger();
 
-                // Always call callback if it exists (FFI, remote, custom routing)
-                if has_callback {
-                    let message = format!($($arg)*);
-                    $crate::call_callback(stringify!(%{level:upper}), $target, &message);
+                // Log to all enabled backends
+                #[cfg(feature = "log")]
+                {
+                    ::log::%{level}!(target: $target, $($arg)*);
                 }
-
-                // Call native backends if: no callback OR force_native is enabled (dual-mode)
-                if !has_callback || force_native {
-                    // Initialize logger to ensure backend is set up
-                    let _ = $crate::logger();
-
-                    match $crate::current_backend() {
-                        $crate::Backend::Tracing => {
-                            // Full tracing macro with all functionality
-                            tracing::%{level}!(target: $target, $($arg)*);
-                        }
-                        $crate::Backend::Log => {
-                            // Full log macro with all functionality
-                            log::%{level}!(target: $target, $($arg)*);
-                        }
-                        $crate::Backend::Slog => {
-                            // For slog, we need to access the logger instance
-                            if let Some(slog_backend) = $crate::logger().as_slog() {
-                                let message = format!($($arg)*);
-                                slog::%{level}!(slog_backend, "{}", message; "target" => $target);
-                            }
-                        }
-                    }
+                
+                #[cfg(feature = "tracing")]
+                {
+                    ::tracing::%{level}!(target: $target, $($arg)*);
+                }
+                
+                #[cfg(feature = "slog")]
+                {
+                    let logger = $crate::logger().as_slog().unwrap();
+                    ::slog::%{level}!(logger.logger(), $($arg)*);
+                }
+                
+                #[cfg(feature = "callback")]
+                {
+                    let message = format!($($arg)*);
+                    $crate::call_callback(stringify!(%{level}), $target, &message);
                 }
             }
         };

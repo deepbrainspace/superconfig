@@ -13,22 +13,33 @@ repository = "https://github.com/deepbrain/superconfig"
 rust-version = "1.88"
 description = "Drop-in replacement for log crate with FFI callback support for bridging Rust logs to Python, Node.js, and other languages"
 
+[features]
+default = ["tracing"]
+log = ["dep:log", "dep:env_logger"]
+tracing = ["dep:tracing", "dep:tracing-subscriber"]
+slog = ["dep:slog", "dep:slog-async", "dep:slog-json", "dep:slog-term"]
+callback = []
+all = ["log", "tracing", "slog", "callback"]
+
 [dependencies]
-# Existing log support
-log = "0.4.27"
+# Log backend (optional)
+env_logger = { version = "0.11.8", optional = true }
+log = { version = "0.4.27", optional = true }
 
-# Universal backend dependencies
-slog = "2.7"
-slog-async = "2.8"
-slog-json = "2.6"
-slog-term = "2.9"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+# Tracing backend (optional)
+tracing = { version = "0.1.41", optional = true }
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "json"], optional = true }
 
-# For macro generation and error handling
+# Slog backend (optional)
+slog = { version = "2.7.0", optional = true }
+slog-async = { version = "2.8.0", optional = true }
+slog-json = { version = "2.6.1", optional = true }
+slog-term = { version = "2.9.1", optional = true }
+
+# For macro generation and error handling (always needed)
 meta-rust = { path = "../meta-rust" }
-paste = "1.0"
-thiserror = "1.0"
+paste = "1.0.15"
+thiserror = "2.0.12"
 
 [dev-dependencies]
 env_logger = "0.11.8"
