@@ -1,4 +1,4 @@
-use logffi::{debug, error, info, trace, warn};
+use logffi::{debug, define_errors, error, info, trace, warn};
 
 #[test]
 fn test_basic_macro_functionality() {
@@ -54,4 +54,21 @@ fn test_all_log_levels_generated() {
     info!("macro test");
     debug!("macro test");
     trace!("macro test");
+}
+
+#[test]
+fn test_define_errors() {
+    // Test define_errors! macro functionality
+    define_errors! {
+        pub enum TestError {
+            #[error("Test error occurred")]
+            TestFailed,
+        }
+    }
+
+    // Test that we can create the error
+    let error = TestError::TestFailed;
+
+    // Test basic functionality
+    assert_eq!(error.to_string(), "Test error occurred");
 }

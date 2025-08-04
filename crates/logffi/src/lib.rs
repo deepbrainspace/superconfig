@@ -320,9 +320,5 @@ pub fn call_callback(level: &str, target: &str, message: &str) {
 pub use call_callback as call_ffi_callback;
 pub use set_callback as set_ffi_callback;
 
-// Include generated macros at crate root level (required for procedural macros)
-include!("generated_macros.rs");
-
-// Import error macros module
-mod error_macros;
-pub use error_macros::LogLevel;
+// Include combined macros at crate root level (required for procedural macros)
+include!("macros.rs");
