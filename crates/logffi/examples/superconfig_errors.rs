@@ -48,18 +48,22 @@ fn main() {
     }
     env_logger::init();
 
-    println!("\n=== What the define_errors! Macro Generates ===\n");
+    println!("\n╔══════════════════════════════════════════════════════════════╗");
+    println!("║          What the define_errors! Macro Generates             ║");
+    println!("╚══════════════════════════════════════════════════════════════╝\n");
 
-    println!("1. Error enum with thiserror::Error derive");
-    println!("2. Display trait implementation (via thiserror)");
-    println!("3. Debug trait implementation");
-    println!("4. code() method for error codes");
-    println!("5. kind() method for FFI error type mapping");
-    println!("6. full_message_chain() method");
-    println!("7. log() method with proper level and target");
-    println!("8. new_<variant_name>() constructor methods that auto-log\n");
+    println!("  ✅ Error enum with thiserror::Error derive");
+    println!("  ✅ Display trait implementation (via thiserror)");
+    println!("  ✅ Debug trait implementation");
+    println!("  ✅ code() method for error codes");
+    println!("  ✅ kind() method for FFI error type mapping");
+    println!("  ✅ full_message_chain() method");
+    println!("  ✅ log() method with proper level and target");
+    println!("  ✅ new_<variant_name>() constructor methods that auto-log");
 
-    println!("=== Example Usage - Manual Creation ===\n");
+    println!("\n┌─────────────────────────────────────────────────────────────┐");
+    println!("│ Example 1: Manual Error Creation (Old Way)                  │");
+    println!("└─────────────────────────────────────────────────────────────┘\n");
 
     // Example 1: Simple error (manual creation)
     let error = ConfigError::KeyNotFound {
@@ -67,85 +71,102 @@ fn main() {
         profile: "production".to_string(),
     };
 
-    println!("Error Display: {}", error);
-    println!("Error Code: {}", error.code());
-    println!("Error Kind: {}", error.kind());
-
-    // This logs to the configured backend with:
-    // - Level: WARN
-    // - Target: "superconfig::registry"
-    // - Message: "[KeyNotFound] Key 'database.host' not found in profile 'production'"
+    println!("📝 Creating error manually...");
+    println!("   Display: {}", error);
+    println!("   Code: {}", error.code());
+    println!("   Kind: {}", error.kind());
+    println!("\n📤 Manually calling error.log()...");
     error.log();
+    println!("   ↳ ⚠️  Log output appears above (WARN level)");
 
-    println!("\n=== NEW: Constructor Methods (Recommended) ===\n");
+    println!("\n┌─────────────────────────────────────────────────────────────┐");
+    println!("│ Example 2: Constructor Methods (NEW Recommended Way) 🎉     │");
+    println!("└─────────────────────────────────────────────────────────────┘\n");
 
-    // Much cleaner! The constructor automatically logs the error
+    println!("🚀 Using new_key_not_found() constructor:");
     let error = ConfigError::new_key_not_found(
         "database.port".to_string(),
         "staging".to_string(),
     );
-    println!("Created and logged: {}", error);
+    println!("   ✓ Created: {}", error);
+    println!("   ✓ Automatically logged! (see WARN above)");
 
-    // Profile not found - constructor handles everything
+    println!("\n🚀 Using new_profile_not_found() constructor:");
     let error = ConfigError::new_profile_not_found("development".to_string());
-    println!("Created and logged: {}", error);
+    println!("   ✓ Created: {}", error);
+    println!("   ✓ Automatically logged! (see WARN above)");
 
-    println!("\n=== IO Error Pattern - Constructor Method ===\n");
+    println!("\n┌─────────────────────────────────────────────────────────────┐");
+    println!("│ Example 3: Real-World IO Error Handling                     │");
+    println!("└─────────────────────────────────────────────────────────────┘\n");
 
-    // Example 2: IO error handling with constructor
     let file_path = "/etc/app/config.toml";
+    println!("📁 Attempting to read: {}", file_path);
     let io_result = std::fs::read_to_string(file_path);
 
     if let Err(io_err) = io_result {
-        // One line creates AND logs the error!
+        println!("   ❌ IO operation failed!");
+        println!("\n🚀 Using new_file_read_error() constructor:");
         let error = ConfigError::new_file_read_error(
             file_path.to_string(),
             io_err.to_string(),
         );
-
-        println!("Error: {}", error);
-        println!("Code: {}", error.code());
-        // No need to call error.log() - constructor already did it!
+        println!("   ✓ Error created and logged in one line!");
+        println!("   ✓ Error: {}", error);
+        println!("   ✓ Code: {}", error.code());
+        println!("   ✓ Check ERROR log above");
     }
 
-    println!("\n=== JSON Parse Error - Constructor Method ===\n");
+    println!("\n┌─────────────────────────────────────────────────────────────┐");
+    println!("│ Example 4: JSON Parse Error with Constructor                │");
+    println!("└─────────────────────────────────────────────────────────────┘\n");
 
-    // Example 3: Parse error handling with constructor
+    println!("📄 Parsing invalid JSON...");
     let json_result = serde_json::from_str::<serde_json::Value>("invalid json");
 
     if let Err(parse_err) = json_result {
-        // Constructor creates, logs, and returns the error
+        println!("   ❌ JSON parsing failed!");
+        println!("\n🚀 Using new_json_parse_error() constructor:");
         let error = ConfigError::new_json_parse_error(
             "app.json".to_string(),
             format!("at line {}, column {}", parse_err.line(), parse_err.column()),
         );
-
-        println!("Error: {}", error);
-        println!("Code: {} (auto-generated)", error.code());
+        println!("   ✓ Error: {}", error);
+        println!("   ✓ Code: {} (auto-generated)", error.code());
+        println!("   ✓ Already logged! (see ERROR above)");
     }
 
-    println!("\n=== YAML Error with Custom Code - Constructor ===\n");
+    println!("\n┌─────────────────────────────────────────────────────────────┐");
+    println!("│ Example 5: Custom Error Code                                │");
+    println!("└─────────────────────────────────────────────────────────────┘\n");
 
-    // Constructor automatically logs at INFO level to "superconfig::parse"
+    println!("📄 Creating YAML error with custom code...");
     let error = ConfigError::new_yaml_parse_error(
         "config.yaml".to_string(),
         "invalid indentation at line 5".to_string(),
     );
+    println!("   ✓ Error: {}", error);
+    println!("   ✓ Code: {} (custom code!)", error.code());
+    println!("   ✓ Auto-logged at ERROR level");
 
-    println!("Error: {}", error);
-    println!("Code: {} (custom)", error.code()); // Will show "YAML_001"
+    println!("\n╔══════════════════════════════════════════════════════════════╗");
+    println!("║              Constructor Method Benefits                      ║");
+    println!("╚══════════════════════════════════════════════════════════════╝\n");
+    println!("  🎯 Single line error creation and logging");
+    println!("  🐍 Method names are snake_case versions of variant names");
+    println!("  🔄 No need to remember to call .log() - it's automatic");
+    println!("  🛡️  Type-safe parameter passing");
+    println!("  💡 IDE autocomplete for constructor methods");
 
-    println!("\n=== Constructor Benefits ===\n");
-    println!("1. Single line error creation and logging");
-    println!("2. Method names are snake_case versions of variant names");
-    println!("3. No need to remember to call .log() - it's automatic");
-    println!("4. Type-safe parameter passing");
-    println!("5. IDE autocomplete for constructor methods");
-
-    println!("\n=== What Gets Logged ===\n");
-    println!("All errors are logged to the configured backend (log/tracing/slog)");
-    println!("Format: [ERROR_CODE] Error message");
-    println!("With appropriate log level and target module");
+    println!("\n╔══════════════════════════════════════════════════════════════╗");
+    println!("║                   Log Output Format                           ║");
+    println!("╚══════════════════════════════════════════════════════════════╝\n");
+    println!("  📊 Backend: log/tracing/slog (configurable)");
+    println!("  📝 Format: [ERROR_CODE] Error message");
+    println!("  🎯 Target: Module-specific (e.g., superconfig::io)");
+    println!("  📈 Level: Configured per error (ERROR/WARN/INFO/DEBUG/TRACE)");
+    
+    println!("\n✨ Example complete! Check the log output above to see all the automatic logging.");
 }
 
 // What this gives SuperConfig:
