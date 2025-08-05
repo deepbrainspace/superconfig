@@ -18,7 +18,7 @@
 //! # Focus on specific operations
 //! RUST_LOG=structured_logging_demo::payment=info cargo run --example structured_logging_demo
 
-use logffi::{debug, error, info, warn, info_span};
+use logffi::{debug, error, info, info_span, warn};
 use serde_json::json;
 use std::time::{Duration, Instant};
 
@@ -28,14 +28,14 @@ fn main() {
 
     // Basic structured logging examples
     demonstrate_basic_structured_logging();
-    
+
     // Real-world scenarios
     demonstrate_user_authentication();
     demonstrate_payment_processing();
     demonstrate_api_request_handling();
     demonstrate_database_operations();
     demonstrate_spans_with_structured_data();
-    
+
     println!("\n🎯 Key Benefits of Structured Logging:");
     println!("   • Machine-readable log data");
     println!("   • Easy filtering and searching");
@@ -47,14 +47,14 @@ fn main() {
 fn demonstrate_basic_structured_logging() {
     println!("📊 Basic Structured Logging");
     println!("---------------------------");
-    
+
     // Simple field logging
     info!(
         user_id = 12345,
         action = "login",
         "User authentication attempt"
     );
-    
+
     // Multiple fields with different types
     info!(
         request_id = "req-abc-123",
@@ -64,7 +64,7 @@ fn demonstrate_basic_structured_logging() {
         duration_ms = 45,
         "API request completed"
     );
-    
+
     // Numeric fields
     warn!(
         cpu_percent = 85.7,
@@ -73,33 +73,33 @@ fn demonstrate_basic_structured_logging() {
         threshold_exceeded = true,
         "System resources under pressure"
     );
-    
+
     // Complex data structures
     let user_metadata = json!({
         "role": "admin",
         "department": "engineering",
         "permissions": ["read", "write", "admin"]
     });
-    
+
     info!(
         user_id = 67890,
         metadata = %user_metadata,
         session_timeout_min = 30,
         "User session created with metadata"
     );
-    
+
     println!();
 }
 
 fn demonstrate_user_authentication() {
     println!("🔐 User Authentication Scenario");
     println!("--------------------------------");
-    
+
     let user_id = 12345;
     let username = "alice.smith";
     let ip_address = "192.168.1.100";
     let user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)";
-    
+
     // Successful login
     info!(
         user_id = user_id,
@@ -110,7 +110,7 @@ fn demonstrate_user_authentication() {
         mfa_enabled = true,
         "User login successful"
     );
-    
+
     // Failed login attempt
     warn!(
         username = "bob.hacker",
@@ -120,7 +120,7 @@ fn demonstrate_user_authentication() {
         attempt_count = 3,
         "Failed login attempt"
     );
-    
+
     // Account lockout
     error!(
         user_id = 54321,
@@ -130,18 +130,18 @@ fn demonstrate_user_authentication() {
         failed_attempts = 5,
         "Account locked due to multiple failed attempts"
     );
-    
+
     println!();
 }
 
 fn demonstrate_payment_processing() {
     println!("💳 Payment Processing Scenario");
     println!("-------------------------------");
-    
+
     let transaction_id = "txn-2024-001";
     let order_id = "order-abc-123";
     let customer_id = 78901;
-    
+
     // Payment initiation
     info!(
         transaction_id = transaction_id,
@@ -153,7 +153,7 @@ fn demonstrate_payment_processing() {
         card_last_four = "4242",
         "Payment processing initiated"
     );
-    
+
     // Payment validation
     debug!(
         transaction_id = transaction_id,
@@ -163,7 +163,7 @@ fn demonstrate_payment_processing() {
         validation_checks_total = 8,
         "Payment validation completed"
     );
-    
+
     // Successful payment
     info!(
         transaction_id = transaction_id,
@@ -175,7 +175,7 @@ fn demonstrate_payment_processing() {
         authorization_code = "AUTH123456",
         "Payment processed successfully"
     );
-    
+
     // Payment failure scenario
     error!(
         transaction_id = "txn-2024-002",
@@ -187,17 +187,17 @@ fn demonstrate_payment_processing() {
         retry_allowed = true,
         "Payment declined"
     );
-    
+
     println!();
 }
 
 fn demonstrate_api_request_handling() {
     println!("🌐 API Request Handling");
     println!("------------------------");
-    
+
     let request_id = "req-2024-789";
     let start_time = Instant::now();
-    
+
     // Request received
     info!(
         request_id = request_id,
@@ -207,10 +207,10 @@ fn demonstrate_api_request_handling() {
         client_ip = "10.0.0.15",
         "API request received"
     );
-    
+
     // Simulate some processing time
     std::thread::sleep(Duration::from_millis(50));
-    
+
     // Database query
     debug!(
         request_id = request_id,
@@ -220,7 +220,7 @@ fn demonstrate_api_request_handling() {
         rows_returned = 5,
         "Database query executed"
     );
-    
+
     // Response sent
     let duration = start_time.elapsed();
     info!(
@@ -231,7 +231,7 @@ fn demonstrate_api_request_handling() {
         cache_hit = false,
         "API request completed"
     );
-    
+
     // Rate limiting example
     warn!(
         client_ip = "203.0.113.50",
@@ -240,17 +240,17 @@ fn demonstrate_api_request_handling() {
         window_remaining_sec = 45,
         "Rate limit exceeded"
     );
-    
+
     println!();
 }
 
 fn demonstrate_database_operations() {
     println!("🗄️  Database Operations");
     println!("------------------------");
-    
+
     let connection_id = "conn-pool-007";
     let query_id = "query-456";
-    
+
     // Connection established
     info!(
         connection_id = connection_id,
@@ -261,7 +261,7 @@ fn demonstrate_database_operations() {
         connection_time_ms = 12,
         "Database connection established"
     );
-    
+
     // Query execution
     debug!(
         connection_id = connection_id,
@@ -272,7 +272,7 @@ fn demonstrate_database_operations() {
         query = "SELECT id, name, email FROM users WHERE active = ? AND department = ?",
         "Executing database query"
     );
-    
+
     // Query completed
     info!(
         connection_id = connection_id,
@@ -283,7 +283,7 @@ fn demonstrate_database_operations() {
         index_used = "idx_users_active_dept",
         "Query executed successfully"
     );
-    
+
     // Connection pool stats
     info!(
         pool_name = "primary",
@@ -293,7 +293,7 @@ fn demonstrate_database_operations() {
         wait_queue_length = 0,
         "Connection pool status"
     );
-    
+
     // Slow query warning
     warn!(
         connection_id = "conn-pool-012",
@@ -304,14 +304,14 @@ fn demonstrate_database_operations() {
         query_type = "aggregation",
         "Slow query detected"
     );
-    
+
     println!();
 }
 
 fn demonstrate_spans_with_structured_data() {
     println!("📏 Spans with Structured Data");
     println!("------------------------------");
-    
+
     // Create a span with structured fields
     let order_span = info_span!(
         "process_order",
@@ -320,11 +320,11 @@ fn demonstrate_spans_with_structured_data() {
         order_total_cents = 4599,
         item_count = 3
     );
-    
+
     let _enter = order_span.enter();
-    
+
     info!("Starting order processing");
-    
+
     // Inventory check with structured data
     debug!(
         sku = "WIDGET-001",
@@ -333,7 +333,7 @@ fn demonstrate_spans_with_structured_data() {
         warehouse = "WEST-01",
         "Inventory check completed"
     );
-    
+
     // Payment processing within span
     info!(
         payment_method = "apple_pay",
@@ -341,7 +341,7 @@ fn demonstrate_spans_with_structured_data() {
         processing_time_ms = 340,
         "Payment processed within order"
     );
-    
+
     // Shipping calculation
     info!(
         shipping_method = "express",
@@ -351,15 +351,15 @@ fn demonstrate_spans_with_structured_data() {
         tracking_number = "FS123456789",
         "Shipping arranged"
     );
-    
+
     info!(
         total_processing_time_ms = 580,
         order_status = "confirmed",
         "Order processing completed"
     );
-    
+
     // Exit span
     drop(_enter);
-    
+
     println!();
 }

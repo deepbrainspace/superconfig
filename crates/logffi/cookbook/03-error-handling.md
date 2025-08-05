@@ -25,12 +25,12 @@ LogFFI's error handling combines automatic logging with structured error informa
 ```rust
 use logffi::{define_errors, error, info};
 
-// Define errors with automatic logging
+// Define errors with automatic logging - LogFFI syntax
 define_errors! {
     UserError {
-        NotFound { user_id: u64 } => "User {} not found",
-        InvalidCredentials { username: String } => "Invalid credentials for user: {}",
-        AccountLocked { user_id: u64, locked_until: String } => "Account {} locked until {}",
+        NotFound { user_id: u64 } : "User {} not found",
+        InvalidCredentials { username: String } : "Invalid credentials for user: {}",
+        AccountLocked { user_id: u64, locked_until: String } : "Account {} locked until {}",
     }
 }
 
@@ -73,9 +73,9 @@ use logffi::define_errors;
 
 define_errors! {
     ErrorTypeName {
-        VariantName { field1: Type1, field2: Type2 } => "Format string with {} and {}",
-        AnotherVariant { field: Type } => "Another message with {}",
-        SimpleVariant => "Simple error message",
+        VariantName { field1: Type1, field2: Type2 } : "Format string with {} and {}",
+        AnotherVariant { field: Type } : "Another message with {}",
+        SimpleVariant {} : "Simple error message",
     }
 }
 ```
