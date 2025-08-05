@@ -150,5 +150,9 @@ cfg_if! {
             fmt, filter, layer, registry, reload, util,
             EnvFilter, Registry
         };
+
+        // Re-export essential traits for complete compatibility
+        pub use tracing_subscriber::layer::SubscriberExt;
+        pub use tracing_subscriber::util::SubscriberInitExt;
     }
 }

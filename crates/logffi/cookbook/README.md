@@ -1,97 +1,250 @@
 # LogFFI Cookbook
 
-Welcome to the LogFFI cookbook! This collection of guides shows you how to use LogFFI's features effectively in real-world scenarios.
+Welcome to the LogFFI cookbook! This collection of guides shows you how to use LogFFI's tracing-native logging and structured data capabilities effectively in real-world scenarios.
 
 ## 📚 Guides
 
 ### [1. Basic Logging](01-basic-logging.md)
 
-Learn the fundamentals of logging with LogFFI, including:
+Learn the fundamentals of LogFFI's tracing-native logging:
 
-- Simple logging statements
-- Logging with variables and formatting
+- Simple logging statements with auto-initialization
 - Target-based logging for module organization
-- Performance considerations
-- Integration with different backends
+- Environment-based configuration with RUST_LOG
+- Integration with the tracing ecosystem
+- Performance considerations and best practices
 
-### [2. Error Handling](02-error-handling.md)
+### [2. Structured Logging](02-structured-logging.md)
 
-Master the `define_errors!` macro for sophisticated error handling:
+Master structured logging for modern observability:
+
+- Adding fields to log messages for machine-readable data
+- Best practices for field naming and types
+- Integration with monitoring platforms (ELK, Grafana, Datadog)
+- Real-world patterns for authentication, payments, and APIs
+- JSON output configuration
+
+### [3. Error Handling](03-error-handling.md)
+
+Use the `define_errors!` macro for sophisticated error handling:
 
 - Creating error enums with automatic logging
-- Using constructor methods for cleaner code
-- Setting error levels and targets
-- Custom error codes for monitoring
-- FFI-friendly error handling
+- Field interpolation with thiserror integration
+- Error source chaining and context
+- Custom error codes for monitoring and alerting
+- Testing error scenarios
 
-### [3. Source Error Chaining](03-source-error-chaining.md)
+### [4. Spans and Instrumentation](04-spans-instrumentation.md)
 
-Implement proper error chaining for better debugging:
+Leverage tracing spans for request correlation and performance monitoring:
 
-- Using thiserror's `#[source]` attribute
-- Chaining multiple error types
-- Working with dynamic errors
-- Integration with anyhow and other error libraries
-- Best practices for error context
+- Creating and entering spans with structured context
+- Using `#[instrument]` for automatic span creation
+- Nested spans for complex operations
+- Async/await compatibility
+- Integration with distributed tracing systems
 
-### [4. FFI Integration](04-ffi-integration.md)
+### [5. Advanced Tracing Integration](05-tracing-integration.md)
 
-Bridge Rust logs to other languages:
+Advanced patterns for the tracing ecosystem:
+
+- Custom tracing subscribers and layers
+- OpenTelemetry integration for distributed tracing
+- Log crate bridge for legacy library compatibility
+- Filtering and sampling strategies
+- Performance optimization techniques
+
+### [6. FFI and Cross-Language Integration](06-ffi-integration.md)
+
+Bridge Rust logs to other languages using callbacks:
 
 - Python integration with PyO3
 - Node.js integration with Neon
-- C/C++ integration
+- C/C++ integration patterns
 - WebAssembly support
-- Advanced FFI patterns
-
-### [5. Backend Configuration](05-backend-configuration.md)
-
-Configure and optimize logging backends:
-
-- Switching between log, tracing, and slog
-- Runtime backend selection
-- Backend-specific features
-- Performance optimization
-- Testing strategies
+- Callback system architecture and best practices
 
 ## 🚀 Quick Start
 
 If you're new to LogFFI, start with:
 
-1. [Basic Logging](01-basic-logging.md) - Learn the fundamentals
-2. [Error Handling](02-error-handling.md) - See the power of `define_errors!`
-3. [FFI Integration](04-ffi-integration.md) - If you need cross-language logging
+1. **[Basic Logging](01-basic-logging.md)** - Learn the fundamentals and auto-initialization
+2. **[Structured Logging](02-structured-logging.md)** - Add rich metadata to your logs
+3. **[Error Handling](03-error-handling.md)** - See the power of `define_errors!`
 
-## 🎯 Common Use Cases
+For specific use cases:
 
-### "I want structured error handling with automatic logging"
+- **Microservices/APIs** → [Structured Logging](02-structured-logging.md) + [Spans](04-spans-instrumentation.md)
+- **Cross-language projects** → [FFI Integration](06-ffi-integration.md)
+- **Migrating from `log`** → [Tracing Integration](05-tracing-integration.md)
 
-→ See [Error Handling](02-error-handling.md) and use the `define_errors!` macro
+## 🎯 Common Patterns
+
+### "I want structured logs for better observability"
+
+```rust
+use logffi::info;
+
+info!(
+    user_id = 12345,
+    action = "login", 
+    ip_address = "192.168.1.1",
+    duration_ms = 145,
+    "User authentication successful"
+);
+```
+
+→ See [Structured Logging](02-structured-logging.md) for comprehensive patterns
+
+### "I need automatic error logging with proper types"
+
+```rust
+use logffi::define_errors;
+
+define_errors! {
+    pub enum ApiError {
+        #[error("User not found: {user_id}")]
+        UserNotFound { user_id: u64 },
+        
+        #[error("Rate limit exceeded: {requests}/{limit}")]
+        RateLimitExceeded { requests: u32, limit: u32 },
+    }
+}
+
+// Errors are automatically logged when created
+let error = ApiError::UserNotFound { user_id: 12345 };
+```
+
+→ Check [Error Handling](03-error-handling.md) for advanced patterns
+
+### "I want to trace requests across async operations"
+
+```rust
+use logffi::{info, info_span};
+use tracing::instrument;
+
+#[instrument(level = "info")]
+async fn process_request(user_id: u64) -> Result<String, ApiError> {
+    info!("Processing user request");
+    
+    let span = info_span!("database_query", table = "users");
+    let _enter = span.enter();
+    
+    // Database operations are now traced within the span
+    info!("Executing user lookup");
+    
+    Ok("Success".to_string())
+}
+```
+
+→ Read [Spans and Instrumentation](04-spans-instrumentation.md) for detailed examples
 
 ### "I need to bridge Rust logs to Python/Node.js"
 
-→ Check [FFI Integration](04-ffi-integration.md) for language-specific examples
+```rust
+// Enable callback feature
+logffi = { version = "0.2", features = ["callback"] }
+```
 
-### "I want proper error context and chaining"
+```rust
+use logffi::{info, error};
 
-→ Read [Source Error Chaining](03-source-error-chaining.md)
+fn main() {
+    // These messages go to both tracing AND external callbacks
+    info!("This reaches both Rust tracing and Python callbacks");
+    error!("Error messages are bridged to external systems");
+}
+```
 
-### "I need JSON structured logging in production"
+→ See [FFI Integration](06-ffi-integration.md) for language-specific examples
 
-→ See [Backend Configuration](05-backend-configuration.md) for JSON output setup
+### "I want JSON logs for production monitoring"
 
-### "I want to organize logs by module/component"
+```rust
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-→ Check target-based logging in [Basic Logging](01-basic-logging.md)
+fn main() {
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer().json())
+        .with(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
+        
+    // Now all LogFFI logs output as JSON
+    logffi::info!(
+        service = "user-api",
+        version = "1.2.3", 
+        "Service started"
+    );
+}
+```
 
-## 💡 Tips
+→ Check [Advanced Tracing Integration](05-tracing-integration.md) for production setups
 
-- Always use the constructor methods (`new_variant_name()`) for errors - they automatically log!
-- Use target-based logging to organize your logs by component
-- Consider using source error chaining for better debugging context
-- Choose the right backend based on your deployment environment
-- Test your error handling paths - LogFFI makes it easy
+## 🔧 Configuration Quick Reference
+
+### Environment Variables
+
+```bash
+# Basic log level control
+RUST_LOG=debug cargo run
+
+# Target specific modules
+RUST_LOG=myapp::database=debug,myapp::auth=info cargo run
+
+# Filter by span names  
+RUST_LOG=process_order=trace cargo run
+```
+
+### Feature Flags
+
+```toml
+[dependencies]
+logffi = { version = "0.2", features = ["callback"] }
+```
+
+### Dependencies for Advanced Use Cases
+
+```toml
+[dependencies]
+logffi = "0.2"
+
+# For JSON output and advanced filtering
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# For OpenTelemetry integration
+tracing-opentelemetry = "0.22"
+
+# For file output and rotation
+tracing-appender = "0.2"
+```
+
+## 💡 Best Practices
+
+- **Use structured fields consistently** - Adopt consistent naming conventions (snake_case, clear semantics)
+- **Add context with spans** - Wrap related operations in spans for better correlation
+- **Leverage auto-initialization** - Let LogFFI handle basic setup, customize only when needed
+- **Test error paths** - LogFFI makes it easy to test error logging scenarios
+- **Use appropriate log levels** - Reserve ERROR for actual problems, INFO for business events
+- **Consider field cardinality** - Avoid fields with unlimited unique values in high-volume scenarios
+
+## 🔗 External Resources
+
+- **[Tracing Documentation](https://docs.rs/tracing)** - Official tracing crate docs
+- **[Tracing Subscriber Guide](https://docs.rs/tracing-subscriber)** - Advanced subscriber configuration
+- **[OpenTelemetry Rust](https://github.com/open-telemetry/opentelemetry-rust)** - Distributed tracing
+- **[Structured Logging Best Practices](https://engineering.grab.com/structured-logging)** - Industry patterns
 
 ## 📝 Contributing
 
-Found a great pattern or use case? We welcome contributions to the cookbook! Please submit a PR to add your examples.
+Found a great pattern or use case? We welcome contributions to the cookbook! Please submit a PR with:
+
+- Clear, runnable examples
+- Real-world context and motivation
+- Performance considerations where relevant
+- Integration tips for common tools
+
+## 🆘 Getting Help
+
+- **[GitHub Issues](https://github.com/your-org/logffi/issues)** - Bug reports and feature requests
+- **[API Documentation](https://docs.rs/logffi)** - Complete API reference
+- **[Examples Directory](../examples/)** - More runnable code samples

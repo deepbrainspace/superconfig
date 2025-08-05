@@ -4,247 +4,304 @@
 [![Documentation](https://docs.rs/logffi/badge.svg)](https://docs.rs/logffi)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Enhanced logging for Rust that complements `log` and `tracing` with unified macros, FFI support, and advanced error handling.
+**Tracing-native logging macros with structured logging support and enhanced error handling for Rust.**
 
-## What LogFFI Provides
+LogFFI provides a clean, modern logging interface built on top of the `tracing` ecosystem, offering structured logging, automatic initialization, and powerful error handling capabilities.
 
-LogFFI **complements** existing logging solutions rather than replacing them:
+## ✨ Key Features
 
-1. **🔄 Unified Macros** - Use the same logging macros whether your dependencies use `log` or `tracing`
-2. **🌉 FFI Bridge** - Essential for Rust libraries that need Python, Node.js, or C bindings
-3. **🎯 Enhanced Error Handling** - `define_errors!` macro combines `thiserror` with automatic logging
-4. **📦 Zero Dependencies** - Works with `log` or `tracing` compatible logger you choose
-
-## When to Use LogFFI
-
-- ✅ Building a Rust library that needs FFI bindings
-- ✅ Want automatic error logging with proper error types
-- ✅ Need to support multiple of `log` and `tracing` ecosystems
-- ✅ Building cross-language applications
-
-## When NOT to Use LogFFI
-
-- ❌ Just need basic logging (use `log` or `tracing` directly)
-- ❌ Want to replace your current logger (we complement, not replace)
-- ❌ Looking for a logging implementation (we're a bridge, not a logger)
-
-## 📚 Documentation
-
-- **[API Documentation](https://docs.rs/logffi)** - Full API reference
-- **[Cookbook](cookbook/)** - Real-world examples and patterns
-- **[Examples](examples/)** - Runnable example code
+- **🎯 Tracing-Native** - Built on the modern `tracing` ecosystem for superior observability
+- **📊 Structured Logging** - First-class support for structured fields and metadata
+- **🔄 Auto-Initialization** - Automatic tracing subscriber setup with smart defaults
+- **🌉 Log Crate Bridge** - Seamless compatibility with libraries using the `log` crate
+- **🔗 FFI Callback Support** - Optional integration with Python, Node.js, C/C++, and WebAssembly
+- **⚡ Enhanced Error Handling** - `define_errors!` macro combining `thiserror` with automatic logging
+- **🛠️ Zero Config** - Works out of the box with sensible defaults
+- **🔧 Spans & Instrumentation** - Full support for tracing spans and `#[instrument]`
 
 ## 🚀 Quick Start
 
-### Step 1: Add LogFFI to your project
+### Add LogFFI to your project
 
 ```toml
 [dependencies]
-# Choose your backend via features
-logffi = { version = "0.2", features = ["log"] } # For log-based loggers
-# OR
-logffi = { version = "0.2", features = ["tracing"] } # For tracing-based loggers
+logffi = "0.2"
 
-# Also add your preferred logger implementation
-env_logger = "0.11" # Or any log/tracing/slog compatible logger
+# Optional: Add tracing-subscriber for advanced configuration
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 ```
 
-### Popular Logger Choices
-
-**For `log` backend:**
-
-- `env_logger` - Simple, environment-based configuration
-- `fern` - Flexible, composable logging
-- `log4rs` - Powerful, Java-inspired logging
-- `simplelog` - Easy to use with good defaults
-- [See all 30+ options](https://docs.rs/log/latest/log/#available-logging-implementations)
-
-**For `tracing` backend:**
-
-- `tracing-subscriber` - The standard choice for most applications
-- `tracing-bunyan-formatter` - JSON output for cloud environments
-- `tracing-opentelemetry` - Distributed tracing support
-- [See all 40+ options](https://github.com/tokio-rs/tracing#related-crates)
-
-### Step 2: Initialize your logger (not LogFFI!)
+### Basic Usage
 
 ```rust
-use logffi::{error, warn, info, debug, trace};
+use logffi::{info, warn, error, debug, trace};
 
 fn main() {
-    // Initialize YOUR CHOSEN logger (LogFFI doesn't provide loggers)
-    env_logger::init();  // Or tracing_subscriber::fmt::init() etc.
+    // LogFFI auto-initializes tracing - no setup needed!
     
-    // Now use LogFFI's unified macros
-    info!("Starting application");
-    debug!("Configuration loaded");
+    info!("Application starting");
+    warn!("This is a warning");
+    error!("Something went wrong");
     
-    if let Err(e) = dangerous_operation() {
-        error!("Operation failed: {}", e);
-    }
-}
-
-fn dangerous_operation() -> Result<(), Box<dyn std::error::Error>> {
-    Ok(())
+    // Structured logging with fields
+    info!(
+        user_id = 12345,
+        action = "login",
+        ip_address = "192.168.1.1",
+        duration_ms = 145,
+        "User authentication successful"
+    );
 }
 ```
 
-### Error Handling with Automatic Logging
-
-LogFFI provides **all thiserror features** plus automatic logging and FFI integration:
+### Enhanced Error Handling
 
 ```rust
 use logffi::define_errors;
 
 define_errors! {
     pub enum AppError {
-        #[error("Configuration not found: {path}", level = error)]
-        ConfigNotFound {
-            path: String,
-        },
+        #[error("Database connection failed: {host}:{port}")]
+        DatabaseConnection { host: String, port: u16 },
         
-        #[error("Failed to connect to database", level = error, target = "db")]
-        DatabaseConnection,
+        #[error("User not found: {user_id}")]
+        UserNotFound { user_id: u64 },
         
-        #[error("Invalid user input: {field}", level = warn)]
-        ValidationError {
-            field: String,
-        },
+        #[error("Invalid configuration: {field}")]
+        InvalidConfig { field: String },
     }
 }
 
-// ✅ Gets ALL thiserror features: Display, Error, Debug, From conversions
-// ✅ PLUS automatic logging integration
-// ✅ PLUS constructor methods with auto-logging
-// ✅ PLUS FFI-friendly error mapping
-
-fn load_config(path: &str) -> Result<Config, AppError> {
-    if !Path::new(path).exists() {
-        // Creates error + logs automatically + works across languages
-        return Err(AppError::new_config_not_found(path.to_string()));
-    }
-    // ...
+fn example() -> Result<(), AppError> {
+    // Errors are automatically logged when created
+    Err(AppError::UserNotFound { user_id: 12345 })
 }
 ```
 
-### Source Error Chaining
+## 🎯 Why LogFFI?
+
+### Modern Tracing Ecosystem
+
+Built on `tracing`, the modern standard for Rust observability:
+
+- **Structured logging** - Attach key-value metadata to log events
+- **Spans** - Track operations across async boundaries
+- **Instrumentation** - Automatic span creation with `#[instrument]`
+- **Rich ecosystem** - Compatible with OpenTelemetry, Jaeger, Datadog, and more
+
+### Auto-Initialization
+
+No boilerplate setup required:
 
 ```rust
-use logffi::define_errors;
-use std::io;
+use logffi::info;
 
-define_errors! {
-    pub enum DataError {
-        #[error("Failed to read file: {path}")]
-        ReadError {
-            path: String,
-            #[source]
-            source: io::Error,  // Proper error chaining!
-        },
-        
-        #[error("Failed to parse JSON")]
-        ParseError {
-            #[source]
-            source: serde_json::Error,
-        },
-    }
+fn main() {
+    // This works immediately - no initialization needed!
+    info!("Hello, world!");
 }
+```
 
-// Errors maintain the full chain for debugging
-fn load_data(path: &str) -> Result<Data, DataError> {
-    let content = std::fs::read_to_string(path)
-        .map_err(|source| DataError::ReadError {
-            path: path.to_string(),
-            source,  // Original IO error is preserved
-        })?;
+### Structured Logging Made Easy
+
+```rust
+use logffi::info;
+
+// Rich, structured metadata
+info!(
+    request_id = "req-123",
+    user_id = 12345,
+    method = "POST", 
+    path = "/api/users",
+    status_code = 201,
+    duration_ms = 45,
+    "API request completed"
+);
+```
+
+### Backward Compatibility
+
+Works seamlessly with existing `log` crate usage:
+
+```rust
+// These both work and are captured by LogFFI
+log::info!("Legacy log message");
+logffi::info!("Modern LogFFI message");
+```
+
+## 📊 Structured Logging
+
+LogFFI excels at structured logging, making your logs machine-readable and perfect for modern observability platforms:
+
+```rust
+use logffi::{info, error, info_span};
+
+// User authentication
+info!(
+    user_id = 12345,
+    username = "alice",
+    ip_address = "192.168.1.100",
+    mfa_enabled = true,
+    "User login successful"
+);
+
+// Payment processing
+error!(
+    transaction_id = "txn-abc-123",
+    amount_cents = 2999,
+    currency = "USD",
+    decline_reason = "insufficient_funds",
+    "Payment failed"
+);
+
+// Spans with structured context
+let span = info_span!("process_order", order_id = "order-123", customer_id = 456);
+let _enter = span.enter();
+
+info!("Processing order");
+info!("Order completed successfully");
+```
+
+## 🏗️ Spans and Instrumentation
+
+Full support for tracing spans and automatic instrumentation:
+
+```rust
+use logffi::{info, info_span};
+use tracing::instrument;
+
+#[instrument(level = "info")]
+async fn process_user_request(user_id: u64, action: &str) -> Result<String, AppError> {
+    info!("Processing user request");
     
-    serde_json::from_str(&content)
-        .map_err(|source| DataError::ParseError { source })
+    // Nested spans
+    let span = info_span!("database_query", table = "users");
+    let _enter = span.enter();
+    
+    info!("Executing database query");
+    
+    Ok("Success".to_string())
 }
 ```
 
-### FFI Integration using Callbacks
+## 🎛️ Configuration
+
+### Environment Variables
+
+LogFFI respects standard tracing environment variables:
+
+```bash
+# Set log level
+RUST_LOG=debug cargo run
+
+# Target specific modules  
+RUST_LOG=myapp::database=debug,myapp::auth=info cargo run
+
+# Filter by span names
+RUST_LOG=process_order=trace cargo run
+```
+
+### Custom Initialization
+
+For advanced use cases, you can configure tracing manually:
 
 ```rust
-use logffi::callback;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-// Bridge to Python logging
-set_callback(Box::new(|level, target, message| {
-    Python::with_gil(|py| {
-        let logging = py.import("logging").unwrap();
-        let logger = logging.call_method1("getLogger", (target,)).unwrap();
-        logger.call_method1(level.to_lowercase(), (message,)).unwrap();
-    });
-}));
-
-// Now all Rust logs appear in Python!
+fn main() {
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer().json())
+        .with(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
+        
+    // Now use LogFFI normally
+    logffi::info!("Application started with custom config");
+}
 ```
 
-## 🎯 Key Benefits
+## 📚 Documentation & Examples
 
-### For Library Authors
+- **[API Documentation](https://docs.rs/logffi)** - Full API reference
+- **[Cookbook](cookbook/)** - Real-world patterns and best practices
+- **[Examples](examples/)** - Runnable example code
 
-- Provide rich error types with zero boilerplate
-- Automatic logging at error creation sites
-- FFI-friendly error codes and messages
-- Works with any logging backend supported by log/tracing/slog.
+### Key Examples
 
-### For Application Developers
+- **[`structured_logging_demo.rs`](examples/structured_logging_demo.rs)** - Comprehensive structured logging showcase
+- **[`advanced_tracing_features.rs`](examples/advanced_tracing_features.rs)** - Spans, instrumentation, and ecosystem integration
+- **[`field_interpolation_demo.rs`](examples/field_interpolation_demo.rs)** - Error field interpolation patterns
 
-- Structured errors with proper context
-- Automatic error logging with appropriate levels
-- Easy integration with monitoring systems
-- Flexible backend configuration
+## 🌉 FFI and Callback Support
 
-### For FFI Users
+LogFFI includes optional FFI callback support for integrating with other languages:
 
-- Bridge Rust logs to any language's native logging libraries.
-- Preserve error context across language boundaries
-- Structured error information for better debugging
+```toml
+[dependencies]
+logffi = { version = "0.2", features = ["callback"] }
+```
 
-## 📖 Learn More
+With the `callback` feature enabled, LogFFI can route log messages to external callbacks, enabling integration with:
 
-Check out the **[Cookbook](cookbook/)** for detailed guides:
-
-- [Basic Logging Patterns](cookbook/01-basic-logging.md)
-- [Advanced Error Handling](cookbook/02-error-handling.md)
-- [Source Error Chaining](cookbook/03-source-error-chaining.md)
-- [FFI Integration Examples](cookbook/04-ffi-integration.md)
-- [Backend Configuration](cookbook/05-backend-configuration.md)
-- [Backend Selection Guide](cookbook/06-backend-selection.md)
-
-## 🔧 Advanced Usage
-
-### Custom Error Codes
+- **Python** (via PyO3)
+- **Node.js** (via Neon)
+- **C/C++** applications
+- **WebAssembly** modules
+- **Any FFI-compatible language**
 
 ```rust
-define_errors! {
-    pub enum ApiError {
-        #[error("Authentication failed", code = "AUTH_001")]
-        AuthFailed,
-        
-        #[error("Rate limit exceeded", code = "RATE_001")]
-        RateLimited,
-        
-        #[error("Invalid request", code = "REQ_001")]
-        BadRequest,
-    }
-}
+use logffi::{info, error};
 
-// Use error codes for monitoring
-match api_call() {
-    Err(e) => {
-        metric_counter!("api.errors", "code" => e.code());
-        Err(e)
-    }
-    Ok(result) => Ok(result),
+fn main() {
+    // These messages are sent to both tracing AND any registered callbacks
+    info!("This goes to tracing and FFI callbacks");
+    error!("Error messages are bridged to external systems");
 }
 ```
 
-## 🤝 Contributing
+The callback system allows external applications to receive structured log data while LogFFI continues to work normally with the tracing ecosystem.
 
-Contributions are welcome! Please feel free to submit a Pull Request. This crate is part of the [SuperConfig](https://github.com/deepbrain/superconfig) project.
+## 🔧 Feature Flags
+
+LogFFI uses minimal feature flags:
+
+```toml
+[dependencies]
+logffi = { version = "0.2", features = ["callback"] }
+```
+
+- **`callback`** - Enable FFI callback support (optional, for cross-language integrations)
+
+## 🌟 Use Cases
+
+### Perfect for:
+
+- ✅ **Modern Rust applications** wanting structured observability
+- ✅ **Microservices** needing rich context and tracing
+- ✅ **Cross-language projects** requiring log bridging to Python, Node.js, or C/C++
+- ✅ **Rust libraries** embedded in other language ecosystems
+- ✅ **Applications** migrating from `log` to `tracing`
+- ✅ **Projects** needing automatic error logging with proper types
+
+### Consider alternatives if:
+
+- ❌ You just need basic text logging (use `log` + `env_logger`)
+- ❌ You're happy with your current logging setup
+- ❌ You don't need structured logging or error handling
+
+## 🤝 Ecosystem Compatibility
+
+LogFFI works seamlessly with the entire tracing ecosystem:
+
+- **[`tracing-subscriber`](https://docs.rs/tracing-subscriber)** - Flexible subscriber implementations
+- **[`tracing-opentelemetry`](https://docs.rs/tracing-opentelemetry)** - OpenTelemetry integration
+- **[`console-subscriber`](https://docs.rs/console-subscriber)** - Tokio Console integration
+- **[`tracing-appender`](https://docs.rs/tracing-appender)** - File output and rotation
+- **[`tracing-flame`](https://docs.rs/tracing-flame)** - Flamegraph profiling
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](../../LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+Built on top of the excellent [`tracing`](https://docs.rs/tracing) and [`thiserror`](https://docs.rs/thiserror) crates. Special thanks to the Rust logging ecosystem maintainers.
