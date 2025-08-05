@@ -1,13 +1,15 @@
 //! # meta-rust - Universal Rust Meta-Programming Toolkit
 //!
-//! Provides the `for_each!` macro for eliminating repetitive code patterns through powerful iteration.
+//! Provides the `for_each!` macro for eliminating repetitive code patterns through powerful iteration
+//! with built-in case transformation support.
 //!
 //! ## Features
 //!
 //! - **Multiple item types**: Identifiers, strings, numbers, and arrays
 //! - **Array indexing**: Access elements with `%{param[0]}`, `%{param[1]}`, etc.
-//! - **Clean syntax**: Uses `%{param}` to avoid conflicts with Rust syntax  
-//! - **Template flexibility**: Multiple parameter references in same template
+//! - **Case transformations**: Built-in support for snake_case, camelCase, kebab-case, PascalCase, UPPER_CASE, and more
+//! - **Clean syntax**: Uses `%{param}` and `%{param:transform}` to avoid conflicts with Rust syntax  
+//! - **Template flexibility**: Multiple parameter references and transforms in same template
 //! - **Production ready**: Comprehensive test coverage and optimized implementation
 //!
 //! ## Quick Start
@@ -29,11 +31,11 @@
 //!     }
 //! });
 //!
-//! // Macro generation - LogFFI use case
-//! for_each!([error, warn, info], |level| {
-//!     macro_rules! %{level}_log {
+//! // Case transformations - generates get_user_data_log!(), create_post_log!() macros
+//! for_each!([getUserData, createPost], |method| {
+//!     macro_rules! %{method:snake}_log {
 //!         ($msg:expr) => {
-//!             format!("[{}] {}", stringify!(%{level}).to_uppercase(), $msg)
+//!             format!("[{}] {}", "%{method:upper}", $msg)
 //!         };
 //!     }
 //! });
@@ -43,16 +45,28 @@
 //!
 //! The `%{}` notation is our special template syntax that gets replaced during macro expansion:
 //!
+//! ### Basic Usage
 //! - `%{param}` - Replace with single item value
 //! - `%{param[0]}` - Replace with first array element  
 //! - `%{param[1]}` - Replace with second array element
 //! - Multiple references supported in same template
 //!
+//! ### Case Transformations
+//! - `%{param:snake}` - Convert to snake_case: getUserData → get_user_data
+//! - `%{param:camel}` - Convert to camelCase: getUserData → getUserData  
+//! - `%{param:kebab}` - Convert to kebab-case: getUserData → get-user-data
+//! - `%{param:pascal}` - Convert to PascalCase: getUserData → GetUserData
+//! - `%{param:title}` - Convert to Title Case: getUserData → Get User Data
+//! - `%{param:upper}` - Convert to UPPERCASE: getUserData → GETUSERDATA
+//! - `%{param:lower}` - Convert to lowercase: getUserData → getuserdata
+//! - `%{param:reverse}` - Reverse string: getUserData → ataDresUteg
+//! - `%{param:len}` - Get string length: getUserData → 11
+//!
 //! **Why `%{}`?** We chose this syntax to avoid conflicts with Rust's native syntax:
 //! - Doesn't conflict with Rust 2024's prefix identifier parsing (`#identifier`)
 //! - Visually distinct from standard Rust syntax
 //! - Allows natural-looking templates that remain readable
-//! - Supports complex expressions like `%{param[0]}` for array indexing
+//! - Supports complex expressions like `%{param[0]:snake}` for array indexing with transforms
 //!
 //! ## Supported Item Types
 //!
@@ -64,7 +78,9 @@
 
 use proc_macro::TokenStream;
 
-mod loops;
+mod for_each;
+// mod meta;
+mod transform;
 
 /// Universal iteration macro supporting single items and arrays.
 ///
@@ -105,6 +121,18 @@ mod loops;
 /// # assert_eq!(get_posts_id(), 2);
 /// ```
 ///
+/// ## Case Transformations
+/// ```rust
+/// # use meta_rust::for_each;
+/// for_each!([getUserData, createPost], |method| {
+///     fn %{method:snake}_handler() -> &'static str {
+///         "%{method:upper}"
+///     }
+/// });
+/// # assert_eq!(get_user_data_handler(), "GETUSERDATA");
+/// # assert_eq!(create_post_handler(), "CREATEPOST");
+/// ```
+///
 /// ## Macro Generation
 /// ```rust
 /// # use meta_rust::for_each;
@@ -120,5 +148,33 @@ mod loops;
 /// ```
 #[proc_macro]
 pub fn for_each(input: TokenStream) -> TokenStream {
-    loops::for_each::main(input)
+    for_each::main(input)
 }
+
+// /// Meta transformation block for applying %{param:transform} patterns
+// ///
+// /// Works like paste::paste! but for case transformations.
+// /// Any %{param:transform} patterns inside the block will be replaced.
+// ///
+// /// # Syntax
+// /// ```text
+// /// meta!(param = "value") { template };
+// /// meta!(param1 = "value1", param2 = "value2") { template };
+// /// ```
+// ///
+// /// # Example
+// /// ```rust
+// /// use meta_rust::meta;
+// ///
+// /// meta!(method = "getUserData") {
+// ///     fn %{method:snake}_handler() {
+// ///         println!("Handling %{method:upper}");
+// ///     }
+// /// };
+// ///
+// /// // Generates: fn get_user_data_handler() { println!("Handling GET_USER_DATA"); }
+// /// ```
+// #[proc_macro]
+// pub fn meta(input: TokenStream) -> TokenStream {
+//     meta::main(input)
+// }

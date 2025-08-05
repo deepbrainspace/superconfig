@@ -3,3 +3,5 @@
 mod loops {
     pub mod for_each;
 }
+
+mod transform_tests;

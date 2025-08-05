@@ -1,11 +1,12 @@
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use quote::quote;
 use syn::{
     Error, Expr, ExprArray, Ident, Token,
     parse::{Parse, ParseStream, Result},
     parse_macro_input,
 };
+
+use crate::transform::transform_tokens;
 
 /// Universal iteration macro supporting single items and arrays
 ///
@@ -43,42 +44,41 @@ pub fn main(input: TokenStream) -> TokenStream {
     TokenStream::from(generated)
 }
 
-// The Magic Function - now uses %{param} syntax
+// The Magic Function - now uses %{param} syntax with transforms
 fn replace_in_template(template: &TokenStream2, param: &str, item: &Item) -> TokenStream2 {
-    let mut result = template.to_string();
-
-    // Replace %{param} with actual values
-    match item {
-        Item::Array(values) => {
-            // Replace %{param[0]}, %{param[1]}, etc.
-            for (index, val) in values.iter().enumerate() {
-                let pattern = format!("%{{{param}[{index}]}}");
-                result = result.replace(&pattern, val);
-            }
-        }
-        Item::Single(single_value) => {
-            // Replace %{param} with actual value
-            let pattern = format!("%{{{param}}}");
-            result = result.replace(&pattern, single_value);
-        }
-    }
-
-    // Strip outer braces if present (for item context)
-    // The template includes braces from closure body: |x| { fn %{x}() {} }
-    // But for items like functions, we want just: fn hello() {}
-    let result = result.trim();
-    let result = if result.starts_with('{') && result.ends_with('}') {
+    // Strip outer braces first if present
+    let template_str = template.to_string();
+    let template_str = template_str.trim();
+    let template_str = if template_str.starts_with('{') && template_str.ends_with('}') {
         // Remove outer braces and trim whitespace
-        result[1..result.len() - 1].trim()
+        template_str[1..template_str.len() - 1].trim()
     } else {
-        result
+        template_str
     };
 
-    result.parse().unwrap_or_else(|_err| {
-        quote! {
-            compile_error!("for_each! template parsing failed");
+    // Parse the cleaned template
+    let cleaned_template: TokenStream2 = template_str.parse().unwrap_or_else(|_| template.clone());
+
+    // Build params for transform_tokens
+    let params = match item {
+        Item::Array(values) => {
+            // Create params for array indexing: param[0], param[1], etc.
+            let mut array_params = vec![];
+            for (index, val) in values.iter().enumerate() {
+                array_params.push((format!("{param}[{index}]"), val.clone()));
+            }
+            // Also add the whole param for non-indexed references
+            array_params.push((param.to_string(), format!("[{}]", values.join(", "))));
+            array_params
         }
-    })
+        Item::Single(single_value) => {
+            // Single param
+            vec![(param.to_string(), single_value.clone())]
+        }
+    };
+
+    // Use the shared transform_tokens function
+    transform_tokens(cleaned_template, &params)
 }
 
 // Input structures
