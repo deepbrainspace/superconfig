@@ -39,8 +39,11 @@ macro_rules! define_errors {
                 match self {
                     $(
                         Self::$variant { .. } => {
-                            // Pass the full error object to tracing for structured logging
-                            define_errors!(@do_log $(level = $level,)? $(target = $target,)? self);
+                            let code = self.code();
+                            let message = self.to_string();
+                            
+                            // Pass separate code and message like the working version
+                            define_errors!(@do_log $(level = $level,)? $(target = $target,)? code, message);
                         },
                     )*
                 }
@@ -57,104 +60,47 @@ macro_rules! define_errors {
         }
     };
     
-    // Call the main logging macros directly - with target
-    (@do_log level = error, target = $target:literal, $error:expr) => {
-        $crate::error!(
-            target: $target,
-            error = $error as &dyn std::error::Error,
-            error.code = $error.code(),
-            "Error: {}", $error
-        );
+    // Call the main logging macros directly - with target and level
+    (@do_log level = error, target = $target:literal, $code:expr, $message:expr) => {
+        $crate::error!(target: $target, "[{}] {}", $code, $message);
     };
-    (@do_log level = warn, target = $target:literal, $error:expr) => {
-        $crate::warn!(
-            target: $target,
-            error = $error as &dyn std::error::Error,
-            error.code = $error.code(),
-            "Warn: {}", $error
-        );
+    (@do_log level = warn, target = $target:literal, $code:expr, $message:expr) => {
+        $crate::warn!(target: $target, "[{}] {}", $code, $message);
     };
-    (@do_log level = info, target = $target:literal, $error:expr) => {
-        $crate::info!(
-            target: $target,
-            error = $error as &dyn std::error::Error,
-            error.code = $error.code(),
-            "Info: {}", $error
-        );
+    (@do_log level = info, target = $target:literal, $code:expr, $message:expr) => {
+        $crate::info!(target: $target, "[{}] {}", $code, $message);
     };
-    (@do_log level = debug, target = $target:literal, $error:expr) => {
-        $crate::debug!(
-            target: $target,
-            error = $error as &dyn std::error::Error,
-            error.code = $error.code(),
-            "Debug: {}", $error
-        );
+    (@do_log level = debug, target = $target:literal, $code:expr, $message:expr) => {
+        $crate::debug!(target: $target, "[{}] {}", $code, $message);
     };
-    (@do_log level = trace, target = $target:literal, $error:expr) => {
-        $crate::trace!(
-            target: $target,
-            error = $error as &dyn std::error::Error,
-            error.code = $error.code(),
-            "Trace: {}", $error
-        );
+    (@do_log level = trace, target = $target:literal, $code:expr, $message:expr) => {
+        $crate::trace!(target: $target, "[{}] {}", $code, $message);
     };
     
-    // Call the main logging macros directly - without target (default target)
-    (@do_log level = error, $error:expr) => {
-        $crate::error!(
-            target: "app",
-            error = $error as &dyn std::error::Error,
-            error.code = $error.code(),
-            "Error: {}", $error
-        );
+    // Call the main logging macros directly - level only (default target)
+    (@do_log level = error, $code:expr, $message:expr) => {
+        $crate::error!(target: module_path!(), "[{}] {}", $code, $message);
     };
-    (@do_log level = warn, $error:expr) => {
-        $crate::warn!(
-            target: "app",
-            error = $error as &dyn std::error::Error,
-            error.code = $error.code(),
-            "Warn: {}", $error
-        );
+    (@do_log level = warn, $code:expr, $message:expr) => {
+        $crate::warn!(target: module_path!(), "[{}] {}", $code, $message);
     };
-    (@do_log level = info, $error:expr) => {
-        $crate::info!(
-            target: "app",
-            error = $error as &dyn std::error::Error,
-            error.code = $error.code(),
-            "Info: {}", $error
-        );
+    (@do_log level = info, $code:expr, $message:expr) => {
+        $crate::info!(target: module_path!(), "[{}] {}", $code, $message);
     };
-    (@do_log level = debug, $error:expr) => {
-        $crate::debug!(
-            target: "app",
-            error = $error as &dyn std::error::Error,
-            error.code = $error.code(),
-            "Debug: {}", $error
-        );
+    (@do_log level = debug, $code:expr, $message:expr) => {
+        $crate::debug!(target: module_path!(), "[{}] {}", $code, $message);
     };
-    (@do_log level = trace, $error:expr) => {
-        $crate::trace!(
-            target: "app",
-            error = $error as &dyn std::error::Error,
-            error.code = $error.code(),
-            "Trace: {}", $error
-        );
+    (@do_log level = trace, $code:expr, $message:expr) => {
+        $crate::trace!(target: module_path!(), "[{}] {}", $code, $message);
     };
     
-    // Default patterns (error level, default target)
-    (@do_log target = $target:literal, $error:expr) => {
-        $crate::error!(
-            target: $target,
-            error = $error as &dyn std::error::Error,
-            error.code = $error.code(),
-            "Error: {}", $error
-        );
+    // Target only (default level = error)  
+    (@do_log target = $target:literal, $code:expr, $message:expr) => {
+        $crate::error!(target: $target, "[{}] {}", $code, $message);
     };
-    (@do_log $error:expr) => {
-        $crate::error!(
-            error = $error as &dyn std::error::Error,
-            error.code = $error.code(),
-            "Error: {}", $error
-        );
+    
+    // Neither level nor target (both defaults)
+    (@do_log $code:expr, $message:expr) => {
+        $crate::error!(target: module_path!(), "[{}] {}", $code, $message);
     };
 }

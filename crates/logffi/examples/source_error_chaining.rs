@@ -1,6 +1,13 @@
-// Example: Source Error Chaining with define_errors!
-//
-// This shows how to properly handle source errors using the #[source] attribute
+//! Source Error Chaining Example
+//!
+//! This example demonstrates proper error source chaining using the #[source] attribute
+//! with LogFFI's tracing-native implementation.
+//!
+//! Run with:
+//! cargo run --example source_error_chaining
+//!
+//! Or with debug logs:
+//! RUST_LOG=debug cargo run --example source_error_chaining
 
 use logffi::define_errors;
 use std::error::Error;
@@ -33,7 +40,7 @@ define_errors! {
         },
 
         // Example with Box<dyn Error> for flexible source types
-        #[error("Database operation failed: {operation}", level = error, target = "app::db", code = "DB_001")]
+        #[error("Database operation failed: {operation}", level = error, target = "app::db")]
         DatabaseError {
             operation: String,
             #[source]
@@ -51,11 +58,9 @@ fn simulate_db_error() -> Box<dyn std::error::Error + Send + Sync> {
 }
 
 fn main() {
-    // Initialize logging
-    unsafe {
-        std::env::set_var("RUST_LOG", "debug");
-    }
-    env_logger::init();
+    println!("\n🔗 LogFFI Source Error Chaining Example");
+    println!("=======================================");
+    println!("Auto-initializing tracing subscriber...");
 
     println!("\n╔══════════════════════════════════════════════════════════════╗");
     println!("║              Source Error Chaining Examples                   ║");

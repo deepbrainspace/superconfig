@@ -1,6 +1,13 @@
-// Example: What SuperConfig Actually Needs from define_errors!
-//
-// This shows the practical, working approach for SuperConfig's error handling
+//! SuperConfig Error Handling Example
+//!
+//! This example demonstrates practical error handling patterns for configuration
+//! management systems using LogFFI's define_errors! macro with tracing integration.
+//!
+//! Run with:
+//! cargo run --example superconfig_errors
+//!
+//! Or with trace level:
+//! RUST_LOG=trace cargo run --example superconfig_errors
 
 use logffi::define_errors;
 
@@ -19,7 +26,7 @@ define_errors! {
             profile: String,
         },
 
-        // NEW: Errors with source chaining using #[source] attribute
+        // Errors with source chaining using #[source] attribute
         #[error("Failed to read config file '{path}'", level = error, target = "superconfig::io")]
         FileReadError {
             path: String,
@@ -34,23 +41,35 @@ define_errors! {
             source: serde_json::Error,  // Chain parse errors
         },
 
-        // For backwards compatibility, you can still use string details
-        #[error("Failed to parse YAML from '{file}': {details}", level = error, target = "superconfig::parse", code = "YAML_001")]
+        // For cases where you need string details instead of source chaining
+        #[error("Failed to parse YAML from '{file}': {details}", level = error, target = "superconfig::parse")]
         YamlParseError {
             file: String,
             details: String,
+        },
+
+        // Environment variable errors
+        #[error("Environment variable '{var}' not found", level = info, target = "superconfig::env")]
+        EnvVarNotFound {
+            var: String,
+        },
+
+        // Network-related config errors
+        #[error("Failed to fetch remote config from '{url}'", level = error, target = "superconfig::remote")]
+        RemoteConfigError {
+            url: String,
+            #[source]
+            source: Box<dyn std::error::Error + Send + Sync>,
         },
     }
 }
 
 fn main() {
-    // Initialize logging
-    unsafe {
-        std::env::set_var("RUST_LOG", "debug");
-    }
-    env_logger::init();
+    println!("\n🔧 SuperConfig Error Handling with LogFFI");
+    println!("==========================================");
+    println!("Auto-initializing tracing subscriber...\n");
 
-    println!("\n╔══════════════════════════════════════════════════════════════╗");
+    println!("╔══════════════════════════════════════════════════════════════╗");
     println!("║          What the define_errors! Macro Generates             ║");
     println!("╚══════════════════════════════════════════════════════════════╝\n");
 
@@ -58,10 +77,8 @@ fn main() {
     println!("  ✅ Display trait implementation (via thiserror)");
     println!("  ✅ Debug trait implementation");
     println!("  ✅ code() method for error codes");
-    println!("  ✅ kind() method for FFI error type mapping");
-    println!("  ✅ full_message_chain() method");
     println!("  ✅ log() method with proper level and target");
-    println!("  ✅ new_<variant_name>() constructor methods that auto-log");
+    println!("  ✅ Source error chaining via #[source] attribute");
 
     println!("\n┌─────────────────────────────────────────────────────────────┐");
     println!("│ Example 1: Manual Error Creation (Old Way)                  │");
@@ -82,18 +99,22 @@ fn main() {
     println!("   ↳ ⚠️  Log output appears above (WARN level)");
 
     println!("\n┌─────────────────────────────────────────────────────────────┐");
-    println!("│ Example 2: Constructor Methods (Recommended Way) 🎉         │");
+    println!("│ Example 2: Different Error Types and Levels                 │");
     println!("└─────────────────────────────────────────────────────────────┘\n");
 
-    println!("🚀 Using new_key_not_found() constructor:");
-    let error = ConfigError::new_key_not_found("database.port".to_string(), "staging".to_string());
+    println!("🚀 Creating profile error (WARN level):");
+    let error = ConfigError::ProfileNotFound {
+        profile: "development".to_string(),
+    };
     println!("   ✓ Created: {}", error);
-    println!("   ✓ Automatically logged! (see WARN above)");
+    error.log();
 
-    println!("\n🚀 Using new_profile_not_found() constructor:");
-    let error = ConfigError::new_profile_not_found("development".to_string());
-    println!("   ✓ Created: {}", error);
-    println!("   ✓ Automatically logged! (see WARN above)");
+    println!("\n🚀 Creating env var error (INFO level):");
+    let env_error = ConfigError::EnvVarNotFound {
+        var: "DATABASE_URL".to_string(),
+    };
+    println!("   ✓ Created: {}", env_error);
+    env_error.log();
 
     println!("\n┌─────────────────────────────────────────────────────────────┐");
     println!("│ Example 3: Real-World IO Error Handling with Source Chain   │");
@@ -157,14 +178,15 @@ fn main() {
     println!("│ Example 5: Custom Error Code                                │");
     println!("└─────────────────────────────────────────────────────────────┘\n");
 
-    println!("📄 Creating YAML error with custom code...");
-    let error = ConfigError::new_yaml_parse_error(
-        "config.yaml".to_string(),
-        "invalid indentation at line 5".to_string(),
-    );
+    println!("📄 Creating YAML error...");
+    let error = ConfigError::YamlParseError {
+        file: "config.yaml".to_string(),
+        details: "invalid indentation at line 5".to_string(),
+    };
     println!("   ✓ Error: {}", error);
-    println!("   ✓ Code: {} (custom code!)", error.code());
-    println!("   ✓ Auto-logged at ERROR level");
+    println!("   ✓ Code: {}", error.code());
+    error.log();
+    println!("   ✓ Logged at ERROR level");
 
     println!("\n╔══════════════════════════════════════════════════════════════╗");
     println!("║              Constructor Method Benefits                      ║");

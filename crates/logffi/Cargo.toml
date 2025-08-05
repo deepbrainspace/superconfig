@@ -19,7 +19,7 @@ features = ["tracing"]
 rustdoc-args = ["--html-in-header", "doc-header.html"]
 
 [features]
-default = ["tracing"]
+default = ["tracing", "callback"]
 tracing = ["dep:tracing", "dep:tracing-subscriber"]
 callback = [] # Optional FFI callback support - NOT enabled by default
 
