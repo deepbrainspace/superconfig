@@ -1,50 +1,10 @@
 // Enhanced define_errors! macro with structured tracing integration
 // This module ONLY contains the define_errors! macro - all logging macros are in tracing.rs
 
-/// Enhanced `define_errors!` macro with structured tracing integration
+/// Enhanced `define_errors!` macro with structured tracing integration.
 /// 
-/// Supports both thiserror-style and simplified LogFFI-style syntax:
-/// 
-/// ```rust
-/// use logffi::define_errors;
-/// 
-/// // New simplified LogFFI syntax (recommended) - unit variants with empty braces
-/// define_errors! {
-///     SimpleError {
-///         NotFound {} : "Resource not found" [level = error],
-///         InvalidInput {} : "Invalid input provided" [level = warn]
-///     }
-/// }
-/// 
-/// // LogFFI syntax - struct variants (with braces and fields)
-/// define_errors! {
-///     PaymentError {
-///         InsufficientFunds { amount: f64, available: f64 } : "Need ${amount}, have ${available}" [level = error],
-///         NetworkError { source: std::io::Error } : "Network error occurred"
-///     }
-/// }
-/// 
-/// // Multiple error types in single macro call
-/// define_errors! {
-///     ApiError {
-///         BadRequest {} : "Invalid request" [level = warn],
-///         Unauthorized {} : "Access denied" [level = error]
-///     }
-///     
-///     StorageError {
-///         ConnectionFailed { host: String } : "Failed to connect to {host}" [level = error],
-///         QueryTimeout {} : "Query timed out" [level = warn]
-///     }
-/// }
-/// 
-/// // Traditional thiserror syntax (still supported)
-/// define_errors! {
-///     pub enum DatabaseError {
-///         #[error("Connection failed", level = error)]
-///         ConnectionFailed,
-///     }
-/// }
-/// ```
+/// Supports both thiserror-style and simplified LogFFI-style syntax.
+/// See examples in the cookbook folder and comprehensive tests for usage patterns.
 #[macro_export]
 macro_rules! define_errors {
     // Traditional thiserror syntax (must come first to avoid conflicts)
