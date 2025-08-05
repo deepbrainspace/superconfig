@@ -125,6 +125,7 @@ fn demonstrate_error_levels() {
 }
 
 fn demonstrate_source_chaining() {
+    use std::error::Error;
     use std::io;
 
     define_errors! {

@@ -93,7 +93,6 @@ fn main() {
     println!("📝 Creating error manually...");
     println!("   Display: {}", error);
     println!("   Code: {}", error.code());
-    println!("   Kind: {}", error.kind());
     println!("\n📤 Manually calling error.log()...");
     error.log();
     println!("   ↳ ⚠️  Log output appears above (WARN level)");
@@ -189,13 +188,13 @@ fn main() {
     println!("   ✓ Logged at ERROR level");
 
     println!("\n╔══════════════════════════════════════════════════════════════╗");
-    println!("║              Constructor Method Benefits                      ║");
+    println!("║                    Key Benefits                               ║");
     println!("╚══════════════════════════════════════════════════════════════╝\n");
-    println!("  🎯 Single line error creation and logging");
-    println!("  🐍 Method names are snake_case versions of variant names");
-    println!("  🔄 No need to remember to call .log() - it's automatic");
-    println!("  🛡️  Type-safe parameter passing");
-    println!("  💡 IDE autocomplete for constructor methods");
+    println!("  🎯 Automatic logging with proper levels and targets");
+    println!("  🔗 Full source error chaining support");
+    println!("  🛡️  Type-safe error creation");
+    println!("  📊 Structured error codes for monitoring");
+    println!("  💡 thiserror integration for clean Display messages");
 
     println!("\n╔══════════════════════════════════════════════════════════════╗");
     println!("║                   Log Output Format                           ║");

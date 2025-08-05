@@ -261,6 +261,7 @@ version = "0.1.0"
 dependencies = [
  "cfg-if",
  "env_logger",
+ "log",
  "meta-rust",
  "paste",
  "serde_json",

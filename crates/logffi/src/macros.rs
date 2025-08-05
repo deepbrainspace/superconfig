@@ -12,8 +12,8 @@ macro_rules! define_errors {
                 $variant:ident $({
                     $(
                         $(#[$field_meta:meta])*
-                        $field_name:ident: $field_type:ty,
-                    )*
+                        $field_name:ident: $field_type:ty
+                    ),* $(,)?
                 })?,
             )*
         }
@@ -27,8 +27,8 @@ macro_rules! define_errors {
                 $variant $({
                     $(
                         $(#[$field_meta])*
-                        $field_name: $field_type,
-                    )*
+                        $field_name: $field_type
+                    ),*
                 })?,
             )*
         }
