@@ -20,7 +20,7 @@
 
 use logffi::{debug, define_errors, error, info, trace, warn};
 use std::collections::HashMap;
-use tracing::{Level, field, instrument};
+use tracing::{Level, instrument};
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 // Custom error types for demonstration
@@ -110,7 +110,7 @@ async fn database_operation(request: &UserRequest) -> Result<String, ServiceErro
     // Simulate successful operation
     debug!(
         query = "SELECT * FROM users WHERE id = ?",
-        params = ?[request.user_id],
+        user_id = request.user_id,
         "Executing database query"
     );
 

@@ -31,17 +31,45 @@ cfg_if! {
             });
         }
 
-        // Single for_each! for ALL tracing macros with auto-init AND callback routing
+        // Event macros with auto-init AND callback routing
         for_each!([
-            // Event macros
-            trace, debug, info, warn, error,
-            // Span macros
-            trace_span, debug_span, info_span, warn_span, error_span,
-            // Generic macros
-            span, event
+            trace, debug, info, warn, error, event
         ], |macro_name| {
             #[macro_export]
             macro_rules! %{macro_name} {
+                // Pattern for structured logging: fields followed by message
+                (target: $target:expr, $($field:ident = $value:expr,)* $fmt:literal $(, $($arg:expr),*)?) => {
+                    {
+                        $crate::ensure_logging_initialized();
+
+                        // Call tracing macro with structured fields
+                        ::tracing::%{macro_name}!(target: $target, $($field = $value,)* $fmt $(, $($arg),*)?);
+
+                        // Call FFI callback only if feature enabled (zero-overhead by default)
+                        #[cfg(feature = "callback")]
+                        {
+                            let message = format!($fmt $(, $($arg),*)?);
+                            $crate::callback::call(stringify!(%{macro_name}), $target, &message);
+                        }
+                    }
+                };
+                // Pattern for simple message (backwards compatibility)
+                (target: $target:expr, $fmt:literal $(, $($arg:expr),*)?) => {
+                    {
+                        $crate::ensure_logging_initialized();
+
+                        // Call tracing macro
+                        ::tracing::%{macro_name}!(target: $target, $fmt $(, $($arg),*)?);
+
+                        // Call FFI callback only if feature enabled (zero-overhead by default)
+                        #[cfg(feature = "callback")]
+                        {
+                            let message = format!($fmt $(, $($arg),*)?);
+                            $crate::callback::call(stringify!(%{macro_name}), $target, &message);
+                        }
+                    }
+                };
+                // Pattern for any other syntax - pass through (fallback for complex cases)
                 (target: $target:expr, $($arg:tt)*) => {
                     {
                         $crate::ensure_logging_initialized();
@@ -52,11 +80,53 @@ cfg_if! {
                         // Call FFI callback only if feature enabled (zero-overhead by default)
                         #[cfg(feature = "callback")]
                         {
-                            let message = format!($($arg)*);
-                            $crate::callback::call(stringify!(%{macro_name}), $target, &message);
+                            // For complex syntax, just use a generic message
+                            let message = concat!("Complex log: ", stringify!($($arg)*));
+                            $crate::callback::call(stringify!(%{macro_name}), $target, message);
                         }
                     }
                 };
+                // Delegate to target version with module_path!
+                ($($arg:tt)*) => {
+                    $crate::%{macro_name}!(target: module_path!(), $($arg)*)
+                };
+            }
+        });
+
+        // Span macros (return Span objects, no callback routing needed)
+        for_each!([
+            trace_span, debug_span, info_span, warn_span, error_span, span
+        ], |macro_name| {
+            #[macro_export]
+            macro_rules! %{macro_name} {
+                // Pattern for structured span creation: fields with name
+                (target: $target:expr, $name:expr, $($field:ident = $value:expr),* $(,)?) => {
+                    {
+                        $crate::ensure_logging_initialized();
+                        ::tracing::%{macro_name}!(target: $target, $name, $($field = $value),*)
+                    }
+                };
+                // Pattern for simple span creation: just name
+                (target: $target:expr, $name:expr) => {
+                    {
+                        $crate::ensure_logging_initialized();
+                        ::tracing::%{macro_name}!(target: $target, $name)
+                    }
+                };
+                // Pattern for span with level (for generic span! macro)
+                (target: $target:expr, $level:expr, $name:expr, $($field:ident = $value:expr),* $(,)?) => {
+                    {
+                        $crate::ensure_logging_initialized();
+                        ::tracing::%{macro_name}!(target: $target, $level, $name, $($field = $value),*)
+                    }
+                };
+                (target: $target:expr, $level:expr, $name:expr) => {
+                    {
+                        $crate::ensure_logging_initialized();
+                        ::tracing::%{macro_name}!(target: $target, $level, $name)
+                    }
+                };
+                // Delegate to target version with module_path!
                 ($($arg:tt)*) => {
                     $crate::%{macro_name}!(target: module_path!(), $($arg)*)
                 };

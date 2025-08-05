@@ -4,7 +4,6 @@
 //! using thiserror's automatic Display formatting.
 
 use logffi::define_errors;
-use std::collections::HashMap;
 
 // Define errors with various field types and interpolation patterns
 define_errors! {

@@ -2,13 +2,13 @@
 //!
 //! Verifies that our tracing-native implementation works correctly with:
 //! - log crate bridge (for libraries still using log)
-//! - tracing spans and structured logging
+//! - structured logging
 //! - tracing subscribers and filtering
 //! - Advanced tracing features
 
-use logffi::{debug, error, info, trace, warn};
+use logffi::{debug, error, info, info_span, trace, warn};
 use std::sync::{Arc, Mutex};
-use tracing::{Level, Span, instrument};
+use tracing::{Level, instrument};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 // Helper to capture tracing events for testing
@@ -142,76 +142,6 @@ fn tracing_targeted_logging() {
 }
 
 #[test]
-fn tracing_spans_integration() {
-    let (collector, events) = TestCollector::new();
-
-    let _guard = tracing_subscriber::registry().with(collector).set_default();
-
-    events.lock().unwrap().clear();
-
-    // Create a span and log within it
-    let span = tracing::span!(Level::INFO, "test_operation", user_id = 12345);
-    let _enter = span.enter();
-
-    info!("Operation started");
-    error!("Operation failed");
-
-    drop(_enter);
-    drop(span);
-
-    let captured = events.lock().unwrap();
-
-    // Events should be captured within the span context
-    assert!(!captured.is_empty());
-
-    let info_event = captured.iter().find(|e| e.level == "INFO");
-    assert!(info_event.is_some());
-    assert_eq!(info_event.unwrap().message, "Operation started");
-}
-
-#[test]
-fn tracing_instrumentation() {
-    let (collector, events) = TestCollector::new();
-
-    let _guard = tracing_subscriber::registry().with(collector).set_default();
-
-    events.lock().unwrap().clear();
-
-    #[instrument(level = "info")]
-    fn instrumented_function(user_id: u64, action: &str) {
-        info!("Processing action: {}", action);
-
-        if action == "fail" {
-            error!("Action failed for user {}", user_id);
-        } else {
-            info!("Action completed successfully");
-        }
-    }
-
-    // Call instrumented function
-    instrumented_function(12345, "process");
-    instrumented_function(67890, "fail");
-
-    let captured = events.lock().unwrap();
-
-    // Should have multiple events from the function
-    let process_events: Vec<_> = captured
-        .iter()
-        .filter(|e| {
-            e.message.contains("Processing action") || e.message.contains("completed successfully")
-        })
-        .collect();
-
-    let error_events: Vec<_> = captured
-        .iter()
-        .filter(|e| e.message.contains("Action failed"))
-        .collect();
-
-    assert!(!process_events.is_empty());
-    assert!(!error_events.is_empty());
-}
-
-#[test]
 fn log_crate_bridge_compatibility() {
     // This test verifies that log crate calls work through tracing's log bridge
     let (collector, events) = TestCollector::new();
@@ -278,7 +208,20 @@ fn tracing_structured_logging() {
     // The structured event should have fields
     let structured = structured_event.unwrap();
     assert_eq!(structured.level, "INFO");
-    // Note: Field checking would require more complex visitor implementation
+
+    // Check that structured fields were captured
+    assert!(structured.fields.contains_key("user_id"));
+    assert_eq!(structured.fields.get("user_id"), Some(&"12345".to_string()));
+    assert!(structured.fields.contains_key("action"));
+    assert_eq!(
+        structured.fields.get("action"),
+        Some(&"\"login\"".to_string())
+    );
+    assert!(structured.fields.contains_key("ip_address"));
+    assert_eq!(
+        structured.fields.get("ip_address"),
+        Some(&"\"192.168.1.1\"".to_string())
+    );
 }
 
 #[test]
@@ -340,4 +283,142 @@ fn tracing_subscriber_layers() {
     let error_event = captured.iter().find(|e| e.message == "Multi-layer error");
     assert!(error_event.is_some());
     assert_eq!(error_event.unwrap().level, "ERROR");
+}
+
+#[test]
+fn tracing_spans_integration() {
+    let (collector, events) = TestCollector::new();
+
+    let _guard = tracing_subscriber::registry().with(collector).set_default();
+
+    events.lock().unwrap().clear();
+
+    // Create a span and log within it
+    let span = tracing::span!(Level::INFO, "test_operation", user_id = 12345);
+    let _enter = span.enter();
+
+    info!("Operation started");
+    error!("Operation failed");
+
+    drop(_enter);
+    drop(span);
+
+    let captured = events.lock().unwrap();
+
+    // Events should be captured within the span context
+    assert!(!captured.is_empty());
+
+    let info_event = captured.iter().find(|e| e.level == "INFO");
+    assert!(info_event.is_some());
+    assert_eq!(info_event.unwrap().message, "Operation started");
+}
+
+#[test]
+fn tracing_spans_comprehensive() {
+    let (collector, events) = TestCollector::new();
+
+    let _guard = tracing_subscriber::registry().with(collector).set_default();
+
+    events.lock().unwrap().clear();
+
+    // Test span creation with fields
+    let span = tracing::span!(
+        Level::INFO,
+        "user_operation",
+        user_id = 12345,
+        operation = "profile_update",
+        session_id = "sess_abc123"
+    );
+
+    // Test entering and exiting spans
+    let _enter = span.enter();
+    info!("Inside span operation");
+    debug!("Debug message in span");
+    drop(_enter); // Exit span
+
+    // Test nested spans
+    let outer_span = tracing::span!(Level::INFO, "outer", request_id = "req_456");
+    let _outer_enter = outer_span.enter();
+
+    let inner_span = tracing::span!(Level::DEBUG, "inner", operation = "validation");
+    let _inner_enter = inner_span.enter();
+
+    warn!("Warning in nested span");
+
+    drop(_inner_enter);
+    drop(_outer_enter);
+
+    // Test LogFFI span macros
+    let logffi_span = info_span!("logffi_span", component = "auth");
+    let _logffi_enter = logffi_span.enter();
+
+    error!("Error in LogFFI span");
+
+    drop(_logffi_enter);
+
+    let captured = events.lock().unwrap();
+
+    // Verify events were captured within span contexts
+    assert!(!captured.is_empty());
+
+    // Check for our specific messages
+    let span_info = captured
+        .iter()
+        .find(|e| e.message == "Inside span operation");
+    assert!(span_info.is_some());
+    assert_eq!(span_info.unwrap().level, "INFO");
+
+    let nested_warn = captured
+        .iter()
+        .find(|e| e.message == "Warning in nested span");
+    assert!(nested_warn.is_some());
+    assert_eq!(nested_warn.unwrap().level, "WARN");
+
+    let logffi_error = captured
+        .iter()
+        .find(|e| e.message == "Error in LogFFI span");
+    assert!(logffi_error.is_some());
+    assert_eq!(logffi_error.unwrap().level, "ERROR");
+}
+
+#[test]
+fn tracing_instrumentation() {
+    let (collector, events) = TestCollector::new();
+
+    let _guard = tracing_subscriber::registry().with(collector).set_default();
+
+    events.lock().unwrap().clear();
+
+    #[instrument(level = "info")]
+    fn instrumented_function(user_id: u64, action: &str) {
+        info!("Processing action: {}", action);
+
+        if action == "fail" {
+            error!("Action failed for user {}", user_id);
+        } else {
+            info!("Action completed successfully");
+        }
+    }
+
+    // Call instrumented function
+    instrumented_function(12345, "process");
+    instrumented_function(67890, "fail");
+
+    let captured = events.lock().unwrap();
+
+    // Should have multiple events from the function
+    let process_events: Vec<_> = captured
+        .iter()
+        .filter(|e| {
+            e.message.contains("Processing action") || e.message.contains("completed successfully")
+        })
+        .collect();
+
+    let error_events: Vec<_> = captured
+        .iter()
+        .filter(|e| e.message.contains("Action failed"))
+        .collect();
+
+    assert!(!process_events.is_empty());
+    assert!(!error_events.is_empty());
 }
