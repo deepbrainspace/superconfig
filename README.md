@@ -4,6 +4,8 @@ A multilingual configuration management toolkit with advanced hierarchical casca
 
 ## Crates in this Workspace
 
+po
+
 | Crate                  | Version                                                                                                         | Docs                                                                                                 | Description                                                                                 |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | **superconfig**        | [![Crates.io](https://img.shields.io/crates/v/superconfig)](https://crates.io/crates/superconfig)               | [![Documentation](https://docs.rs/superconfig/badge.svg)](https://docs.rs/superconfig)               | Advanced configuration management with hierarchical cascading and performance optimizations |
