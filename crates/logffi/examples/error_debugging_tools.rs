@@ -356,6 +356,7 @@ mod tests {
             *patterns.entry(key).or_insert(0) += 1;
         }
 
+
         assert_eq!(patterns.get("prod::db::error::DatabaseTimeout"), Some(&2));
         assert_eq!(patterns.get("prod::api::warn::ApiRateLimit"), Some(&1));
     }

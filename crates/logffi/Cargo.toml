@@ -35,8 +35,26 @@ paste = "1.0.15"
 thiserror = "2.0.12"
 
 [dev-dependencies]
+criterion = "0.5"
 env_logger = "0.11.8"
 log = "0.4"
 serde_json = "1.0"
 serial_test = "3.2.0"
 tokio = { version = "1.0", features = ["full"] }
+
+[[bench]]
+name = "error_info_performance"
+harness = false
+
+# Configure examples to run as tests
+[[example]]
+name = "error_monitoring_dashboard"
+test = true
+
+[[example]]
+name = "structured_error_logging"
+test = true
+
+[[example]]
+name = "error_debugging_tools"
+test = true
