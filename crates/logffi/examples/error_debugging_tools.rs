@@ -352,12 +352,12 @@ mod tests {
         let mut patterns = BTreeMap::new();
         for error in &errors {
             let (code, level, target) = error.error_info();
-            let key = format!("{}::{}", target, level);
+            let key = format!("{}::{}::{}", target, level, code);  // Include code in pattern key
             *patterns.entry(key).or_insert(0) += 1;
         }
 
-        assert_eq!(patterns.get("prod::db::error"), Some(&2));
-        assert_eq!(patterns.get("prod::api::warn"), Some(&1));
+        assert_eq!(patterns.get("prod::db::error::DatabaseTimeout"), Some(&2));
+        assert_eq!(patterns.get("prod::api::warn::ApiRateLimit"), Some(&1));
     }
 
     #[test]

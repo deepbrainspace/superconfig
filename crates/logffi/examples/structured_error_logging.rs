@@ -203,7 +203,7 @@ fn check_alert_conditions(errors: &[AppError]) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::Value;
+    // serde_json::Value not needed for current tests
 
     #[test]
     fn test_error_info_extraction() {
