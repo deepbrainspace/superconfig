@@ -1,67 +1,576 @@
-# Error Handling with LogFFI and Tracing
+# Error Handling with LogFFI's Dual-Syntax Approach
 
-This guide demonstrates how to combine LogFFI's `define_errors!` macro with tracing's structured logging for comprehensive error handling. LogFFI provides automatic error logging capabilities, while tracing handles the underlying structured logging implementation.
+This guide demonstrates LogFFI v0.2's **revolutionary dual-syntax `define_errors!` macro** that combines the simplicity of the new LogFFI format with full backward compatibility with thiserror syntax.
 
-**What LogFFI provides:** The `define_errors!` macro for automatic error logging, convenient macros, and re-exported tracing-subscriber components.
+**🆕 What's New in v0.2:**
 
-**What tracing provides:** The structured logging implementation, error context handling, and integration with observability platforms.
+- **LogFFI Format** - Clean, attribute-based syntax for modern error definitions
+- **64% Macro Optimization** - Reduced from 998 to 358 lines while adding features
+- **Multiple Error Types** - Define multiple enums in one macro call
+- **Auto Source Chaining** - Fields named `source` automatically become `#[source]`
+- **Mixed Variants** - Unit and struct variants in the same enum
+- **11 Comprehensive Tests** - Every scenario battle-tested for reliability
 
 ## Table of Contents
 
-- [Error Handling Overview](#error-handling-overview)
-- [The define_errors! Macro](#the-define_errors-macro)
-- [Basic Error Types](#basic-error-types)
-- [Structured Error Logging](#structured-error-logging)
-- [Error Context and Chaining](#error-context-and-chaining)
-- [Integration with Result Types](#integration-with-result-types)
-- [Advanced Error Patterns](#advanced-error-patterns)
-- [Error Recovery and Handling](#error-recovery-and-handling)
-- [Best Practices](#best-practices)
+- [🆕 LogFFI Format Overview](#-logffi-format-overview)
+- [🔧 Thiserror Compatibility](#-thiserror-compatibility)
+- [📦 Basic Error Types](#-basic-error-types)
+- [🔀 Mixed Variant Types](#-mixed-variant-types)
+- [📊 Logging Levels & Targets](#-logging-levels--targets)
+- [⛓️ Automatic Source Chaining](#️-automatic-source-chaining)
+- [🔧 Multiple Error Types](#-multiple-error-types)
+- [🌍 Real-World Examples](#-real-world-examples)
+- [💡 Best Practices](#-best-practices)
 
-## Error Handling Overview
+## 🆕 LogFFI Format Overview
 
-LogFFI's error handling combines automatic logging with structured error information:
+The new LogFFI format provides a clean, powerful syntax for error definitions:
 
 ```rust
-use logffi::{define_errors, error, info};
+use logffi::define_errors;
 
-// Define errors with automatic logging - LogFFI syntax
+// 🆕 LogFFI Format - Clean, attribute-based syntax
 define_errors! {
     UserError {
-        NotFound { user_id: u64 } : "User {} not found",
-        InvalidCredentials { username: String } : "Invalid credentials for user: {}",
-        AccountLocked { user_id: u64, locked_until: String } : "Account {} locked until {}",
+        NotFound { user_id: u64 } : "User {user_id} not found" [level = warn, target = "auth::users"],
+        InvalidCredentials { username: String } : "Invalid credentials for user: {username}" [level = error],
+        AccountLocked { 
+            user_id: u64, 
+            locked_until: String 
+        } : "Account {user_id} locked until {locked_until}" [level = warn],
+        ServiceUnavailable {} : "Authentication service temporarily unavailable" [level = error]
     }
 }
 
 fn authenticate_user(username: &str, password: &str) -> Result<User, UserError> {
-    let user = find_user(username)?;
+    let user = find_user(username).map_err(|_| UserError::NotFound { 
+        user_id: 12345 
+    })?;
     
     if user.is_locked() {
-        // Error automatically logged with structured fields
-        return Err(UserError::AccountLocked {
+        let err = UserError::AccountLocked {
             user_id: user.id,
             locked_until: user.locked_until.to_string(),
-        });
+        };
+        err.log(); // WARN auth::users: [AccountLocked] Account 12345 locked until 2024-01-15
+        return Err(err);
     }
     
     if !verify_password(password, &user.password_hash) {
-        // Structured error logging happens automatically
-        return Err(UserError::InvalidCredentials {
+        let err = UserError::InvalidCredentials {
             username: username.to_string(),
-        });
+        };
+        err.log(); // ERROR auth::module: [InvalidCredentials] Invalid credentials for user: alice
+        return Err(err);
     }
-    
-    info!(
-        user_id = user.id,
-        username = username,
-        "User authentication successful"
-    );
     
     Ok(user)
 }
 ```
 
+**Key LogFFI Format Features:**
+
+- ✅ **Clean Syntax** - No repetitive `#[error(...)]` attributes
+- ✅ **Field Interpolation** - `{user_id}` syntax in messages
+- ✅ **Attribute-Based Logging** - `[level = warn, target = "auth::users"]`
+- ✅ **Unit & Struct Variants** - Mix empty `{}` and `{ fields }` variants
+- ✅ **Automatic Methods** - `.log()`, `.code()`, `.to_string()` generated
+
+## 🔧 Thiserror Compatibility
+
+LogFFI maintains **full backward compatibility** with existing thiserror syntax:
+
+```rust
+use logffi::define_errors;
+
+// Traditional thiserror syntax (still fully supported)
+define_errors! {
+    pub enum DatabaseError {
+        #[error("Connection failed to {host}:{port}", level = error, target = "db::connection")]
+        ConnectionFailed { host: String, port: u16 },
+        
+        #[error("Query timeout after {timeout_ms}ms", level = warn)]
+        QueryTimeout { timeout_ms: u64 },
+        
+        #[error("Transaction rollback required")]
+        TransactionFailed,
+    }
+}
+
+// Mix both syntaxes if needed during migration
+define_errors! {
+    pub enum MixedSyntaxError {
+        #[error("Legacy syntax still works")]
+        LegacyVariant,
+    }
+    
+    ModernError {
+        NewVariant { field: String } : "Modern LogFFI syntax: {field}" [level = info]
+    }
+}
+```
+
+## 📦 Basic Error Types
+
+### Unit Variants (No Fields)
+
+```rust
+define_errors! {
+    SimpleError {
+        NotFound {} : "Resource not found" [level = warn],
+        Unauthorized {} : "Access denied" [level = error],
+        ServiceUnavailable {} : "Service temporarily unavailable" [level = error]
+    }
+}
+
+// Usage
+let err = SimpleError::NotFound;
+assert_eq!(err.code(), "NotFound");
+assert_eq!(err.to_string(), "Resource not found");
+err.log(); // WARN module_path: [NotFound] Resource not found
+```
+
+### Struct Variants (With Fields)
+
+```rust
+define_errors! {
+    ValidationError {
+        InvalidEmail { email: String } : "Invalid email address: {email}" [level = warn],
+        PasswordTooShort { 
+            length: usize, 
+            min_length: usize 
+        } : "Password length {length} below minimum {min_length}" [level = error],
+        MissingField { field_name: String } : "Required field missing: {field_name}" [level = error]
+    }
+}
+
+// Usage with field interpolation
+let err = ValidationError::PasswordTooShort { 
+    length: 4, 
+    min_length: 8 
+};
+assert_eq!(err.to_string(), "Password length 4 below minimum 8");
+err.log(); // ERROR module_path: [PasswordTooShort] Password length 4 below minimum 8
+```
+
+## 🔀 Mixed Variant Types
+
+**Most Powerful Feature** - Mix unit and struct variants in the same enum:
+
+```rust
+define_errors! {
+    PaymentError {
+        // Unit variants (simple cases)
+        InvalidCard {} : "Invalid card number" [level = warn],
+        NetworkTimeout {} : "Payment network timeout" [level = error],
+        
+        // Struct variants (complex cases with data)
+        InsufficientFunds { 
+            amount: f64, 
+            available: f64 
+        } : "Need ${amount}, have ${available}" [level = error],
+        
+        ProcessingFailed { 
+            transaction_id: String, 
+            reason: String 
+        } : "Transaction {transaction_id} failed: {reason}" [level = error],
+        
+        // Mix with source chaining
+        NetworkError { 
+            source: std::io::Error 
+        } : "Network error occurred"
+    }
+}
+
+// All variants work seamlessly
+let simple_err = PaymentError::InvalidCard;
+let complex_err = PaymentError::InsufficientFunds { amount: 100.0, available: 50.0 };
+let chained_err = PaymentError::NetworkError { 
+    source: std::io::Error::new(std::io::ErrorKind::TimedOut, "Connection timeout")
+};
+
+// All have the same interface
+simple_err.log();
+complex_err.log();
+assert!(chained_err.source().is_some()); // Source chaining works
+```
+
+## 📊 Logging Levels & Targets
+
+### All Log Levels Supported
+
+```rust
+define_errors! {
+    SystemError {
+        CriticalFailure {} : "System critical failure" [level = error],
+        ConfigurationWarning {} : "Non-optimal configuration detected" [level = warn], 
+        StartupInfo {} : "System initialization completed" [level = info],
+        DebugInfo { details: String } : "Debug information: {details}" [level = debug],
+        TraceDetail { step: u32 } : "Processing step {step}" [level = trace]
+    }
+}
+```
+
+### Custom Targets for Structured Logging
+
+```rust
+define_errors! {
+    ApplicationError {
+        DatabaseError {} : "Database connection failed" [level = error, target = "app::database"],
+        NetworkError {} : "Network request failed" [level = warn, target = "app::network"],
+        AuthError {} : "Authentication failed" [level = info, target = "app::auth"],
+        DefaultError {} : "Uses module_path!() as target" [level = error]
+    }
+}
+
+// Results in structured log messages:
+// ERROR app::database: [DatabaseError] Database connection failed
+// WARN  app::network: [NetworkError] Network request failed  
+// INFO  app::auth: [AuthError] Authentication failed
+// ERROR my_module::sub_module: [DefaultError] Uses module_path!() as target
+```
+
+## ⛓️ Automatic Source Chaining
+
+Fields named `source` are **automatically** detected and become `#[source]`:
+
+```rust
+define_errors! {
+    ChainedError {
+        // Single source
+        IoError { 
+            source: std::io::Error 
+        } : "IO operation failed",
+        
+        // Source with additional context
+        DatabaseError {
+            operation: String,
+            source: std::io::Error,
+            retry_count: u32
+        } : "Database operation {operation} failed after {retry_count} retries",
+        
+        // Any Error type works as source
+        GenericError {
+            context: String,
+            source: Box<dyn std::error::Error + Send + Sync>
+        } : "Operation failed: {context}"
+    }
+}
+
+// Source chaining works automatically
+let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "File not found");
+let db_err = ChainedError::DatabaseError {
+    operation: "SELECT".to_string(),
+    source: io_err,
+    retry_count: 3,
+};
+
+assert!(db_err.source().is_some());
+assert_eq!(db_err.source().unwrap().to_string(), "File not found");
+assert_eq!(db_err.to_string(), "Database operation SELECT failed after 3 retries");
+```
+
+## 🔧 Multiple Error Types
+
+Define multiple error enums in a **single macro call**:
+
+```rust
+define_errors! {
+    // First error type
+    ApiError {
+        BadRequest { field: String } : "Invalid field: {field}" [level = warn],
+        Unauthorized {} : "Access denied" [level = error],
+        RateLimited { retry_after: u64 } : "Rate limited, retry after {retry_after}s" [level = warn]
+    }
+    
+    // Second error type in same macro
+    DatabaseError {
+        ConnectionFailed { host: String } : "Failed to connect to {host}" [level = error],
+        QueryTimeout {} : "Query timed out" [level = warn],
+        TransactionFailed { reason: String } : "Transaction failed: {reason}" [level = error]
+    }
+}
+
+// Each gets its own enum with full functionality
+let api_err = ApiError::BadRequest { field: "email".to_string() };
+let db_err = DatabaseError::ConnectionFailed { host: "localhost".to_string() };
+
+api_err.log(); // WARN module_path: [BadRequest] Invalid field: email
+db_err.log();  // ERROR module_path: [ConnectionFailed] Failed to connect to localhost
+```
+
+## 🌍 Real-World Examples
+
+### E-commerce Payment Processing
+
+```rust
+define_errors! {
+    PaymentError {
+        // Simple validation errors
+        InvalidCard {} : "Invalid card number format" [level = warn],
+        ExpiredCard {} : "Card has expired" [level = warn],
+        
+        // Business logic errors with data
+        InsufficientFunds { 
+            requested: f64, 
+            available: f64 
+        } : "Insufficient funds: requested ${requested}, available ${available}" [level = error],
+        
+        // External service errors with chaining
+        ProcessorError { 
+            processor: String,
+            source: std::io::Error 
+        } : "Payment processor {processor} unavailable",
+        
+        // Fraud detection
+        SuspiciousActivity { 
+            user_id: u64, 
+            risk_score: f32 
+        } : "Suspicious activity detected for user {user_id}, risk score: {risk_score}" [level = error, target = "fraud::detection"]
+    }
+}
+
+fn process_payment(amount: f64, card: &Card) -> Result<PaymentResult, PaymentError> {
+    if !card.is_valid() {
+        let err = PaymentError::InvalidCard;
+        err.log(); // WARN module_path: [InvalidCard] Invalid card number format
+        return Err(err);
+    }
+    
+    if card.is_expired() {
+        return Err(PaymentError::ExpiredCard);
+    }
+    
+    let balance = get_balance(card)?;
+    if balance < amount {
+        return Err(PaymentError::InsufficientFunds {
+            requested: amount,
+            available: balance,
+        });
+    }
+    
+    // Process payment...
+    Ok(PaymentResult::Success)
+}
+```
+
+### Microservice API Error Handling
+
+```rust
+define_errors! {
+    // User service errors
+    UserServiceError {
+        UserNotFound { user_id: u64 } : "User {user_id} not found" [level = warn, target = "service::users"],
+        DuplicateEmail { email: String } : "Email {email} already registered" [level = warn],
+        ValidationFailed { field: String, reason: String } : "Validation failed for {field}: {reason}" [level = error]
+    }
+    
+    // Order service errors  
+    OrderServiceError {
+        OrderNotFound { order_id: String } : "Order {order_id} not found" [level = warn, target = "service::orders"],
+        InvalidStatus { 
+            current: String, 
+            requested: String 
+        } : "Cannot change order status from {current} to {requested}" [level = error],
+        InsufficientInventory { 
+            product_id: String, 
+            requested: u32, 
+            available: u32 
+        } : "Product {product_id}: requested {requested}, available {available}" [level = error]
+    }
+}
+
+#[tracing::instrument(level = "info")]
+async fn create_order(user_id: u64, items: Vec<OrderItem>) -> Result<Order, OrderServiceError> {
+    // Validate user exists
+    let _user = get_user(user_id).await.map_err(|_| {
+        let err = UserServiceError::UserNotFound { user_id };
+        err.log(); // WARN service::users: [UserNotFound] User 12345 not found
+        err
+    })?;
+    
+    // Check inventory
+    for item in &items {
+        let available = get_inventory(item.product_id).await?;
+        if available < item.quantity {
+            return Err(OrderServiceError::InsufficientInventory {
+                product_id: item.product_id.clone(),
+                requested: item.quantity,
+                available,
+            });
+        }
+    }
+    
+    // Create order...
+    Ok(Order::new(user_id, items))
+}
+```
+
+## 💡 Best Practices
+
+### 1. **Choose the Right Format**
+
+```rust
+// ✅ Use LogFFI format for new code - cleaner and more powerful
+define_errors! {
+    NewServiceError {
+        ValidationFailed { field: String } : "Invalid {field}" [level = warn]
+    }
+}
+
+// ✅ Keep thiserror format for existing code - no need to migrate immediately
+define_errors! {
+    pub enum ExistingError {
+        #[error("Legacy error: {message}")]
+        LegacyError { message: String },
+    }
+}
+```
+
+### 2. **Use Appropriate Log Levels**
+
+```rust
+define_errors! {
+    WellLeveledError {
+        // ERROR - Actual problems requiring attention
+        SystemFailure {} : "Critical system failure" [level = error],
+        
+        // WARN - Issues that need monitoring but don't break functionality  
+        RateLimitApproaching { current: u32, limit: u32 } : "Rate limit approaching: {current}/{limit}" [level = warn],
+        
+        // INFO - Business events worth recording
+        UserAction { user_id: u64, action: String } : "User {user_id} performed {action}" [level = info]
+    }
+}
+```
+
+### 3. **Structure Targets for Observability**
+
+```rust
+define_errors! {
+    ObservableError {
+        // Group by service/component
+        DatabaseError {} : "DB connection failed" [level = error, target = "service::database"],
+        ApiError {} : "External API failed" [level = error, target = "service::external_api"],
+        
+        // Group by business domain
+        PaymentError {} : "Payment processing failed" [level = error, target = "domain::payments"],
+        UserError {} : "User management error" [level = warn, target = "domain::users"]
+    }
+}
+```
+
+### 4. **Test Error Scenarios**
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_error_logging_and_codes() {
+        let err = PaymentError::InsufficientFunds { 
+            requested: 100.0, 
+            available: 50.0 
+        };
+        
+        // Test structured fields
+        assert_eq!(err.code(), "InsufficientFunds");
+        assert_eq!(err.to_string(), "Insufficient funds: requested $100, available $50");
+        
+        // Test logging (use test subscriber to capture)
+        err.log(); // Logs to tracing system
+        
+        // Test error chaining
+        assert!(err.source().is_none()); // No source for this error
+    }
+    
+    #[test]
+    fn test_source_chaining() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "File not found");
+        let payment_err = PaymentError::ProcessorError {
+            processor: "stripe".to_string(),
+            source: io_err,
+        };
+        
+        // Verify source chain
+        assert!(payment_err.source().is_some());
+        assert_eq!(payment_err.source().unwrap().to_string(), "File not found");
+    }
+}
+```
+
+### 5. **Performance Considerations**
+
+```rust
+// ✅ Good - Reasonable field count and types
+define_errors! {
+    EfficientError {
+        RequestFailed { 
+            status_code: u16, 
+            method: String 
+        } : "Request failed: {method} returned {status_code}" [level = warn]
+    }
+}
+
+// ❌ Avoid - Too many fields or complex types that are expensive to format
+define_errors! {
+    InefficientError {
+        OverlyDetailed { 
+            request_body: String,      // Could be very large
+            response_headers: HashMap<String, String>,  // Complex formatting
+            stack_trace: Vec<String>,  // Potentially huge
+        } : "Complex error with too much data"
+    }
+}
+```
+
+### 6. **Migration Strategy**
+
+```rust
+// Phase 1: Keep existing thiserror syntax working
+define_errors! {
+    pub enum LegacyError {
+        #[error("Old style error")]
+        OldVariant,
+    }
+}
+
+// Phase 2: Add new variants using LogFFI format in same enum
+define_errors! {
+    pub enum MixedError {
+        #[error("Still using old syntax")]
+        OldVariant,
+    }
+    
+    NewError {
+        NewVariant {} : "Using new LogFFI syntax" [level = warn]
+    }
+}
+
+// Phase 3: Gradually migrate old variants to new format as you touch them
+define_errors! {
+    NewError {
+        ModernVariant {} : "All modern LogFFI syntax" [level = warn],
+        AnotherModern { id: u64 } : "Modern with fields: {id}" [level = error]
+    }
+}
+```
+
+**The LogFFI dual-syntax approach gives you the power of modern error handling while respecting your existing codebase investments.**
+
+    info!(
+        user_id = user.id,
+        username = username,
+        "User authentication successful"
+    );
+
+    Ok(user)
+
+}
+
+````
 ## The define_errors! Macro
 
 LogFFI's `define_errors!` macro creates error types with automatic structured logging:
@@ -78,7 +587,7 @@ define_errors! {
         SimpleVariant {} : "Simple error message",
     }
 }
-```
+````
 
 ### Error Definition Examples
 

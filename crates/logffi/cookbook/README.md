@@ -26,11 +26,12 @@ Master structured logging for modern observability:
 
 ### [3. Error Handling](03-error-handling.md)
 
-Use the `define_errors!` macro for sophisticated error handling:
+Master the **dual-syntax `define_errors!` macro** for sophisticated error handling:
 
-- Creating error enums with automatic logging
-- Field interpolation with thiserror integration
-- Error source chaining and context
+- **🆕 LogFFI Format** - Clean, attribute-based syntax for modern error definitions
+- **🔧 Thiserror Compatibility** - Full backward compatibility with existing code
+- **⚡ Advanced Features** - Multiple error types, auto source chaining, mixed variants
+- Field interpolation and structured logging integration
 - Custom error codes for monitoring and alerting
 - Testing error scenarios
 
@@ -98,21 +99,36 @@ info!(
 
 ### "I need automatic error logging with proper types"
 
+**🆕 LogFFI Format** (Recommended):
+
 ```rust
 use logffi::define_errors;
 
 define_errors! {
-    pub enum ApiError {
-        #[error("User not found: {user_id}")]
-        UserNotFound { user_id: u64 },
-        
-        #[error("Rate limit exceeded: {requests}/{limit}")]
-        RateLimitExceeded { requests: u32, limit: u32 },
+    ApiError {
+        UserNotFound { user_id: u64 } : "User not found: {user_id}" [level = warn, target = "api::users"],
+        RateLimitExceeded { requests: u32, limit: u32 } : "Rate limit exceeded: {requests}/{limit}" [level = error],
+        NetworkTimeout { source: std::io::Error } : "Network operation timed out"  // Auto source chaining
     }
 }
 
-// Errors are automatically logged when created
+// Errors have structured logging built-in
 let error = ApiError::UserNotFound { user_id: 12345 };
+error.log(); // WARN api::users: [UserNotFound] User not found: 12345
+```
+
+**Traditional Thiserror Syntax** (Also supported):
+
+```rust
+define_errors! {
+    pub enum ApiError {
+        #[error("User not found: {user_id}", level = warn, target = "api::users")]
+        UserNotFound { user_id: u64 },
+        
+        #[error("Rate limit exceeded: {requests}/{limit}", level = error)]
+        RateLimitExceeded { requests: u32, limit: u32 },
+    }
+}
 ```
 
 → Check [Error Handling](03-error-handling.md) for advanced patterns

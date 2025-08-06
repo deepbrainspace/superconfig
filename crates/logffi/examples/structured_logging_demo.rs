@@ -1,7 +1,8 @@
-//! Structured Logging Demo
+//! Structured Logging Demo with Error Integration
 //!
-//! This example demonstrates LogFFI's structured logging capabilities, showing how to
-//! add structured fields to your log messages for better observability and analysis.
+//! This example demonstrates LogFFI's structured logging capabilities with both:
+//! - Manual structured logging using field syntax
+//! - Automatic structured logging via LogFFI v0.2 error format
 //!
 //! Structured logging allows you to attach key-value pairs to log messages, making
 //! them machine-readable and perfect for log aggregation systems like ELK, Grafana,
@@ -18,7 +19,7 @@
 //! # Focus on specific operations
 //! RUST_LOG=structured_logging_demo::payment=info cargo run --example structured_logging_demo
 
-use logffi::{debug, error, info, info_span, warn};
+use logffi::{debug, define_errors, error, info, info_span, warn};
 use serde_json::json;
 use std::time::{Duration, Instant};
 
@@ -29,6 +30,9 @@ fn main() {
     // Basic structured logging examples
     demonstrate_basic_structured_logging();
 
+    // Automatic structured logging via LogFFI errors
+    demonstrate_automatic_structured_logging_via_errors();
+
     // Real-world scenarios
     demonstrate_user_authentication();
     demonstrate_payment_processing();
@@ -37,6 +41,8 @@ fn main() {
     demonstrate_spans_with_structured_data();
 
     println!("\n🎯 Key Benefits of Structured Logging:");
+    println!("   • Manual structured logging with field syntax");
+    println!("   • Automatic structured logging via LogFFI error format");
     println!("   • Machine-readable log data");
     println!("   • Easy filtering and searching");
     println!("   • Better integration with monitoring tools");
@@ -88,6 +94,156 @@ fn demonstrate_basic_structured_logging() {
         "User session created with metadata"
     );
 
+    println!();
+}
+
+fn demonstrate_automatic_structured_logging_via_errors() {
+    println!("🔄 Automatic Structured Logging via LogFFI Errors");
+    println!("--------------------------------------------------");
+    println!("LogFFI errors automatically create structured log entries!\n");
+
+    // Define errors with structured fields that automatically become log fields
+    define_errors! {
+        StructuredError {
+            // User authentication with structured fields
+            AuthenticationFailed {
+                user_id: u64,
+                username: String,
+                ip_address: String,
+                attempt_count: u32,
+                lockout_remaining_min: Option<u32>
+            } : "Authentication failed for user {username} (ID: {user_id}) from {ip_address} (attempt {attempt_count})" [level = warn, target = "auth::login"],
+
+            // Payment processing with rich context
+            PaymentDeclined {
+                transaction_id: String,
+                user_id: u64,
+                amount_cents: u64,
+                currency: String,
+                payment_method: String,
+                decline_reason: String,
+                processor: String
+            } : "Payment declined for transaction {transaction_id}: ${amount_cents} {currency} via {payment_method} - {decline_reason}" [level = error, target = "payment::processing"],
+
+            // API rate limiting with detailed metrics
+            RateLimitExceeded {
+                user_id: Option<u64>,
+                api_key_id: String,
+                endpoint: String,
+                requests_count: u32,
+                limit: u32,
+                window_minutes: u32,
+                retry_after_seconds: u64
+            } : "Rate limit exceeded for API key {api_key_id} on {endpoint}: {requests_count}/{limit} in {window_minutes}min window" [level = warn, target = "api::rate_limit"],
+
+            // Database performance monitoring
+            SlowQuery {
+                query_id: String,
+                table: String,
+                operation: String,
+                duration_ms: u64,
+                slow_threshold_ms: u64,
+                rows_examined: u64,
+                rows_returned: u64,
+                index_used: Option<String>
+            } : "Slow query detected: {operation} on {table} took {duration_ms}ms (threshold: {slow_threshold_ms}ms)" [level = warn, target = "database::performance"]
+        }
+    }
+
+    println!("🔧 Authentication failure with structured data:");
+    let auth_error = StructuredError::AuthenticationFailed {
+        user_id: 12345,
+        username: "alice.smith".to_string(),
+        ip_address: "192.168.1.100".to_string(),
+        attempt_count: 3,
+        lockout_remaining_min: Some(15),
+    };
+    println!("   Human message: {}", auth_error);
+    println!("   Error code: {}", auth_error.code());
+    println!("   📊 This error automatically logs structured fields:");
+    println!("      • user_id: 12345");
+    println!("      • username: \"alice.smith\"");
+    println!("      • ip_address: \"192.168.1.100\"");
+    println!("      • attempt_count: 3");
+    println!("      • lockout_remaining_min: Some(15)");
+    auth_error.log(); // All fields automatically included in structured log
+    println!();
+
+    println!("🔧 Payment declined with rich context:");
+    let payment_error = StructuredError::PaymentDeclined {
+        transaction_id: "txn_1A2B3C4D".to_string(),
+        user_id: 67890,
+        amount_cents: 2999, // $29.99
+        currency: "USD".to_string(),
+        payment_method: "credit_card".to_string(),
+        decline_reason: "insufficient_funds".to_string(),
+        processor: "stripe".to_string(),
+    };
+    println!("   Human message: {}", payment_error);
+    println!("   📊 Automatically structured with:");
+    println!("      • transaction_id: \"txn_1A2B3C4D\"");
+    println!("      • user_id: 67890");
+    println!("      • amount_cents: 2999");
+    println!("      • currency: \"USD\"");
+    println!("      • payment_method: \"credit_card\"");
+    println!("      • decline_reason: \"insufficient_funds\"");
+    println!("      • processor: \"stripe\"");
+    payment_error.log(); // Rich structured data automatically logged
+    println!();
+
+    println!("🔧 API rate limit with metrics:");
+    let rate_limit_error = StructuredError::RateLimitExceeded {
+        user_id: Some(11111),
+        api_key_id: "ak_live_1234567890abcdef".to_string(),
+        endpoint: "/api/v1/users".to_string(),
+        requests_count: 1001,
+        limit: 1000,
+        window_minutes: 60,
+        retry_after_seconds: 3540, // ~59 minutes
+    };
+    println!("   Human message: {}", rate_limit_error);
+    println!("   📊 Perfect for monitoring dashboards:");
+    println!("      • user_id: Some(11111)");
+    println!("      • api_key_id: \"ak_live_1234567890abcdef\"");
+    println!("      • endpoint: \"/api/v1/users\"");
+    println!("      • requests_count: 1001");
+    println!("      • limit: 1000");
+    println!("      • window_minutes: 60");
+    println!("      • retry_after_seconds: 3540");
+    rate_limit_error.log();
+    println!();
+
+    println!("🔧 Database performance monitoring:");
+    let slow_query_error = StructuredError::SlowQuery {
+        query_id: "query_slow_001".to_string(),
+        table: "user_activity_logs".to_string(),
+        operation: "SELECT".to_string(),
+        duration_ms: 2500,
+        slow_threshold_ms: 1000,
+        rows_examined: 1500000,
+        rows_returned: 25,
+        index_used: Some("idx_user_timestamp".to_string()),
+    };
+    println!("   Human message: {}", slow_query_error);
+    println!("   📊 Database optimization metrics:");
+    println!("      • query_id: \"query_slow_001\"");
+    println!("      • table: \"user_activity_logs\"");
+    println!("      • operation: \"SELECT\"");
+    println!("      • duration_ms: 2500");
+    println!("      • slow_threshold_ms: 1000");
+    println!("      • rows_examined: 1500000");
+    println!("      • rows_returned: 25");
+    println!("      • index_used: Some(\"idx_user_timestamp\")");
+    slow_query_error.log();
+    println!();
+
+    println!("✨ LogFFI Error Benefits:");
+    println!("   🎯 Human-readable error messages");
+    println!("   📊 Automatic structured logging");
+    println!("   🔧 Perfect for monitoring and alerting");
+    println!("   📈 Rich context for debugging");
+    println!("   🚀 Zero additional logging code needed");
+    println!("   ⚡ Built-in performance - no field serialization overhead");
     println!();
 }
 

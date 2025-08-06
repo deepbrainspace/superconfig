@@ -1,22 +1,54 @@
-//! Field Interpolation Demo
+//! Field Interpolation Demo - Dual Syntax Showcase
 //!
-//! This example shows how field values are interpolated into error messages
-//! using thiserror's automatic Display formatting.
+//! This example demonstrates field interpolation in both LogFFI v0.2 formats:
+//! - 🆕 LogFFI Format: Clean, attribute-based syntax
+//! - 🔧 Thiserror Format: Traditional compatibility syntax
+//!
+//! Both use thiserror's automatic Display formatting for field interpolation.
 
 use logffi::define_errors;
 
-// Define errors with various field types and interpolation patterns
+// 🆕 LogFFI Format - Clean, modern syntax for field interpolation
 define_errors! {
-    pub enum InterpolationDemo {
+    LogFFIInterpolation {
         // Simple string interpolation
-        #[error("File '{filename}' not found in directory '{directory}'")]
+        FileNotFound { filename: String, directory: String } : "File '{filename}' not found in directory '{directory}'" [level = warn],
+
+        // Numeric interpolation with formatting
+        MemoryExhausted { current: u64, limit: u64, percentage: f64 } : "Memory usage too high: {current}MB / {limit}MB ({percentage:.1}%)" [level = error],
+
+        // Complex type interpolation
+        InvalidConfig { key: String, value: serde_json::Value, section: String } : "Invalid configuration key '{key}' with value '{value:?}' in section '{section}'" [level = error, target = "config"],
+
+        // Multiple field types with structured logging
+        QueryFailed { query: String, rows: i32, duration_ms: u128 } : "Database query failed: {query} (affected {rows} rows, took {duration_ms}ms)" [level = warn, target = "database"],
+
+        // Collection interpolation
+        MissingFields { missing_fields: Vec<String> } : "Missing required fields: {missing_fields:?}" [level = warn],
+
+        // Complex permission system with many fields
+        PermissionDenied {
+            user_id: u64,
+            action: String,
+            resource_type: String,
+            resource_id: String,
+            required_permission: String
+        } : "User {user_id} attempted {action} on resource {resource_type}:{resource_id} but lacks permission '{required_permission}'" [level = error, target = "security"]
+    }
+}
+
+// 🔧 Traditional Thiserror Format - For comparison and backward compatibility
+define_errors! {
+    pub enum ThiserrorInterpolation {
+        // Simple string interpolation
+        #[error("File '{filename}' not found in directory '{directory}'", level = warn)]
         FileNotFound {
             filename: String,
             directory: String,
         },
 
         // Numeric interpolation with formatting
-        #[error("Memory usage too high: {current}MB / {limit}MB ({percentage:.1}%)")]
+        #[error("Memory usage too high: {current}MB / {limit}MB ({percentage:.1}%)", level = error)]
         MemoryExhausted {
             current: u64,
             limit: u64,
@@ -24,7 +56,7 @@ define_errors! {
         },
 
         // Complex type interpolation
-        #[error("Invalid configuration key '{key}' with value '{value:?}' in section '{section}'")]
+        #[error("Invalid configuration key '{key}' with value '{value:?}' in section '{section}'", level = error, target = "config")]
         InvalidConfig {
             key: String,
             value: serde_json::Value,
@@ -32,7 +64,7 @@ define_errors! {
         },
 
         // Multiple field types
-        #[error("Database query failed: {query} (affected {rows} rows, took {duration_ms}ms)")]
+        #[error("Database query failed: {query} (affected {rows} rows, took {duration_ms}ms)", level = warn, target = "database")]
         QueryFailed {
             query: String,
             rows: i32,
@@ -40,13 +72,13 @@ define_errors! {
         },
 
         // Collection interpolation
-        #[error("Missing required fields: {missing_fields:?}")]
+        #[error("Missing required fields: {missing_fields:?}", level = warn)]
         MissingFields {
             missing_fields: Vec<String>,
         },
 
         // Custom formatting with nested fields
-        #[error("User {user_id} attempted {action} on resource {resource_type}:{resource_id} but lacks permission '{required_permission}'")]
+        #[error("User {user_id} attempted {action} on resource {resource_type}:{resource_id} but lacks permission '{required_permission}'", level = error, target = "security")]
         PermissionDenied {
             user_id: u64,
             action: String,
@@ -58,60 +90,82 @@ define_errors! {
 }
 
 fn main() {
-    println!("🔧 LogFFI Field Interpolation Demo");
-    println!("==================================\n");
+    println!("🔧 LogFFI Field Interpolation Demo - Dual Syntax");
+    println!("==================================================");
+    println!("Comparing LogFFI v0.2 format vs traditional thiserror syntax\n");
+
+    demonstrate_logffi_format();
+    demonstrate_thiserror_format();
+    show_syntax_comparison();
+
+    println!("\n🎯 Key Points:");
+    println!("   • Both formats use thiserror's {{field_name}} interpolation");
+    println!("   • LogFFI format is cleaner: no repetitive #[error(...)] attributes");
+    println!(
+        "   • LogFFI format supports attribute-based logging: [level = warn, target = \"db\"]"
+    );
+    println!("   • Any type that implements Display can be interpolated");
+    println!("   • Use {{field:?}} for Debug formatting (like Vec, HashMap)");
+    println!("   • Use {{field:.precision}} for number formatting");
+    println!("   • Complex types like JSON values work seamlessly");
+    println!("   • Full backward compatibility - migrate at your own pace");
+}
+
+fn demonstrate_logffi_format() {
+    println!("🆕 LogFFI Format Examples");
+    println!("-------------------------");
 
     // Example 1: Simple string interpolation
-    println!("📁 Example 1: File operations");
-    let file_error = InterpolationDemo::FileNotFound {
+    println!("📁 File operations (LogFFI format):");
+    let file_error = LogFFIInterpolation::FileNotFound {
         filename: "config.toml".to_string(),
         directory: "/etc/myapp".to_string(),
     };
     println!("   Error: {}", file_error);
     println!("   Code: {}", file_error.code());
-    file_error.log();
+    file_error.log(); // WARN level
     println!();
 
     // Example 2: Numeric formatting
-    println!("💾 Example 2: Memory monitoring");
-    let memory_error = InterpolationDemo::MemoryExhausted {
+    println!("💾 Memory monitoring (LogFFI format):");
+    let memory_error = LogFFIInterpolation::MemoryExhausted {
         current: 1542,
         limit: 1024,
         percentage: (1542.0 / 1024.0) * 100.0,
     };
     println!("   Error: {}", memory_error);
-    memory_error.log();
+    memory_error.log(); // ERROR level
     println!();
 
-    // Example 3: Complex types (JSON values)
-    println!("⚙️  Example 3: Configuration validation");
+    // Example 3: Complex types with target
+    println!("⚙️  Configuration with custom target (LogFFI format):");
     let json_value = serde_json::json!({
         "timeout": "invalid_duration",
         "retries": -5
     });
-    let config_error = InterpolationDemo::InvalidConfig {
+    let config_error = LogFFIInterpolation::InvalidConfig {
         key: "database.connection".to_string(),
         value: json_value,
         section: "production".to_string(),
     };
     println!("   Error: {}", config_error);
-    config_error.log();
+    config_error.log(); // ERROR level, target = "config"
     println!();
 
-    // Example 4: Database operations
-    println!("🗄️  Example 4: Database operations");
-    let query_error = InterpolationDemo::QueryFailed {
+    // Example 4: Database operations with target
+    println!("🗄️  Database operations with target (LogFFI format):");
+    let query_error = LogFFIInterpolation::QueryFailed {
         query: "UPDATE users SET last_login = NOW() WHERE active = true".to_string(),
         rows: 0,
         duration_ms: 2847,
     };
     println!("   Error: {}", query_error);
-    query_error.log();
+    query_error.log(); // WARN level, target = "database"
     println!();
 
     // Example 5: Collections
-    println!("📋 Example 5: Validation with collections");
-    let validation_error = InterpolationDemo::MissingFields {
+    println!("📋 Validation with collections (LogFFI format):");
+    let validation_error = LogFFIInterpolation::MissingFields {
         missing_fields: vec![
             "email".to_string(),
             "username".to_string(),
@@ -119,12 +173,12 @@ fn main() {
         ],
     };
     println!("   Error: {}", validation_error);
-    validation_error.log();
+    validation_error.log(); // WARN level
     println!();
 
-    // Example 6: Complex permission system
-    println!("🔐 Example 6: Permission system");
-    let permission_error = InterpolationDemo::PermissionDenied {
+    // Example 6: Complex permission system with security target
+    println!("🔐 Permission system with security target (LogFFI format):");
+    let permission_error = LogFFIInterpolation::PermissionDenied {
         user_id: 12345,
         action: "delete".to_string(),
         resource_type: "document".to_string(),
@@ -132,14 +186,65 @@ fn main() {
         required_permission: "documents:delete".to_string(),
     };
     println!("   Error: {}", permission_error);
-    permission_error.log();
+    permission_error.log(); // ERROR level, target = "security"
+    println!();
+}
+
+fn demonstrate_thiserror_format() {
+    println!("🔧 Traditional Thiserror Format Examples");
+    println!("-----------------------------------------");
+
+    // Same examples using traditional syntax
+    println!("📁 File operations (thiserror format):");
+    let file_error = ThiserrorInterpolation::FileNotFound {
+        filename: "config.toml".to_string(),
+        directory: "/etc/myapp".to_string(),
+    };
+    println!("   Error: {}", file_error);
+    println!("   Code: {}", file_error.code());
+    file_error.log(); // WARN level
     println!();
 
-    println!("🎯 Key Points:");
-    println!("   • thiserror automatically interpolates {{field_name}} patterns");
-    println!("   • Any type that implements Display can be interpolated");
-    println!("   • Use {{field:?}} for Debug formatting (like Vec, HashMap)");
-    println!("   • Use {{field:.precision}} for number formatting");
-    println!("   • Complex types like JSON values work seamlessly");
-    println!("   • Our LogFFI macro preserves all thiserror functionality");
+    println!("💾 Memory monitoring (thiserror format):");
+    let memory_error = ThiserrorInterpolation::MemoryExhausted {
+        current: 1542,
+        limit: 1024,
+        percentage: (1542.0 / 1024.0) * 100.0,
+    };
+    println!("   Error: {}", memory_error);
+    memory_error.log(); // ERROR level
+    println!();
+
+    println!("🔐 Permission system (thiserror format):");
+    let permission_error = ThiserrorInterpolation::PermissionDenied {
+        user_id: 67890,
+        action: "modify".to_string(),
+        resource_type: "user_profile".to_string(),
+        resource_id: "profile_xyz_789".to_string(),
+        required_permission: "users:modify".to_string(),
+    };
+    println!("   Error: {}", permission_error);
+    permission_error.log(); // ERROR level, target = "security"
+    println!();
+}
+
+fn show_syntax_comparison() {
+    println!("⚖️  Syntax Comparison");
+    println!("--------------------");
+    println!("🆕 LogFFI Format:");
+    println!(
+        "   ValidationError {{ field: String, reason: String }} : \"Field {{field}} failed: {{reason}}\" [level = warn]"
+    );
+    println!();
+    println!("🔧 Thiserror Format:");
+    println!("   #[error(\"Field {{field}} failed: {{reason}}\", level = warn)]");
+    println!("   ValidationError {{ field: String, reason: String }},");
+    println!();
+    println!("✅ Benefits of LogFFI Format:");
+    println!("   • Cleaner syntax - no repetitive #[error(...)] attributes");
+    println!("   • Attribute-based logging: [level = warn, target = \"validation\"]");
+    println!("   • Mixed variants: unit {{}} and struct variants in same enum");
+    println!("   • Multiple error types in single macro call");
+    println!("   • Auto source detection for fields named 'source'");
+    println!("   • 64% macro size reduction (998 → 358 lines)");
 }
