@@ -164,22 +164,54 @@ deepbrain/
 
 **DeepBrain**: "Empowering developers with intelligent tools"
 
-### Target Audiences
+### Target Audiences & Market Progression
 
-1. **Rust Developers** (Immediate)
-   - Need: Better logging, configuration, metaprogramming
-   - Message: "Professional-grade Rust tooling"
-   - Channels: r/rust, This Week in Rust, RustConf
+#### Phase 1: Rust Developer Community (Immediate)
 
-2. **AI/ML Engineers** (6-12 months)
-   - Need: Context management for AI agents
-   - Message: "Give your AI perfect memory"
-   - Channels: HuggingFace, r/LocalLLaMA, AI newsletters
+**Products**: MetaRust + LogFFI replacement
 
-3. **Enterprise Teams** (12+ months)
-   - Need: Reliable, supported tooling
-   - Message: "Enterprise-ready development ecosystem"
-   - Channels: Direct sales, partnerships
+- **Market Size**: ~500K active Rust developers globally
+- **Product Lifespan**: Primarily Rust-specific, won't cross to other languages
+- **Key Value**: Fill gaps in Rust ecosystem we needed ourselves
+- **Primary Features**:
+  - LogFFI: define_errors! macro (main adoption driver)
+  - LogFFI: tracing/thiserror compatibility (no separate imports)
+  - LogFFI: FFI callbacks (niche use case)
+  - MetaRust: Rust-specific macro utilities
+- **Channels**: crates.io, r/rust, This Week in Rust, RustConf
+
+#### Phase 2: Wider Developer Community (3-6 months)
+
+**Product**: SuperConfig (multi-language support)
+
+- **Market Size**: ~30M developers globally
+- **Cross-Language**: Designed for polyglot environments
+- **Key Value**: Universal configuration management
+- **Channels**: HackerNews, Dev.to, GitHub trending
+
+#### Phase 3: AI Users & Developers (6-12 months)
+
+**Product**: DeepBrain Core
+
+- **Market Size**: Anyone using AI tools
+- **Beyond Developers**: Business users, researchers, creators
+- **Key Value**: Context memory for AI agents
+- **Channels**: Product Hunt, AI newsletters, partnerships
+
+### Product Vision & Constraints
+
+**Rust-Specific Products** (Limited to Rust ecosystem):
+
+- **LogFFI replacement**: Performance & quality advantages only in Rust
+- **MetaRust**: Rust macro system, cannot port to other languages
+- **Strategic Note**: Accept these as ecosystem-building tools with limited TAM
+
+**Cross-Language Products** (Broader market potential):
+
+- **SuperConfig**: Multi-language by design
+- **DeepBrain Core**: Language-agnostic AI tool
+
+**Important**: This progression strategy acknowledges that our first two products have inherent market limitations but serve as credibility builders and community engagement tools for the broader vision.
 
 ### Launch Strategy
 

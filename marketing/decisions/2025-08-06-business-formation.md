@@ -1,10 +1,23 @@
-[← Back to Decisions Overview](../DECISIONS.md)
+[🚪 ← Back to Decisions Overview](../DECISIONS.md)
 
 # Business Formation & Funding Strategy Decision
 
 **Decision Date**: 2025-08-06\
-**Status**: 🟢 Decided\
+**Status**: ✅ Decided\
 **Meeting Attendees**: Nayeem Syed, Claude Code Opus 4.1
+
+## 🎯 Action Items from This Decision
+
+### 🔴 This Week (Urgent)
+
+- [ ] Incorporate DeepBrain Technologies Ltd (£12)
+
+### 🟢 This Month (Planning)
+
+- [ ] Legal setup completion (business banking, accounting)
+- [ ] Prepare for Delaware C-Corp conversion at $50k MRR
+
+---
 
 ## Executive Summary
 

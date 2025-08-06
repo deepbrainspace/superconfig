@@ -1,4 +1,4 @@
-[← Back to Decisions Overview](../DECISIONS.md)
+[🚪 ← Back to Decisions Overview](../DECISIONS.md)
 
 # Infrastructure Decisions
 
