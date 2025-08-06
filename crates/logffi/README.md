@@ -87,6 +87,12 @@ fn example() -> Result<(), AppError> {
     // Errors are automatically logged with structured tracing
     let err = AppError::UserNotFound { user_id: 12345 };
     err.log(); // Logs: WARN app::module: [UserNotFound] User not found: 12345
+    
+    // 🆕 New in v0.2: Error introspection for monitoring & debugging
+    let (code, level, target) = err.error_info();
+    println!("Code: {}, Level: {}, Target: {}", code, level, target);
+    // Output: Code: UserNotFound, Level: warn, Target: app::module
+    
     Err(err)
 }
 ```
@@ -104,6 +110,51 @@ define_errors! {
     }
 }
 ```
+
+### 🔍 Error Introspection & Monitoring
+
+**New in v0.2**: All generated error enums include an `error_info()` method for monitoring and debugging:
+
+```rust
+use logffi::define_errors;
+use std::collections::HashMap;
+
+define_errors! {
+    ApiError {
+        DatabaseTimeout { query: String } : "Query timed out: {query}" [level = error, target = "db::query"],
+        RateLimited {} : "API rate limit exceeded" [level = warn, target = "api::rate"],
+        UserNotFound { user_id: u64 } : "User {user_id} not found" [level = info]
+    }
+}
+
+fn main() {
+    let error = ApiError::DatabaseTimeout { query: "SELECT * FROM users".to_string() };
+    
+    // Get structured error information
+    let (code, level, target) = error.error_info();
+    println!("Error Code: {}", code);     // "DatabaseTimeout"
+    println!("Log Level: {}", level);     // "error" 
+    println!("Target: {}", target);       // "db::query"
+    
+    // Perfect for metrics collection
+    let mut error_metrics = HashMap::new();
+    *error_metrics.entry(code).or_insert(0) += 1;
+    
+    // Ideal for monitoring dashboards
+    match level {
+        "error" => send_alert_to_pagerduty(&error),
+        "warn" => increment_warning_counter(),
+        _ => log_for_debugging(&error)
+    }
+}
+```
+
+**Use Cases for `error_info()`:**
+
+- 📊 **Metrics Collection** - Build error dashboards and SLA monitoring
+- 🚨 **Alerting Systems** - Set up automated alerts based on error patterns
+- 🔍 **Debugging Tools** - Analyze error patterns in production
+- 📈 **Business Intelligence** - Track error rates by component/severity
 
 ## 🎯 Why LogFFI?
 

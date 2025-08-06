@@ -66,10 +66,34 @@ macro_rules! define_errors {
             }
             
             /// Get error code for API stability
+            /// 
+            /// Returns a static string identifier for this error variant.
+            /// Useful for programmatic error handling and API responses.
             pub fn code(&self) -> &'static str {
                 match self {
                     $(
                         Self::$variant { .. } => stringify!($variant),
+                    )*
+                }
+            }
+            
+            /// Get structured error information for debugging and metrics
+            /// 
+            /// Returns a tuple of (code, level, target) for this error variant.
+            /// This is useful for error analytics, monitoring, and structured logging.
+            /// 
+            /// # Returns
+            /// - `code`: Static string identifier for the error variant
+            /// - `level`: Log level as specified in attributes (defaults to "error")
+            /// - `target`: Log target module (defaults to current module)
+            pub fn error_info(&self) -> (&'static str, &'static str, &'static str) {
+                match self {
+                    $(
+                        Self::$variant { .. } => {
+                            let code = stringify!($variant);
+                            // For thiserror format, we extract from thiserror attributes
+                            define_errors!(@extract_thiserror_info $($level)? $($target)? ; code)
+                        },
                     )*
                 }
             }
@@ -177,10 +201,32 @@ macro_rules! define_errors {
                 }
             }
             
+            /// Get error code for API stability
+            /// 
+            /// Returns a static string identifier for this error variant.
             pub fn code(&self) -> &'static str {
                 match self {
                     $(
                         Self::$variant => stringify!($variant),
+                    )*
+                }
+            }
+            
+            /// Get structured error information for debugging and metrics
+            /// 
+            /// Returns a tuple of (code, level, target) for this error variant.
+            /// 
+            /// # Returns
+            /// - `code`: Static string identifier for the error variant
+            /// - `level`: Log level as specified in attributes (defaults to "error")
+            /// - `target`: Log target module (defaults to current module)
+            pub fn error_info(&self) -> (&'static str, &'static str, &'static str) {
+                match self {
+                    $(
+                        Self::$variant => {
+                            let code = stringify!($variant);
+                            define_errors!(@extract_info $([$($attr)*])? ; code)
+                        },
                     )*
                 }
             }
@@ -212,10 +258,32 @@ macro_rules! define_errors {
                 }
             }
             
+            /// Get error code for API stability
+            /// 
+            /// Returns a static string identifier for this error variant.
             pub fn code(&self) -> &'static str {
                 match self {
                     $(
                         Self::$variant { .. } => stringify!($variant),
+                    )*
+                }
+            }
+            
+            /// Get structured error information for debugging and metrics
+            /// 
+            /// Returns a tuple of (code, level, target) for this error variant.
+            /// 
+            /// # Returns
+            /// - `code`: Static string identifier for the error variant
+            /// - `level`: Log level as specified in attributes (defaults to "error")
+            /// - `target`: Log target module (defaults to current module)
+            pub fn error_info(&self) -> (&'static str, &'static str, &'static str) {
+                match self {
+                    $(
+                        Self::$variant { .. } => {
+                            let code = stringify!($variant);
+                            define_errors!(@extract_info $([$($attr)*])? ; code)
+                        },
                     )*
                 }
             }
@@ -303,6 +371,9 @@ macro_rules! define_errors {
                 }
             }
             
+            /// Get error code for API stability
+            /// 
+            /// Returns a static string identifier for this error variant.
             pub fn code(&self) -> &'static str {
                 match self {
                     $(
@@ -310,6 +381,31 @@ macro_rules! define_errors {
                     )*
                     $(
                         Self::$struct_variant { .. } => stringify!($struct_variant),
+                    )*
+                }
+            }
+            
+            /// Get structured error information for debugging and metrics
+            /// 
+            /// Returns a tuple of (code, level, target) for this error variant.
+            /// 
+            /// # Returns
+            /// - `code`: Static string identifier for the error variant
+            /// - `level`: Log level as specified in attributes (defaults to "error")
+            /// - `target`: Log target module (defaults to current module)
+            pub fn error_info(&self) -> (&'static str, &'static str, &'static str) {
+                match self {
+                    $(
+                        Self::$unit_variant => {
+                            let code = stringify!($unit_variant);
+                            define_errors!(@extract_info $([$($unit_attr)*])? ; code)
+                        },
+                    )*
+                    $(
+                        Self::$struct_variant { .. } => {
+                            let code = stringify!($struct_variant);
+                            define_errors!(@extract_info $([$($struct_attr)*])? ; code)
+                        },
                     )*
                 }
             }
@@ -394,6 +490,40 @@ macro_rules! define_errors {
     };
     (@log_thiserror ; $code:expr, $message:expr) => {
         define_errors!(@log_with_attrs ; $code, $message);
+    };
+
+    // -----------------------------------------------------------------------------------
+    // STRUCTURED ERROR INFO EXTRACTION
+    // -----------------------------------------------------------------------------------
+    // For thiserror format - different attribute parsing
+    (@extract_thiserror_info $level:ident $target:literal ; $code:expr) => {
+        ($code, stringify!($level), $target)
+    };
+    (@extract_thiserror_info $level:ident ; $code:expr) => {
+        ($code, stringify!($level), module_path!())
+    };
+    (@extract_thiserror_info $target:literal ; $code:expr) => {
+        ($code, "error", $target)
+    };
+    (@extract_thiserror_info ; $code:expr) => {
+        ($code, "error", module_path!())
+    };
+    
+    // For LogFFI format - bracket-based attributes
+    (@extract_info [level = $level:ident, target = $target:literal] ; $code:expr) => {
+        ($code, stringify!($level), $target)
+    };
+    (@extract_info [target = $target:literal, level = $level:ident] ; $code:expr) => {
+        ($code, stringify!($level), $target)
+    };
+    (@extract_info [level = $level:ident] ; $code:expr) => {
+        ($code, stringify!($level), module_path!())
+    };
+    (@extract_info [target = $target:literal] ; $code:expr) => {
+        ($code, "error", $target)
+    };
+    (@extract_info ; $code:expr) => {
+        ($code, "error", module_path!())
     };
 
 }

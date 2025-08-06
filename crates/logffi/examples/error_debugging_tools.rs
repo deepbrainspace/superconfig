@@ -24,7 +24,7 @@ pub fn analyze_error_patterns(errors: &[ProductionError]) {
     let mut analysis = BTreeMap::new();
     for error in errors {
         let (code, level, target) = error.error_info();
-        let key = format!("{}::{}", target, level);
+        let key = format!("{}::{}::{}", target, level, code);
         *analysis.entry(key).or_insert(0) += 1;
     }
 
@@ -109,6 +109,11 @@ pub fn generate_debug_insights(errors: &[ProductionError]) {
                 *acc.entry(target).or_insert(0) += 1;
                 acc
             });
+
+    println!("📍 Errors by Target:");
+    for (target, count) in &target_counts {
+        println!("  {} → {} occurrences", target, count);
+    }
 
     // Critical error analysis
     if let Some(&critical_count) = level_counts.get("error") {
