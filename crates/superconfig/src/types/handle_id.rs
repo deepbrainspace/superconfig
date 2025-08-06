@@ -2,6 +2,13 @@
 //!
 //! This module provides the enhanced `HandleID` system that's compatible with the existing
 //! handle system while supporting the new multi-format architecture.
+//!
+//! ## Functions
+//!
+//! - [`generate_handle_id`] - Generate new unique handle IDs
+//! - [`reset_handle_counter`] - Reset counter for testing
+//! - [`get_current_handle_count`] - Get current counter value
+//! - [`is_valid_handle_id`] - Validate handle ID values
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -77,4 +84,23 @@ pub fn reset_handle_counter() {
 #[must_use]
 pub fn get_current_handle_count() -> HandleID {
     NEXT_HANDLE_ID.load(Ordering::Relaxed)
+}
+
+/// Check if a handle ID is valid (non-zero)
+///
+/// Handle IDs start at 1, so 0 represents an invalid/null handle.
+/// This function provides a convenient way to validate handle IDs.
+///
+/// # Examples
+///
+/// ```
+/// use superconfig::types::{generate_handle_id, is_valid_handle_id};
+///
+/// let valid_id = generate_handle_id();
+/// assert!(is_valid_handle_id(valid_id));
+/// assert!(!is_valid_handle_id(0));
+/// ```
+#[must_use]
+pub const fn is_valid_handle_id(handle_id: HandleID) -> bool {
+    handle_id != 0
 }
