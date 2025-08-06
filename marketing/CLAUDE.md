@@ -43,6 +43,7 @@ This folder manages strategic decisions for DeepBrain Technologies Ltd, a develo
 2. Add action items to both decision docs and main DECISIONS.md
 3. Use proper linking format for traceability
 4. Mark completed items with [x] and strikethrough
+5. **ALWAYS reply/suggest/comment based on thoroughly researched information - never make claims about domain availability, technical constraints, or market data without verification**
 
 ## Token Efficiency
 

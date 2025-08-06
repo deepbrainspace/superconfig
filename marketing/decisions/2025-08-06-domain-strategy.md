@@ -2,15 +2,15 @@
 
 # Domain Strategy Decision
 
-**Decision Date**: TBD\
-**Status**: ❓ Under Discussion\
+**Decision Date**: 2025-08-06\
+**Status**: ✅ Decided\
 **Meeting Attendees**: Nayeem Syed, Claude Code Opus 4.1
 
 ## Executive Summary
 
 **Current Situation**: Own deepbrain.space and superconfig.dev\
-**Decision Needed**: Primary domain strategy for DeepBrain brand\
-**My Recommendation**: deepbrain.dev as primary, keep .space for specific uses
+**Decision Made**: deepbrain.space as primary domain with product-specific domains forwarding\
+**Final Strategy**: Unified branding through main site with product pages
 
 ---
 
@@ -18,7 +18,7 @@
 
 1. **deepbrain.space** - Purchased, available
 2. **superconfig.dev** - Purchased, currently in use
-3. **deepbrain.dev** - Available for purchase (~$12/year)
+3. **deepbrain.dev** - NOT Available.
 
 ---
 
@@ -44,7 +44,7 @@
 
 ---
 
-### Option 2: deepbrain.dev as Primary (BUY NEW)
+### Option 2: deepbrain.dev as Primary (NOT AVAILABLE)
 
 **Pros:**
 
@@ -64,7 +64,7 @@
 
 ---
 
-### Option 3: deepbrain.ai as Primary (IF AVAILABLE)
+### Option 3: deepbrain.ai as Primary (NOT AVAILABLE)
 
 **Pros:**
 
@@ -83,7 +83,7 @@
 
 ---
 
-### Option 4: Hybrid Strategy (RECOMMENDED)
+### Option 4: Hybrid Strategy (NOT POSSIBLE)
 
 **Structure:**
 
@@ -180,24 +180,35 @@
 | Flexibility        | 🟡     | ✅   | 🟡  | ✅     |
 | Future-Proof       | 🟡     | ✅   | 🟡  | ✅     |
 
-**Winner: Hybrid with .dev primary** (7/7 criteria satisfied)
+**Winner: deepbrain.space primary** (based on actual availability research)
 
 ---
 
-## Final Opus 4.1 Thoughts
+## ✅ DECISION FINALIZED: deepbrain.space as Primary
 
-Don't overthink this. Get deepbrain.dev now. It's the safe, professional choice that won't limit you.
+**Final Decision**: deepbrain.space will serve as the main marketing and branding website for DeepBrain Technologies.
 
-The .space domain is a nice-to-have for creative campaigns, but .dev is where serious developer tools live. You can always add .ai later if you pivot hard into AI.
+**Rationale**:
 
-As for superconfig.dev - keep it for now. It costs almost nothing and preserves optionality. You might want to launch SuperConfig as a standalone product later.
+- deepbrain.dev and deepbrain.ai are NOT available (confirmed by user research)
+- deepbrain.space provides unique brand identity and is already owned
+- Cost-effective solution with unified branding strategy
 
-**Action Items:**
+**Domain Architecture**:
 
-1. Buy deepbrain.dev TODAY
-2. Keep deepbrain.space for creative uses
-3. Archive superconfig.dev with rebrand notice
-4. Consider .ai domain only if AI becomes primary focus
+- **Primary**: deepbrain.space (main marketing site with dedicated product sections)
+- **Product-specific forwards**:
+  - superconfig.dev → deepbrain.space/superconfig (already owned)
+  - logfusion.dev → deepbrain.space/logfusion (to acquire)
+  - metarust.dev → deepbrain.space/metarust (to acquire)
+  - DeepBrain Core: uses main site (no separate domain needed)
+
+**Implementation Strategy**:
+
+1. Use deepbrain.space as primary marketing site
+2. Create dedicated sections/pages for each product
+3. Product-specific domains forward to respective sections
+4. Unified branding and SEO strategy
 
 ---
 
@@ -214,6 +225,22 @@ This is literally the cost of one coffee meetup. Don't let $12 block your decisi
 
 ---
 
+## 🎯 Action Items from This Decision
+
+### 🔴 This Week (Urgent)
+
+- [ ] Register logfusion.dev and metarust.dev domains
+- [ ] Set up domain forwarding configuration
+- [ ] Plan deepbrain.space website structure with product sections
+
+### 🟡 Next 2 Weeks (Important)
+
+- [ ] Design unified website with product pages
+- [ ] Configure DNS and forwarding rules
+- [ ] Update all marketing materials to reference deepbrain.space
+
+---
+
 _Document created: 2025-08-06_\
 _Last updated: 2025-08-06_\
-_Next review: Upon decision_
+_Next review: After website launch_
