@@ -10,69 +10,86 @@ This document outlines the strategic positioning, branding, and technical archit
 
 ### Current Situation
 
-- **Company**: DeepBrain (upcoming)
-- **Current Products**: logffi, meta-rust, superconfig (all ready/near-ready)
-- **Future Product**: DeepBrain (AI context brain for agents)
-- **Challenge**: Avoid rebranding when flagship AI product launches
+- **Company**: DeepBrain Inc.
+- **Current Products**:
+  - **rusttoolkit** - Language extensions & macros (formerly meta-rust)
+  - **cargotoolkit** - Cargo workflow tools & subcommands
+  - **logfusion** - Logging, tracing & error handling (formerly logffi)
+  - **superconfig** - Configuration management
+- **Future Product**: DeepBrain Core (AI context brain for agents)
+- **Challenge**: Build unified brand with independent growth metrics
 
 ### Recommended Brand Architecture
 
 ```
-DeepBrain (Company)
-├── DeepBrain OSS (Open Source Division)
-│   ├── TraceLog (formerly logffi)
-│   ├── MetaRust (meta-rust) 
-│   ├── SuperConfig (superconfig)
-│   └── [Future OSS tools]
-└── DeepBrain AI (Commercial Division)
-    ├── DeepBrain Core (Context brain for AI agents)
-    └── [Future AI products]
+DeepBrain Inc. (Umbrella Brand)
+├── Developer Tools (Open Source)
+│   ├── RustToolkit - Language extensions & procedural macros
+│   ├── CargoToolkit - Cargo workflow tools & subcommands
+│   ├── LogFusion - Logging, tracing & error handling
+│   └── SuperConfig - Configuration management
+└── DeepBrain Core (Future AI Product)
+    └── Context memory for AI agents
 ```
 
 ### Domain Strategy
 
-**Primary Domain**: `deepbrain.dev` or `deepbrain.ai`
+**Primary Domains**:
+
+- `deepbrain.space` - Main company portal
+- `rusttoolkit.dev` - Rust language extensions
+- `cargotoolkit.dev` - Cargo workflow tools
+- `logfusion.dev` - Logging & error handling
+- `superconfig.dev` - Configuration management
+
+**Each product site structure**:
 
 ```
-deepbrain.dev/
-├── /                    # Company landing page
-├── /oss/                # Open source tools hub
-│   ├── /tracelog        # Logging & error handling
-│   ├── /metarust        # Metaprogramming utilities
-│   └── /superconfig     # Configuration management
-├── /ai/                 # AI products (future)
-│   └── /context         # DeepBrain context engine
-├── /docs/               # Unified documentation
-├── /blog/               # Technical blog
-└── /playground/         # Interactive demos
+[product].dev/
+├── /                    # Product landing page
+├── /docs/               # Documentation (Fume + docs.rs integration)
+├── /examples/           # Interactive examples
+├── /playground/         # Try online
+└── /api/                # API reference (from docs.rs)
 ```
 
-### Repository Structure Options
+### Repository Structure
 
-#### Option A: Single Monorepo (Current)
-
-```
-github.com/deepbrain/deepbrain
-├── oss/
-│   ├── tracelog/
-│   ├── metarust/
-│   └── superconfig/
-├── ai/
-│   └── context-engine/
-└── website/
-```
-
-#### Option B: Organization with Multiple Repos
+**Separate Repos for Independent Growth**:
 
 ```
-github.com/deepbrain/
-├── deepbrain-oss         # All OSS tools monorepo
-├── deepbrain-ai          # AI products monorepo
-├── deepbrain-website     # Documentation site
-└── deepbrain-examples    # Shared examples
+github.com/deepbrainspace/
+├── rusttoolkit/          # Separate repo (monorepo structure)
+│   ├── crates/           # Rust crate
+│   ├── website/          # Next.js documentation site
+│   ├── docs/             # Unified docs (Fume + docs.rs)
+│   └── examples/         # Code examples
+├── cargotoolkit/         # Separate repo (monorepo structure)
+│   ├── crates/
+│   ├── website/
+│   ├── docs/
+│   └── examples/
+├── logfusion/            # Separate repo (monorepo structure)
+│   ├── crates/
+│   ├── website/
+│   ├── docs/
+│   └── examples/
+├── superconfig/          # Separate repo (monorepo structure)
+│   ├── crates/
+│   ├── website/
+│   ├── docs/
+│   └── examples/
+├── template-repo/        # Template for new products
+└── deepbrain/            # Future: Core AI platform
 ```
 
-**Recommendation**: Option A with Moon build system for unified CI/CD
+**Benefits**:
+
+- Independent GitHub stars and metrics
+- Separate issue tracking and communities
+- Individual release cycles
+- Better SEO and discovery
+- Unified structure through template
 
 ---
 
@@ -80,12 +97,13 @@ github.com/deepbrain/
 
 ### Current vs. Proposed Names
 
-| Current Name    | Issues                                                         | Proposed Name      | Tagline                         |
-| --------------- | -------------------------------------------------------------- | ------------------ | ------------------------------- |
-| **logffi**      | • Too technical<br>• FFI focus limiting<br>• Hard to pronounce | **TraceLog**       | "Zero-friction Rust logging"    |
-| **meta-rust**   | • Clear but generic<br>• SEO challenges                        | **MetaRust**       | "Powerful Rust metaprogramming" |
-| **superconfig** | • Strong name<br>• Clear purpose                               | **SuperConfig**    | "Configuration done right"      |
-| **deepbrain**   | • Perfect for AI product                                       | **DeepBrain Core** | "Context memory for AI agents"  |
+| Current Name    | Final Name       | Description                                 | Tagline                        |
+| --------------- | ---------------- | ------------------------------------------- | ------------------------------ |
+| **meta-rust**   | **rusttoolkit**  | Procedural macros & language extensions     | "Rust language supercharged"   |
+| **N/A**         | **cargotoolkit** | Enhanced cargo subcommands & workflow tools | "Cargo workflow perfected"     |
+| **logffi**      | **logfusion**    | Unified logging, tracing & error handling   | "All your logs, one interface" |
+| **superconfig** | **superconfig**  | Universal configuration management          | "Configuration done right"     |
+| **deepbrain**   | **deepbrain**    | AI context memory engine (future)           | "Context memory for AI agents" |
 
 ### Naming Principles
 
@@ -98,7 +116,7 @@ github.com/deepbrain/
 
 ## 3. 🏗️ Monorepo Positioning with Moon
 
-### Why Moon + Monorepo
+### Individual Monorepos per Product
 
 ```yaml
 # .moon/workspace.yml
@@ -108,12 +126,12 @@ vcs:
   provider: "git"
   defaultBranch: "main"
 
+# Each product has its own monorepo:
 projects:
-  - "oss/tracelog"
-  - "oss/metarust"
-  - "oss/superconfig"
-  - "website"
-  - "docs"
+  - "crates"      # Rust crate(s)
+  - "website"     # Next.js site
+  - "docs"        # Unified documentation
+  - "examples"    # Example projects
 
 tasks:
   rust:
@@ -137,23 +155,26 @@ tasks:
 ### Project Structure
 
 ```
-deepbrain/
+[product-name]/            # Each product repo
 ├── .moon/                 # Moon configuration
 │   ├── workspace.yml
 │   └── toolchain.yml
-├── oss/                   # Open source tools
-│   ├── tracelog/
-│   │   ├── moon.yml      # Project-specific config
+├── crates/                # Rust crate(s)
+│   ├── [product]/
+│   │   ├── src/
 │   │   └── Cargo.toml
-│   ├── metarust/
-│   └── superconfig/
-├── website/               # Docusaurus site
-│   ├── moon.yml
+│   └── [product]-macros/  # If needed
+├── website/               # Next.js documentation site
+│   ├── pages/
+│   ├── components/
 │   └── package.json
-└── shared/                # Shared resources
-    ├── docs/
-    ├── examples/
-    └── assets/
+├── docs/                  # Unified documentation
+│   ├── content/           # MDX content
+│   └── api/               # Generated from rustdoc
+└── examples/              # Example projects
+    ├── basic/
+    ├── advanced/
+    └── integration/
 ```
 
 ---
@@ -162,13 +183,20 @@ deepbrain/
 
 ### Brand Positioning
 
-**DeepBrain**: "Empowering developers with intelligent tools"
+**DeepBrain Inc.**: "Empowering developers with intelligent tools"
+
+### Product-Specific Positioning
+
+- **RustToolkit**: "Essential Rust language extensions"
+- **CargoToolkit**: "Supercharge your Cargo workflow"
+- **LogFusion**: "Unified logging for modern Rust"
+- **SuperConfig**: "Configuration management perfected"
 
 ### Target Audiences & Market Progression
 
 #### Phase 1: Rust Developer Community (Immediate)
 
-**Products**: MetaRust + LogFFI replacement
+**Products**: RustToolkit + CargoToolkit + LogFusion
 
 - **Market Size**: ~500K active Rust developers globally
 - **Product Lifespan**: Primarily Rust-specific, won't cross to other languages

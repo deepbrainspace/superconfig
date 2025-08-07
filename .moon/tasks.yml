@@ -173,10 +173,11 @@ tasks:
     options:
       cache: false
 
-  # Run all examples in the crate
-  examples:
-    command: "../../.moon/scripts/run_examples.sh"
-    inputs: ["@globs(sources)", "examples/**/*", "@globs(configs)"]
-    options:
-      cache: false
-      outputStyle: "stream"
+  # Run all examples in the crate using enhanced cargo-examples
+ # this will be implemented when we have the new structure ready and have this in cargotoolkit.
+  # examples:
+  #   command: "/home/nsm/code/deepbrain/cargo-examples/target/release/cargo-examples examples --manifest-path ./Cargo.toml --print"
+  #   inputs: ["@globs(sources)", "examples/**/*", "@globs(configs)"]
+  #   options:
+  #     cache: false
+  #     outputStyle: "stream"
