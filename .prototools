@@ -1,2 +1,10 @@
 rust = "1.88.0"
 moon = "1.39.3"
+direnv = "latest"
+hurl = "latest"
+hyperfine = "latest"
+
+[plugins]
+direnv = "https://raw.githubusercontent.com/appthrust/proto-toml-plugins/main/direnv/plugin.toml"
+hurl = "https://raw.githubusercontent.com/Phault/proto-toml-plugins/main/hurl/plugin.toml"
+hyperfine = "https://raw.githubusercontent.com/Phault/proto-toml-plugins/main/hyperfine/plugin.toml"

@@ -91,13 +91,14 @@ To set up the development environment with all required tools:
 make init
 ```
 
-This installs:
+This installs **proto** and uses the `.prototools` configuration to automatically install:
 
-- **proto** - Universal tool version manager
 - **rust** - Rust toolchain via proto
 - **moon** - Build system and monorepo management
 - **direnv** - Automatic environment variable loading
-- **cargo-examples** - Tool for running project examples
+- **hurl** - HTTP testing tool and curl alternative
+- **hyperfine** - Command-line benchmarking tool
+- **cargo-examples** - Tool for running project examples (via cargo)
 
 ### Configuration Example
 
