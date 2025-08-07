@@ -20,8 +20,8 @@
         in {
           default = pkgs.mkShell {
             packages = with pkgs; [
-              # Rust toolchain from rust-toolchain.toml (if exists)
-              (rust-bin.fromRustupToolchainFile ./rust-toolchain.toml or rust-bin.stable.latest.default)
+              # Rust toolchain - use stable latest for now
+              rust-bin.stable.latest.default
               
               # Development tools for cargo templates
               cargo-generate
