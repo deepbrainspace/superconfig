@@ -779,6 +779,8 @@ checksum = "56f7d92ca342cea22a06f2121d944b4fd82af56988c270852495420f961d4ace"
 [[package]]
 name = "rusttoolkit"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2abda6d7c7ae1f34b4b605c836bf93eb72ebded1f98bb61507d9606b3c9efc88"
 dependencies = [
  "heck",
  "proc-macro2",
