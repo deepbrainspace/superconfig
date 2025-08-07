@@ -83,6 +83,24 @@ let debug = config.debug_config()?;        // Full debug output
 
 ## 🚀 Quick Start
 
+### Development Setup
+
+To set up the development environment with all required tools:
+
+```bash
+make init
+```
+
+This installs:
+
+- **proto** - Universal tool version manager
+- **rust** - Rust toolchain via proto
+- **moon** - Build system and monorepo management
+- **direnv** - Automatic environment variable loading
+- **cargo-examples** - Tool for running project examples
+
+### Configuration Example
+
 ```rust
 use superconfig::SuperConfig;  // Only import you need
 use serde::{Deserialize, Serialize};
