@@ -122,7 +122,7 @@ runs:
       id: cargo-tools-cache
       with:
         path: ~/.cargo/bin
-        key: cargo-tools-${{ runner.os }}-${{ hashFiles('.prototools') }}-v1
+        key: cargo-tools-${{ runner.os }}-${{ hashFiles('.prototools') }}-v2
 
     - name: Install Rust tools and utilities
       if: steps.cargo-tools-cache.outputs.cache-hit != 'true'
@@ -132,6 +132,7 @@ runs:
         cargo install cargo-audit
         cargo install cargo-deny
         cargo install cargo-outdated
+        cargo install cargo-llvm-cov
         cargo install cargo-tarpaulin
 
     - name: Verify Moon installation
@@ -144,4 +145,5 @@ runs:
         cargo audit --version
         cargo deny --version
         cargo outdated --version
+        cargo llvm-cov --version
         cargo tarpaulin --version
