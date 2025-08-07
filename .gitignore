@@ -29,3 +29,11 @@ cobertura.xml
 tarpaulin-report.html
 *.profraw
 lcov.info
+
+# grcov coverage output
+coverage/
+**/coverage/
+.coverage/
+
+
+**/target

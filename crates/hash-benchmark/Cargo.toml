@@ -1,0 +1,17 @@
+[package]
+name = "hash-benchmark"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[dependencies]
+dashmap = "6"
+hashbrown = "0.15"
+papaya = "0.1"
+scc = "2"
+superhashmap = { path = "../superhashmap" }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
+
+[[bin]]
+name = "benchmark"
+path = "src/main.rs"

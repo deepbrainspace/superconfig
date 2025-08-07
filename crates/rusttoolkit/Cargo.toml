@@ -1,0 +1,34 @@
+[package]
+name = "rusttoolkit"
+version = "0.1.0"
+authors = ["Nayeem Syed"]
+categories = ["development-tools", "rust-patterns"]
+documentation = "https://docs.rs/rusttoolkit"
+edition = "2024"
+homepage = "https://github.com/deepbrain/rusttoolkit"
+keywords = ["macros", "metaprogramming", "codegen", "proc-macro", "rust"]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/deepbrain/rusttoolkit"
+rust-version = "1.88"
+description = "Rust toolkit with cool useful procedural macros"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+heck = "0.5.0"
+proc-macro2 = "1.0.91"
+quote = "1.0.37"
+syn = { version = "2.0.104", features = ["full", "parsing", "printing", "visit-mut", "extra-traits"] }
+
+[dev-dependencies]
+trybuild = "1.0.110"
+
+[features]
+default = []
+# Future feature flags for different macro families
+loops = []
+structs = []
+functions = []
+types = []

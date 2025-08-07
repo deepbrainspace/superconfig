@@ -1,17 +1,23 @@
 # SuperConfig
 
-Advanced configuration management with hierarchical cascading, intelligent array merging, smart format detection, and performance optimizations.
+A multilingual configuration management toolkit with advanced hierarchical cascading, intelligent array merging, smart format detection, and optimized patterns for high-performance applications.
 
 ## Crates in this Workspace
 
-| Crate           | Version                                                                                           | Docs                                                                                   | Description                                                               |
-| --------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| **SuperConfig** | [![Crates.io](https://img.shields.io/crates/v/superconfig)](https://crates.io/crates/superconfig) | [![Documentation](https://docs.rs/superconfig/badge.svg)](https://docs.rs/superconfig) | Advanced configuration management with hierarchical cascading             |
-| **SuperFFI**    | [![Crates.io](https://img.shields.io/crates/v/superffi)](https://crates.io/crates/superffi)       | [![Documentation](https://docs.rs/superffi/badge.svg)](https://docs.rs/superffi)       | Multi-language FFI binding generator for Python, Node.js, and WebAssembly |
+po
+
+| Crate                  | Version                                                                                                         | Docs                                                                                                 | Description                                                                                 |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| **superconfig**        | [![Crates.io](https://img.shields.io/crates/v/superconfig)](https://crates.io/crates/superconfig)               | [![Documentation](https://docs.rs/superconfig/badge.svg)](https://docs.rs/superconfig)               | Advanced configuration management with hierarchical cascading and performance optimizations |
+| **superconfig-macros** | [![Crates.io](https://img.shields.io/crates/v/superconfig-macros)](https://crates.io/crates/superconfig-macros) | [![Documentation](https://docs.rs/superconfig-macros/badge.svg)](https://docs.rs/superconfig-macros) | Procedural macros for fluent API error handling and FFI integration                         |
+| **logffi**             | [![Crates.io](https://img.shields.io/crates/v/logffi)](https://crates.io/crates/logffi)                         | [![Documentation](https://docs.rs/logffi/badge.svg)](https://docs.rs/logffi)                         | Drop-in replacement for log crate with FFI callback support                                 |
+| **multiffi**           | [![Crates.io](https://img.shields.io/crates/v/multiffi)](https://crates.io/crates/multiffi)                     | [![Documentation](https://docs.rs/multiffi/badge.svg)](https://docs.rs/multiffi)                     | Multi-language FFI binding generator for Python, Node.js, and WebAssembly                   |
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Built on [Figment's](https://github.com/SergioBenitez/Figment) foundation, SuperConfig adds advanced features while maintaining 100% compatibility.
+**SuperConfig** is a comprehensive configuration management ecosystem designed for modern multilingual applications. The core `superconfig` crate provides advanced configuration handling with hierarchical cascading and intelligent merging, while companion crates enable seamless integration across Python, Node.js, WebAssembly, and other languages through optimized FFI patterns.
+
+Built from the ground up for maximum performance and flexibility, SuperConfig delivers enterprise-grade configuration management with zero-overhead abstractions.
 
 ## 🚀 Core Features
 
@@ -76,6 +82,25 @@ let debug = config.debug_config()?;        // Full debug output
 ```
 
 ## 🚀 Quick Start
+
+### Development Setup
+
+To set up the development environment with all required tools:
+
+```bash
+make init
+```
+
+This installs **proto** and uses the `.prototools` configuration to automatically install:
+
+- **rust** - Rust toolchain via proto
+- **moon** - Build system and monorepo management
+- **direnv** - Automatic environment variable loading
+- **hurl** - HTTP testing tool and curl alternative
+- **hyperfine** - Command-line benchmarking tool
+- **cargo-examples** - Tool for running project examples (via cargo)
+
+### Configuration Example
 
 ```rust
 use superconfig::SuperConfig;  // Only import you need
@@ -393,5 +418,3 @@ Licensed under the MIT License. See [LICENSE](LICENSE) for details.
 ---
 
 **SuperConfig** - Configuration management that scales with your application.
-
-# Test change

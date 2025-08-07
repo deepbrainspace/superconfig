@@ -1,0 +1,8 @@
+[toolchain]
+channel = "stable"
+components = [
+  "rustc",
+  "cargo",
+  "rustfmt",
+]
+profile = "minimal"

@@ -7,4 +7,4 @@ rust:
   components: 
     - 'rustfmt'
     - 'clippy'
-  syncToolchainConfig: true
+  syncToolchainConfig: false  # Allow per-project rust-toolchain.toml files

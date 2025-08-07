@@ -1,0 +1,11 @@
+language: 'rust'
+type: 'library'
+
+# Override clippy task to not use --all-features since this crate 
+# intentionally prevents multiple features from being enabled
+tasks:
+  clippy:
+    command: "cargo clippy -- -D warnings"
+    inputs: ["@globs(sources)", "@globs(configs)"]
+    options:
+      mergeArgs: "replace"

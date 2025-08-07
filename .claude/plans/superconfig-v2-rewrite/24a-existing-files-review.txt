@@ -1,0 +1,139 @@
+File Retrieval Strategy for SuperConfig v2.1 Implementation
+
+## CLEAN SLATE IMPLEMENTATION STATUS ✅ COMPLETED
+
+As of 2025-08-03, the current SuperConfig crate has been cleaned to a minimal state for v2.1 implementation:
+
+### Current Clean State (crates/superconfig/):
+```
+src/
+├── lib.rs                    # Clean v2.1 lib with logffi integration
+└── types/
+    ├── mod.rs               # Minimal types module
+    └── handle_id.rs         # New HandleID implementation
+tests/
+└── handle_id_tests.rs       # Unit tests for HandleID
+benches/
+└── registry_bench.rs.disabled  # Disabled until Phase 6
+Cargo.toml                   # Cleaned dependencies
+```
+
+### Files PRESERVED in Clean State:
+- ✅ **Infrastructure**: `moon.yml`, `CHANGELOG.md`, benchmark baselines
+- ✅ **Core dependencies**: `scc`, `logffi`, `serde`, `serde_json`, `thiserror`
+- ✅ **New HandleID system**: `src/types/handle_id.rs` + tests
+
+### Files ARCHIVED for Later Retrieval:
+All v2.0 implementation files are preserved in: `crates-archive/superconfigV2/`
+
+## FILE RETRIEVAL PLAN BY PHASE
+
+### Phase 1: Core Architecture (NEXT)
+**Files to retrieve and adapt:**
+
+1. **config_flags.rs** → **Retrieve as-is** (Excellent flag system)
+   ```bash
+   cp crates-archive/superconfigV2/src/config_flags.rs src/
+   ```
+   - **Why preserve**: Production-ready with startup/runtime separation
+   - **Adaptation needed**: None - integrate directly with new architecture
+   - **Integration point**: Use flags in ConfigRegistry for multi-format control
+
+2. **handle.rs** → **Adapt for new HandleID**
+   ```bash
+   cp crates-archive/superconfigV2/src/core/handle.rs src/core/
+   # Then update HandleId import to use our new types::HandleID
+   ```
+   - **Why preserve**: FFI-optimized design with PhantomData
+   - **Adaptation needed**: Update HandleId type import only
+   - **Integration point**: Work with new DataMap backend system
+
+3. **stats.rs** → **Enhance for multi-format**
+   ```bash
+   cp crates-archive/superconfigV2/src/core/stats.rs src/core/
+   # Then add multi-format operation counters
+   ```
+   - **Why preserve**: Saturating arithmetic and good API design
+   - **Adaptation needed**: Add format-specific operation tracking
+   - **Integration point**: Track performance across all formats
+
+### Phase 2-5: New Architecture Components
+**Create new files** - no retrieval needed:
+- `src/backend/` - New swappable backend system
+- `src/formats/` - New multi-format support system  
+- `src/sources/` - New env/CLI integration system
+- `src/trees/` - New tree management system
+- `src/api/` - New public API layer
+
+### Phase 6: Testing & Benchmarking 
+**Files to retrieve and adapt:**
+
+1. **registry_bench.rs** → **Update for new API**
+   ```bash
+   mv benches/registry_bench.rs.disabled benches/registry_bench.rs
+   # Then update for new ConfigRegistry API and multi-format tests
+   ```
+   - **Why preserve**: Comprehensive benchmark infrastructure
+   - **Adaptation needed**: Update for new SuperConfig API
+   - **Integration point**: Add format-specific benchmarks
+
+2. **Test patterns** → **Expand and enhance**
+   ```bash
+   # Reference: crates-archive/superconfigV2/tests/logging_integration_tests.rs
+   # Create new comprehensive test suite based on proven patterns
+   ```
+   - **Why reference**: Good test organization patterns
+   - **Adaptation needed**: Create new tests for multi-format functionality
+   - **Integration point**: Build comprehensive integration test suite
+
+## DEPENDENCY RETRIEVAL STRATEGY
+
+### Dependencies to Add Back (Phase-by-Phase):
+
+**Phase 1: Core Architecture**
+```toml
+# No additional dependencies needed - scc already present
+```
+
+**Phase 2: Multi-Format System** 
+```toml
+toml = "0.9.4"                    # Already present in archived Cargo.toml
+serde-yaml-bw = "0.3"             # Our researched choice for YAML  
+ini = "1.3"                       # New for INI support
+```
+
+**Phase 3: Sources System**
+```toml
+clap = { version = "4.0", optional = true }  # For CLI parsing
+```
+
+**Phase 6: Performance Features**
+```toml
+# Reference archived Cargo.toml for optional performance features:
+# - hot_reload, parallel, simd, profiling flags
+# - tokio, rayon, simd-json, tracing dependencies
+```
+
+## RETRIEVAL COMMANDS SUMMARY
+
+### Quick Reference Commands:
+```bash
+# Phase 1 file retrieval:
+cp crates-archive/superconfigV2/src/config_flags.rs src/
+cp crates-archive/superconfigV2/src/core/handle.rs src/core/
+cp crates-archive/superconfigV2/src/core/stats.rs src/core/
+
+# Phase 6 benchmark retrieval:
+mv benches/registry_bench.rs.disabled benches/registry_bench.rs
+
+# Dependency reference:
+diff crates-archive/superconfigV2/Cargo.toml Cargo.toml
+```
+
+### Integration Notes:
+1. **Preserve proven patterns** - config_flags.rs, handle.rs design, benchmark infrastructure
+2. **Enhance rather than replace** - stats system, test organization, performance baselines  
+3. **Reference for inspiration** - error handling patterns, Arc usage, module organization
+4. **Maintain compatibility** - benchmark baselines for performance regression detection
+
+This strategy ensures we leverage 60%+ of the proven v2.0 codebase while implementing the clean v2.1 architecture.
