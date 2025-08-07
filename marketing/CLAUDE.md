@@ -20,7 +20,7 @@ This folder manages strategic decisions for DeepBrain Technologies Ltd, a develo
 ## Key Decisions Made
 
 - **Company**: DeepBrain Technologies Ltd → Inc.
-- **Products**: LogFusion, MetaRust, SuperConfig, DeepBrain Core
+- **Products**: LogFusion, RustToolkit, SuperConfig, DeepBrain Core
 - **Strategy**: Hybrid descriptive naming + DeepBrain brand
 - **Market**: Rust devs → All devs → AI users
 

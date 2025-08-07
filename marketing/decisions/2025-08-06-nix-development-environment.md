@@ -60,7 +60,7 @@ The Makefile + proto approach successfully delivered:
 
 ## Context & Problem
 
-DeepBrain is building multiple monorepo-based products (LogFusion, MetaRust, SuperConfig, DeepBrain Core) with the following challenges:
+DeepBrain is building multiple monorepo-based products (LogFusion, RustToolkit, SuperConfig, DeepBrain Core) with the following challenges:
 
 1. **Inconsistent development environments** between local development, CI, and new team members
 2. **Manual tool installation** (cargo-examples, moon, etc.) prone to version drift

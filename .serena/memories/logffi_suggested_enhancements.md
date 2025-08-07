@@ -1,4 +1,4 @@
-# LogFFI Suggested Enhancements - Remaining Work Items
+# LogFusion Suggested Enhancements - Remaining Work Items
 
 Based on the error_info() enhancement, here are the remaining work items to implement:
 
@@ -16,7 +16,7 @@ Based on the error_info() enhancement, here are the remaining work items to impl
 ```rust
 // examples/structured_error_logging.rs
 use serde_json::json;
-use logffi::define_errors;
+use logfusion::define_errors;
 
 define_errors! {
     AppError {
@@ -54,7 +54,7 @@ fn main() {
 ```rust
 // examples/error_debugging_tools.rs
 use std::collections::BTreeMap;
-use logffi::define_errors;
+use logfusion::define_errors;
 
 pub fn analyze_error_patterns<E: ErrorInfo>(errors: &[E]) {
     let mut analysis = BTreeMap::new();

@@ -26,7 +26,7 @@ result_large_err = "allow" # Allow large error types for rich context
 
 ### Naming Conventions
 
-- **Crates**: kebab-case (`superconfig`, `logffi`, `superconfig-macros`)
+- **Crates**: kebab-case (`superconfig`, `logfusion`, `superconfig-macros`)
 - **Modules**: snake_case
 - **Functions**: snake_case
 - **Types/Structs**: PascalCase
@@ -44,13 +44,13 @@ result_large_err = "allow" # Allow large error types for rich context
 
 - **Library**: `thiserror` for custom error types
 - **Pattern**: Rich error context preferred over simple errors
-- **FFI Errors**: Use `logffi` macros for FFI-compatible error handling
+- **FFI Errors**: Use `logfusion` macros for FFI-compatible error handling
 
 ### Dependencies
 
 - **Serde**: Version 1.0+ with derive feature
 - **SCC**: Lock-free data structures (v2.3+)
-- **LogFFI**: Internal logging with FFI support
+- **LogFusion**: Internal logging with FFI support
 - **Performance**: Prefer zero-allocation where possible
 
 ### Code Organization
@@ -84,10 +84,10 @@ result_large_err = "allow" # Allow large error types for rich context
 type(scope): description
 
 Types: feat, fix, docs, style, refactor, test, chore
-Scopes: crate names (superconfig, logffi, multiffi)
+Scopes: crate names (superconfig, logfusion, multiffi)
 Examples:
 - feat(superconfig): add hierarchical configuration provider  
-- fix(logffi): resolve callback memory leak
+- fix(logfusion): resolve callback memory leak
 - chore(ci): update GitHub Actions workflow
 ```
 
@@ -143,7 +143,7 @@ Examples:
 ### Multi-language Support
 
 - **Target languages**: Python, Node.js, WebAssembly
-- **Logging**: Use `logffi` for consistent logging across languages
+- **Logging**: Use `logfusion` for consistent logging across languages
 - **Error handling**: FFI-compatible error types
 - **Memory management**: Careful ownership in FFI boundaries
 

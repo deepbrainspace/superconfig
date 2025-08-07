@@ -15,7 +15,7 @@ moon run superconfig:build
 moon run --affected :build-release
 
 # Build specific crate in release mode
-moon run logffi:build-release
+moon run logfusion:build-release
 ```
 
 ### Testing Commands

@@ -41,17 +41,17 @@
 ```bash
 # 1. Create one file
 # 2. Test it works
-git add crates/logffi/examples/new_example.rs
-git commit -m "feat(logffi): add new example demonstrating feature X"
+git add crates/logfusion/examples/new_example.rs
+git commit -m "feat(logfusion): add new example demonstrating feature X"
 
 # 3. Create next file  
 # 4. Test it works
-git add crates/logffi/tests/integration/new_test.rs
-git commit -m "test(logffi): add integration tests for feature X"
+git add crates/logfusion/tests/integration/new_test.rs
+git commit -m "test(logfusion): add integration tests for feature X"
 
 # 5. Update documentation
-git add crates/logffi/README.md
-git commit -m "docs(logffi): add feature X documentation to README"
+git add crates/logfusion/README.md
+git commit -m "docs(logfusion): add feature X documentation to README"
 ```
 
 ## Anti-patterns to Avoid

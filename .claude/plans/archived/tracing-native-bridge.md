@@ -51,7 +51,7 @@ src/
 
 ```rust
 use cfg_if::cfg_if;
-use meta_rust::for_each;
+use rusttoolkit::for_each;
 
 cfg_if! {
     if #[cfg(feature = "tracing")] {
@@ -310,7 +310,7 @@ tracing = { version = "0.1.41", optional = true }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "json"], optional = true }
 
 # For macro generation, error handling, and conditional compilation
-meta-rust = { path = "../meta-rust" }
+rusttoolkit = { path = "../rusttoolkit" }
 thiserror = "2.0.12"
 cfg-if = "1.0"
 

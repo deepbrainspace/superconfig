@@ -59,7 +59,7 @@ deepbrain.space (Next.js + Fumadocs)
 ├── /products/           # Product showcase pages
 ├── /docs/              # Documentation hub
 │   ├── /tracelog       # TraceLog documentation
-│   ├── /metarust       # MetaRust documentation
+│   ├── /metarust       # RustToolkit documentation
 │   └── /superconfig    # SuperConfig documentation
 ├── /blog/              # Technical blog
 ├── /playground/        # Interactive demos

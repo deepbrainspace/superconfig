@@ -8,15 +8,15 @@
 
 ## Executive Summary
 
-**Current Name**: meta-rust\
-**Leading Candidates**: MetaRust, RustMacro, MacroForge\
+**Current Name**: rusttoolkit\
+**Leading Candidates**: RustToolkit, RustMacro, MacroForge\
 **Decision Needed**: This week (blocks marketing materials)
 
 ---
 
-## Current Name Analysis: "meta-rust"
+## Current Name Analysis: "rusttoolkit"
 
-### Problems with "meta-rust"
+### Problems with "rusttoolkit"
 
 - **Hyphenated**: Less professional, harder to brand
 - **Too Generic**: "Meta" is overused (Meta/Facebook, metadata, etc.)
@@ -33,7 +33,7 @@
 
 ## Naming Options Evaluation
 
-### Option 1: MetaRust (CamelCase)
+### Option 1: RustToolkit (CamelCase)
 
 **Pros:**
 
@@ -137,26 +137,26 @@
 
 ## Opus 4.1 Recommendation
 
-### 🎯 **✅ DECISION MADE: MetaRust (Keep Current)**
+### 🎯 **✅ DECISION MADE: RustToolkit (Keep Current)**
 
-**Final Decision**: Keep "MetaRust" as product name (no change from meta-rust)
+**Final Decision**: Keep "RustToolkit" as product name (no change from rusttoolkit)
 
-**Why MetaRust won:**
+**Why RustToolkit won:**
 
-1. **Brand Continuity**: You already have users who know meta-rust. Don't lose that recognition.
+1. **Brand Continuity**: You already have users who know rusttoolkit. Don't lose that recognition.
 
 2. **Scope Advantage**: "Meta" covers ALL metaprogramming - macros, code generation, compile-time computation. MacroForge would limit you.
 
 3. **Minimal Migration**: Just update the styling, not a complete rebrand.
 
-4. **Professional Polish**: MetaRust looks like a real product. meta-rust looks like a GitHub repo.
+4. **Professional Polish**: RustToolkit looks like a real product. rusttoolkit looks like a GitHub repo.
 
 5. **Future Products**:
-   - MetaRust Core
-   - MetaRust Pro (with IDE integration)
-   - MetaRust Cloud (macro sharing platform?)
+   - RustToolkit Core
+   - RustToolkit Pro (with IDE integration)
+   - RustToolkit Cloud (macro sharing platform?)
 
-### Marketing Positioning with MetaRust
+### Marketing Positioning with RustToolkit
 
 **Tagline Options:**
 
@@ -181,38 +181,38 @@ If you want something completely fresh, I'd pick **MacroForge** because:
 - Clear value proposition
 - Sounds professional
 
-But I honestly think keeping MetaRust (just styled better) is the smartest move. You're not fixing a broken name, just polishing it.
+But I honestly think keeping RustToolkit (just styled better) is the smartest move. You're not fixing a broken name, just polishing it.
 
 ---
 
 ## Decision Criteria Checklist
 
-| Criteria          | meta-rust | MetaRust | MacroForge | RustMacro | CodeWeaver |
-| ----------------- | --------- | -------- | ---------- | --------- | ---------- |
-| Easy to pronounce | ✅        | ✅       | ✅         | ✅        | ✅         |
-| Memorable         | 🟡        | ✅       | ✅         | 🟡        | ✅         |
-| Descriptive       | ✅        | ✅       | ✅         | ✅        | ❌         |
-| SEO potential     | 🟡        | 🟡       | ✅         | ✅        | ❌         |
-| Unique            | ❌        | 🟡       | ✅         | ❌        | ✅         |
-| Scalable brand    | 🟡        | ✅       | ✅         | ❌        | 🟡         |
-| Professional      | ❌        | ✅       | ✅         | 🟡        | ✅         |
-| Continuity        | ✅        | ✅       | ❌         | ❌        | ❌         |
+| Criteria          | rusttoolkit | RustToolkit | MacroForge | RustMacro | CodeWeaver |
+| ----------------- | ----------- | ----------- | ---------- | --------- | ---------- |
+| Easy to pronounce | ✅          | ✅          | ✅         | ✅        | ✅         |
+| Memorable         | 🟡          | ✅          | ✅         | 🟡        | ✅         |
+| Descriptive       | ✅          | ✅          | ✅         | ✅        | ❌         |
+| SEO potential     | 🟡          | 🟡          | ✅         | ✅        | ❌         |
+| Unique            | ❌          | 🟡          | ✅         | ❌        | ✅         |
+| Scalable brand    | 🟡          | ✅          | ✅         | ❌        | 🟡         |
+| Professional      | ❌          | ✅          | ✅         | 🟡        | ✅         |
+| Continuity        | ✅          | ✅          | ❌         | ❌        | ❌         |
 
-**Winner: MetaRust** (7/8 criteria met + continuity bonus)
+**Winner: RustToolkit** (7/8 criteria met + continuity bonus)
 
 ---
 
 ## Implementation Plan
 
-If we choose MetaRust:
+If we choose RustToolkit:
 
 1. **Minimal Changes Needed**:
    - Update Cargo.toml name field
    - Update documentation headers
-   - Keep crates.io slug as meta-rust (for compatibility)
+   - Keep crates.io slug as rusttoolkit (for compatibility)
 
 2. **Marketing Materials**:
-   - Always use "MetaRust" in writing
+   - Always use "RustToolkit" in writing
    - Logo uses CamelCase
    - Keep GitHub URL as-is for now
 
@@ -220,7 +220,7 @@ If we choose MetaRust:
 
 ## Opus 4.1 Final Thoughts
 
-This is a much easier decision than logffi. You have a decent name that just needs polish. Don't overthink it - MetaRust is fine. Save your energy for the bigger battles (like domain strategy).
+This is a much easier decision than logffi. You have a decent name that just needs polish. Don't overthink it - RustToolkit is fine. Save your energy for the bigger battles (like domain strategy).
 
 The hyphen → CamelCase change is enough to look professional without confusing existing users.
 

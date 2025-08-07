@@ -5,7 +5,7 @@
 SuperConfig is a comprehensive multi-language configuration management ecosystem designed for modern applications. It provides:
 
 - **Core SuperConfig Library**: Advanced configuration management with hierarchical cascading, intelligent array merging, and smart format detection
-- **LogFFI**: Drop-in replacement for Rust's log crate with FFI callback support for multi-language integration
+- **LogFusion**: Drop-in replacement for Rust's log crate with FFI callback support for multi-language integration
 - **MultiFI**: Multi-language FFI binding generator for Python, Node.js, and WebAssembly
 - **SuperConfig Macros**: Procedural macros for fluent API error handling and FFI integration
 
@@ -39,11 +39,11 @@ SuperConfig is a comprehensive multi-language configuration management ecosystem
 superconfig/
 ├── crates/                 # All Rust crates
 │   ├── superconfig/        # Main configuration library
-│   ├── logffi/             # FFI logging library
+│   ├── logfusion/             # FFI logging library
 │   ├── multiffi/           # Multi-language FFI generator
 │   ├── superconfig-macros/ # Procedural macros
 │   ├── superhashmap/       # High-performance hashmap
-│   ├── meta-rust/          # Rust metaprogramming utilities
+│   ├── rusttoolkit/          # Rust metaprogramming utilities
 │   └── hash-benchmark/     # Benchmarking utilities
 ├── .moon/                  # Moon build system configuration
 ├── .github/                # GitHub Actions workflows

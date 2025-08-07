@@ -20,7 +20,7 @@
 | 🏗️ **Infra**          | [Monorepo structure](decisions/2025-08-06-infrastructure.md#monorepo)                                        | Moon monorepo                           | 6.8.25 | 🟢       | **✓**  | **✓** |
 | 💼 **Business**      | [Company naming](decisions/2025-08-06-company-logffi-naming.md)                                              | DeepBrain Technologies Ltd              | 6.8.25 | 🔴       | **✓**  | **—** |
 | 🎨 **Branding**      | [Product: logffi → LogFusion](decisions/2025-08-06-company-logffi-naming.md#part-2-logffi-alternative-names) | LogFusion                               | 6.8.25 | 🔴       | **✓**  | **—** |
-| 🎨 **Branding**      | [Product: meta-rust](decisions/2025-08-06-metarust-naming.md)                                                | MetaRust (keep current)                 | 6.8.25 | 🔴       | **✓**  | **—** |
+| 🎨 **Branding**      | [Product: rusttoolkit](decisions/2025-08-06-metarust-naming.md)                                              | RustToolkit (keep current)              | 6.8.25 | 🔴       | **✓**  | **—** |
 | 🎨 **Branding**      | [Product suite strategy](decisions/2025-08-06-product-suite-branding.md)                                     | Hybrid: descriptive + brand             | 6.8.25 | 🔴       | **✓**  | **—** |
 | 💼 **Business**      | [Incorporation strategy](decisions/2025-08-06-business-formation.md)                                         | UK Ltd → Delaware C-Corp                | 6.8.25 | 🔴       | **✓**  | **—** |
 | 💼 **Business**      | [Partner equity](decisions/2025-08-06-business-formation.md#partner-equity-structure-mark-a)                 | Mark A: 2-5% performance                | 6.8.25 | 🔴       | **✓**  | **—** |
@@ -53,7 +53,7 @@
 
 ### 🔴 This Week (Urgent)
 
-- [x] ~~Decide product names~~ ✅ LogFusion & MetaRust decided [[Company & LogFFI Naming]](decisions/2025-08-06-company-logffi-naming.md)
+- [x] ~~Decide product names~~ ✅ LogFusion & RustToolkit decided [[Company & LogFFI Naming]](decisions/2025-08-06-company-logffi-naming.md)
 - [x] ~~Finalize domain strategy~~ ✅ deepbrain.space decided [[Domain Strategy]](decisions/2025-08-06-domain-strategy.md)
 - [ ] Create deepbrain/business repository [[Business Repo Location]](decisions/2025-08-06-business-repo-location.md)
 - [ ] Rename logffi → logfusion throughout codebase [[Development Focus]](decisions/2025-08-06-development-focus.md)
@@ -69,7 +69,7 @@
 - [ ] Move marketing decisions to deepbrain/business repository [[Business Repo Location]](decisions/2025-08-06-business-repo-location.md)
 - [ ] Extract GitHub repository template from logfusion patterns [[Development Focus]](decisions/2025-08-06-development-focus.md)
 - [ ] Complete codebase update for DeepBrain Branding (Cargo.toml, docs, README) [[Company & LogFFI Naming]](decisions/2025-08-06-company-logffi-naming.md)
-- [ ] Create logos/branding for LogFusion and MetaRust [[Product Suite Branding]](decisions/2025-08-06-product-suite-branding.md)
+- [ ] Create logos/branding for LogFusion and RustToolkit [[Product Suite Branding]](decisions/2025-08-06-product-suite-branding.md)
 - [ ] Setup Google Analytics 4 for cross-domain tracking [[Repository Architecture]](decisions/2025-08-06-repository-architecture.md)
 - [ ] Set up main deepbrain monorepo structure [[Repository Architecture]](decisions/2025-08-06-repository-architecture.md)
 
@@ -99,7 +99,7 @@
 | 2025-08-06 | [Marketing Start Analysis](decisions/2025-08-06-marketing-start-analysis.md)                   | Soft launch after product 2, full after product 3                        |
 | 2025-08-06 | [Company Naming & LogFFI](decisions/2025-08-06-company-logffi-naming.md)                       | DeepBrain Technologies Ltd + ErrorForge product name                     |
 | 2025-08-06 | [Product Suite Branding](decisions/2025-08-06-product-suite-branding.md)                       | Hybrid strategy: descriptive names with DeepBrain brand                  |
-| 2025-08-06 | [Meta-Rust Naming Options](decisions/2025-08-06-metarust-naming.md)                            | MetaRust (keep current) for Rust-specific tool                           |
+| 2025-08-06 | [Meta-Rust Naming Options](decisions/2025-08-06-metarust-naming.md)                            | RustToolkit (keep current) for Rust-specific tool                        |
 | 2025-08-06 | [Domain Strategy](decisions/2025-08-06-domain-strategy.md)                                     | deepbrain.dev primary, .space for creative, archive superconfig.dev      |
 | 2025-08-06 | [Nix Development Environment](decisions/2025-08-06-nix-development-environment.md)             | Nix for dev environments + future package distribution                   |
 
@@ -107,10 +107,10 @@
 
 ## 📊 Decision History
 
-| Date           | Decisions Made                                                                                                                                                                                                                                                                                         |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **2025-08-07** | • CLI libraries research (inquire, dialoguer, ratatui) - defer for now<br>• Nix development environment ABORTED - use Makefile + proto<br>• Serena MCP integration ABORTED - too automated, not transparent                                                                                            |
-| **2025-08-06** | • Company: DeepBrain Technologies Ltd<br>• Products: LogFusion (logffi), MetaRust (keep)<br>• Product suite strategy (hybrid naming)<br>• Business formation (UK → US)<br>• Bootstrap funding<br>• Partner equity (2-5%)<br>• Website tech (Next.js + Fumadocs)<br>• Infrastructure (Moon, Cloudflare) |
+| Date           | Decisions Made                                                                                                                                                                                                                                                                                            |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **2025-08-07** | • CLI libraries research (inquire, dialoguer, ratatui) - defer for now<br>• Nix development environment ABORTED - use Makefile + proto<br>• Serena MCP integration ABORTED - too automated, not transparent                                                                                               |
+| **2025-08-06** | • Company: DeepBrain Technologies Ltd<br>• Products: LogFusion (logffi), RustToolkit (keep)<br>• Product suite strategy (hybrid naming)<br>• Business formation (UK → US)<br>• Bootstrap funding<br>• Partner equity (2-5%)<br>• Website tech (Next.js + Fumadocs)<br>• Infrastructure (Moon, Cloudflare) |
 
 ---
 

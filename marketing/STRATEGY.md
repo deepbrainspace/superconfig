@@ -12,7 +12,7 @@ This document outlines the strategic positioning, branding, and technical archit
 
 - **Company**: DeepBrain Inc.
 - **Current Products**:
-  - **rusttoolkit** - Language extensions & macros (formerly meta-rust)
+  - **rusttoolkit** - Language extensions & macros (formerly rusttoolkit)
   - **cargotoolkit** - Cargo workflow tools & subcommands
   - **logfusion** - Logging, tracing & error handling (formerly logffi)
   - **superconfig** - Configuration management
@@ -99,7 +99,7 @@ github.com/deepbrainspace/
 
 | Current Name    | Final Name       | Description                                 | Tagline                        |
 | --------------- | ---------------- | ------------------------------------------- | ------------------------------ |
-| **meta-rust**   | **rusttoolkit**  | Procedural macros & language extensions     | "Rust language supercharged"   |
+| **rusttoolkit** | **rusttoolkit**  | Procedural macros & language extensions     | "Rust language supercharged"   |
 | **N/A**         | **cargotoolkit** | Enhanced cargo subcommands & workflow tools | "Cargo workflow perfected"     |
 | **logffi**      | **logfusion**    | Unified logging, tracing & error handling   | "All your logs, one interface" |
 | **superconfig** | **superconfig**  | Universal configuration management          | "Configuration done right"     |
@@ -205,7 +205,7 @@ tasks:
   - LogFFI: define_errors! macro (main adoption driver)
   - LogFFI: tracing/thiserror compatibility (no separate imports)
   - LogFFI: FFI callbacks (niche use case)
-  - MetaRust: Rust-specific macro utilities
+  - RustToolkit: Rust-specific macro utilities
 - **Channels**: crates.io, r/rust, This Week in Rust, RustConf
 
 #### Phase 2: Wider Developer Community (3-6 months)
@@ -231,7 +231,7 @@ tasks:
 **Rust-Specific Products** (Limited to Rust ecosystem):
 
 - **LogFFI replacement**: Performance & quality advantages only in Rust
-- **MetaRust**: Rust macro system, cannot port to other languages
+- **RustToolkit**: Rust macro system, cannot port to other languages
 - **Strategic Note**: Accept these as ecosystem-building tools with limited TAM
 
 **Cross-Language Products** (Broader market potential):

@@ -146,7 +146,7 @@ github.com/deepbrain/logfusion
 | ------------------ | ------------------ | -------------------------- | ---------------- |
 | **Company**        | deepbrain.space    | `deepbrain/deepbrain`      | Cloudflare Pages |
 | **LogFusion**      | logfusion.dev      | `deepbrain/logfusion`      | Cloudflare Pages |
-| **MetaRust**       | metarust.dev       | `deepbrain/metarust`       | Cloudflare Pages |
+| **RustToolkit**    | metarust.dev       | `deepbrain/metarust`       | Cloudflare Pages |
 | **SuperConfig**    | superconfig.dev    | `deepbrain/superconfig`    | Cloudflare Pages |
 | **DeepBrain Core** | deepbrain.space/ai | `deepbrain/deepbrain-core` | Cloudflare Pages |
 
@@ -352,10 +352,10 @@ template-product-monorepo/
 - [ ] Configure documentation sync
 - [ ] Deploy to logfusion.dev
 
-**2. MetaRust Repository**:
+**2. RustToolkit Repository**:
 
 - [ ] Create from template: `github.com/deepbrain/metarust`
-- [ ] Migrate current meta-rust code
+- [ ] Migrate current rusttoolkit code
 - [ ] Set up website and documentation
 - [ ] Deploy to metarust.dev
 

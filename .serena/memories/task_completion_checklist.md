@@ -86,7 +86,7 @@ moon run --affected :coverage        # Generate coverage reports
 
 1. **Multi-language testing**: Test with Python, Node.js if applicable
 2. **Memory management**: Careful attention to ownership
-3. **Error handling**: Use logffi macros for consistent error handling
+3. **Error handling**: Use logfusion macros for consistent error handling
 4. **Documentation**: Update multi-language examples
 
 ## Quality Gates (Must Pass)

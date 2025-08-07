@@ -59,9 +59,9 @@
 
 **Correct**:
 
-- ✅ `moon logffi:test`
-- ✅ `moon logffi:build`
-- ✅ `moon logffi:lint`
+- ✅ `moon logfusion:test`
+- ✅ `moon logfusion:build`
+- ✅ `moon logfusion:lint`
 
 **Incorrect**:
 
@@ -79,4 +79,4 @@
 6. **Push** - Push to remote to save progress
 7. **Repeat** - Move to next small piece
 
-This approach was successfully demonstrated in the LogFFI error introspection enhancement project where 9 tasks were completed incrementally with regular commits and pushes.
+This approach was successfully demonstrated in the LogFusion error introspection enhancement project where 9 tasks were completed incrementally with regular commits and pushes.

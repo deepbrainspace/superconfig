@@ -12,22 +12,22 @@
 ## MOON COMMANDS REQUIRED
 
 - **ALWAYS use Moon commands instead of direct cargo commands**
-- **Build**: `moon run logffi:build` (NOT `cargo build`)
-- **Test**: `moon run logffi:test` (NOT `cargo test`)
-- **Lint**: `moon run logffi:lint` (NOT `cargo clippy`)
-- **Format**: `moon run logffi:format` (NOT `cargo fmt`)
+- **Build**: `moon run logfusion:build` (NOT `cargo build`)
+- **Test**: `moon run logfusion:test` (NOT `cargo test`)
+- **Lint**: `moon run logfusion:lint` (NOT `cargo clippy`)
+- **Format**: `moon run logfusion:format` (NOT `cargo fmt`)
 - **Quality checks**: `moon run --affected :lint` and `moon run --affected :format`
 
 ## Warning Fixing Workflow
 
-1. **After ANY code change** - immediately run `moon run logffi:lint`
+1. **After ANY code change** - immediately run `moon run logfusion:lint`
 2. **Fix every single warning** - no exceptions, no "leave it for later"
-3. **Test again** - ensure fixes don't break functionality with `moon run logffi:test`
+3. **Test again** - ensure fixes don't break functionality with `moon run logfusion:test`
 4. **Only then commit** - never commit code with warnings
 
 ## Testing Standards
 
-- All tests must pass with ZERO warnings using `moon run logffi:test`
+- All tests must pass with ZERO warnings using `moon run logfusion:test`
 - No ignored tests without explicit justification
 - Comprehensive test coverage for new features
 - Integration tests for public APIs

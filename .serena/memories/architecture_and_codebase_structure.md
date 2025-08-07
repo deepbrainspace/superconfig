@@ -8,11 +8,11 @@
 superconfig/                         # Root workspace
 ├── crates/                          # All Rust crates
 │   ├── superconfig/                 # 🏗️ Main configuration library
-│   ├── logffi/                      # 📋 FFI logging with callback support
+│   ├── logfusion/                      # 📋 FFI logging with callback support
 │   ├── multiffi/                    # 🔌 Multi-language FFI generator
 │   ├── superconfig-macros/          # 🪄 Procedural macros
 │   ├── superhashmap/               # ⚡ High-performance hashmap
-│   ├── meta-rust/                  # 🦀 Rust metaprogramming utilities
+│   ├── rusttoolkit/                  # 🦀 Rust metaprogramming utilities
 │   └── hash-benchmark/             # 📊 Benchmarking utilities
 ├── .moon/                          # 🌙 Moon build system config
 ├── .github/                        # 🚀 CI/CD workflows
@@ -49,7 +49,7 @@ superconfig/
 
 ## Supporting Crates
 
-### LogFFI (`crates/logffi/`)
+### LogFusion (`crates/logfusion/`)
 
 - **Purpose**: Multi-backend logging with FFI callback support
 - **Features**: Tracing integration, callback support, error macros
@@ -66,7 +66,7 @@ superconfig/
 
 - **Purpose**: Procedural macros for SuperConfig ecosystem
 - **Features**: Fluent API error handling, FFI integration macros
-- **Dependencies**: Built on meta-rust utilities
+- **Dependencies**: Built on rusttoolkit utilities
 
 ## Build System Architecture
 
@@ -109,7 +109,7 @@ pre-push:
 - **serde_json**: JSON handling with raw values
 - **thiserror**: Error handling and custom errors
 - **scc**: Lock-free concurrent data structures
-- **logffi**: Internal logging (path dependency)
+- **logfusion**: Internal logging (path dependency)
 
 ### Development Dependencies
 

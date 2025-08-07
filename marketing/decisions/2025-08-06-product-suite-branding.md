@@ -11,14 +11,14 @@
 
 ### 🟡 Next 2 Weeks (Important)
 
-- [ ] Create logos/branding for LogFusion and MetaRust
+- [ ] Create logos/branding for LogFusion and RustToolkit
 - [ ] Apply hybrid strategy to all product marketing materials
 
 ---
 
 ## Executive Summary
 
-**Current Situation**: 4 unrelated product names (logffi, meta-rust, superconfig, deepbrain)\
+**Current Situation**: 4 unrelated product names (logffi, rusttoolkit, superconfig, deepbrain)\
 **Core Question**: Should products share naming convention or remain independent?\
 **My Recommendation**: **Hybrid approach** - DeepBrain umbrella with descriptive product names
 
@@ -27,7 +27,7 @@
 ## Current Product Portfolio
 
 1. **logffi** → Logging & error handling (proposed: TraceLog)
-2. **meta-rust** → Rust metaprogramming utilities (proposed: MetaRust)
+2. **rusttoolkit** → Rust metaprogramming utilities (proposed: RustToolkit)
 3. **superconfig** → Configuration management
 4. **deepbrain** → AI context brain (core product)
 
@@ -88,7 +88,7 @@
 **Structure:**
 
 - TraceLog (logging)
-- MetaRust (metaprogramming)
+- RustToolkit (metaprogramming)
 - SuperConfig (configuration)
 - DeepBrain (AI brain)
 
@@ -255,7 +255,7 @@ Given the hybrid strategy:
    - "by DeepBrain" in small text
 
 2. **Meta-Rust → MetaForge**
-   - More distinctive than MetaRust
+   - More distinctive than RustToolkit
    - Implies creation/building
    - Still clearly about metaprogramming
 
