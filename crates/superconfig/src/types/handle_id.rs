@@ -21,8 +21,9 @@ pub type HandleID = u64;
 /// Global counter for generating unique handle IDs
 ///
 /// Uses atomic operations for thread-safety without locks.
-/// Starts at 1 to reserve 0 for special cases (e.g., null/invalid handles).
-static NEXT_HANDLE_ID: AtomicU64 = AtomicU64::new(1);
+/// Starts at 0 so that `fetch_add` returns 0, 1, 2, etc. and we add 1 to get 1, 2, 3, etc.
+/// This reserves 0 for special cases (e.g., null/invalid handles).
+static NEXT_HANDLE_ID: AtomicU64 = AtomicU64::new(0);
 
 /// Generate a new unique handle ID
 ///
@@ -42,7 +43,10 @@ static NEXT_HANDLE_ID: AtomicU64 = AtomicU64::new(1);
 /// ```
 #[must_use]
 pub fn generate_handle_id() -> HandleID {
-    NEXT_HANDLE_ID.fetch_add(1, Ordering::Relaxed)
+    // fetch_add returns the previous value, then atomically increments
+    // We add 1 to skip 0 (reserved for invalid/null handles)
+    let id = NEXT_HANDLE_ID.fetch_add(1, Ordering::SeqCst);
+    id + 1
 }
 
 /// Reset the handle ID counter (primarily for testing)
@@ -63,7 +67,7 @@ pub fn generate_handle_id() -> HandleID {
 /// assert_eq!(id, 1);
 /// ```
 pub fn reset_handle_counter() {
-    NEXT_HANDLE_ID.store(1, Ordering::SeqCst);
+    NEXT_HANDLE_ID.store(0, Ordering::SeqCst);
 }
 
 /// Get the current handle ID counter value without incrementing
@@ -83,7 +87,7 @@ pub fn reset_handle_counter() {
 /// ```
 #[must_use]
 pub fn get_current_handle_count() -> HandleID {
-    NEXT_HANDLE_ID.load(Ordering::Relaxed)
+    NEXT_HANDLE_ID.load(Ordering::Relaxed) + 1
 }
 
 /// Check if a handle ID is valid (non-zero)

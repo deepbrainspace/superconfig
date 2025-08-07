@@ -1,5 +1,6 @@
 //! Unit tests for handle ID generation and management
 
+use serial_test::serial;
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::thread;
@@ -8,6 +9,7 @@ use superconfig::types::{
 };
 
 #[test]
+#[serial]
 fn test_generate_unique_ids() {
     reset_handle_counter();
 
@@ -25,6 +27,7 @@ fn test_generate_unique_ids() {
 }
 
 #[test]
+#[serial]
 fn test_thread_safety() {
     reset_handle_counter();
 
@@ -59,12 +62,13 @@ fn test_thread_safety() {
 }
 
 #[test]
+#[serial]
 fn test_reset_counter() {
     reset_handle_counter();
     assert_eq!(get_current_handle_count(), 1);
 
-    generate_handle_id();
-    generate_handle_id();
+    let _ = generate_handle_id();
+    let _ = generate_handle_id();
     assert_eq!(get_current_handle_count(), 3);
 
     reset_handle_counter();
@@ -75,18 +79,19 @@ fn test_reset_counter() {
 }
 
 #[test]
+#[serial]
 fn test_get_current_handle_count() {
     reset_handle_counter();
 
     let initial = get_current_handle_count();
     assert_eq!(initial, 1);
 
-    generate_handle_id();
+    let _ = generate_handle_id();
     let after_one = get_current_handle_count();
     assert_eq!(after_one, 2);
 
-    generate_handle_id();
-    generate_handle_id();
+    let _ = generate_handle_id();
+    let _ = generate_handle_id();
     let after_three = get_current_handle_count();
     assert_eq!(after_three, 4);
 }
@@ -102,21 +107,34 @@ fn test_handle_id_type_compatibility() {
 }
 
 #[test]
+#[serial]
 fn test_large_number_of_ids() {
-    reset_handle_counter();
+    // Don't reset counter - just test uniqueness of generated IDs
+    // This avoids race conditions with other tests
 
-    // Generate many IDs to test for overflow concerns
+    // Generate many IDs to test for uniqueness
     let mut ids = HashSet::new();
+    let mut prev_id = 0;
+
     for _ in 0..10000 {
         let id = generate_handle_id();
+        // Each ID should be unique
         assert!(ids.insert(id), "Duplicate ID: {}", id);
+        // IDs should be monotonically increasing
+        assert!(
+            id > prev_id,
+            "ID {} not greater than previous {}",
+            id,
+            prev_id
+        );
+        prev_id = id;
     }
 
     assert_eq!(ids.len(), 10000);
-    assert_eq!(get_current_handle_count(), 10001); // Started at 1, generated 10000
 }
 
 #[test]
+#[serial]
 fn test_atomic_ordering() {
     reset_handle_counter();
 

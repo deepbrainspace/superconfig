@@ -47,11 +47,11 @@ pub mod types;
 // Re-exports for current types
 pub use types::*;
 
-// Re-export logffi under a logging namespace for better API organization
-/// Logging functionality provided by the logffi crate
+/// Re-export logfusion under a logging namespace for better API organization
+/// Logging functionality provided by the logfusion crate
 ///
 /// This module provides structured logging with FFI callback support.
 /// Use this for all logging needs within `SuperConfig` applications.
 pub mod logging {
-    pub use logffi::*;
+    pub use logfusion::*;
 }
