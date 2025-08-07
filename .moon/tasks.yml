@@ -172,3 +172,11 @@ tasks:
     inputs: ["@globs(sources)", "@globs(configs)"]
     options:
       cache: false
+
+  # Run all examples in the crate
+  examples:
+    command: "../../.moon/scripts/run_examples.sh"
+    inputs: ["@globs(sources)", "examples/**/*", "@globs(configs)"]
+    options:
+      cache: false
+      outputStyle: "stream"
