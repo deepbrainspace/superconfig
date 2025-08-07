@@ -29,7 +29,7 @@ unsafe impl<K: Sync, S: Sync> Sync for HashSet<K, S> {}
 /// # Examples
 ///
 /// ```rust
-/// use papaya::{HashSet, ResizeMode};
+/// use superhashmap::{HashSet, ResizeMode};
 /// use seize::Collector;
 /// use std::collections::hash_map::RandomState;
 ///
@@ -144,7 +144,7 @@ impl<K> HashSet<K> {
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashSet;
+    /// use superhashmap::HashSet;
     /// let map: HashSet<&str> = HashSet::new();
     /// ```
     pub fn new() -> HashSet<K> {
@@ -160,7 +160,7 @@ impl<K> HashSet<K> {
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashSet;
+    /// use superhashmap::HashSet;
     /// let set: HashSet<&str> = HashSet::with_capacity(10);
     /// ```
     pub fn with_capacity(capacity: usize) -> HashSet<K> {
@@ -206,7 +206,7 @@ impl<K, S> HashSet<K, S> {
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashSet;
+    /// use superhashmap::HashSet;
     /// use std::hash::RandomState;
     ///
     /// let s = RandomState::new();
@@ -235,7 +235,7 @@ impl<K, S> HashSet<K, S> {
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashSet;
+    /// use superhashmap::HashSet;
     /// use std::hash::RandomState;
     ///
     /// let s = RandomState::new();
@@ -314,7 +314,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashSet;
+    /// use superhashmap::HashSet;
     ///
     /// let set = HashSet::new();
     ///
@@ -332,7 +332,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashSet;
+    /// use superhashmap::HashSet;
     ///
     /// let set = HashSet::new();
     /// assert!(set.is_empty());
@@ -357,7 +357,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashSet;
+    /// use superhashmap::HashSet;
     ///
     /// let set = HashSet::new();
     /// set.pin().insert(1);
@@ -384,7 +384,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashSet;
+    /// use superhashmap::HashSet;
     ///
     /// let set = HashSet::new();
     /// set.pin().insert(1);
@@ -415,7 +415,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashSet;
+    /// use superhashmap::HashSet;
     ///
     /// let set = HashSet::new();
     /// assert_eq!(set.pin().insert(37), true);
@@ -444,7 +444,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashSet;
+    /// use superhashmap::HashSet;
     ///
     /// let set = HashSet::new();
     /// set.pin().insert(1);
@@ -477,7 +477,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashSet;
+    /// use superhashmap::HashSet;
     ///
     /// let set: HashSet<&str> = HashSet::new();
     /// set.pin().reserve(10);
@@ -496,7 +496,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashSet;
+    /// use superhashmap::HashSet;
     ///
     /// let set = HashSet::new();
     ///
@@ -524,7 +524,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashSet;
+    /// use superhashmap::HashSet;
     ///
     /// let mut set: HashSet<i32> = (0..8).collect();
     /// set.pin().retain(|&v| v % 2 == 0);
@@ -549,7 +549,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashSet;
+    /// use superhashmap::HashSet;
     ///
     /// let set = HashSet::from([
     ///     "a",

@@ -40,11 +40,11 @@ unsafe impl<K: Send + Sync, V: Send + Sync, S: Sync> Sync for HashMap<K, V, S> {
 /// # Examples
 ///
 /// ```rust
-/// use papaya::{HashMap, ResizeMode};
+/// use superhashmap::{HashMap, ResizeMode};
 /// use seize::Collector;
-/// use std::collections::hash_map::RandomState;
+/// use ahash::RandomState;
 ///
-/// let map: HashMap<i32, i32> = HashMap::builder()
+/// let map: HashMap<i32, i32, RandomState> = HashMap::builder()
 ///     // Set the initial capacity.
 ///     .capacity(2048)
 ///     // Set the hasher.
@@ -195,7 +195,7 @@ impl<K, V> HashMap<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     /// let map: HashMap<&str, i32> = HashMap::new();
     /// ```
     pub fn new() -> HashMap<K, V> {
@@ -214,7 +214,7 @@ impl<K, V> HashMap<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     /// let map: HashMap<&str, i32> = HashMap::with_capacity(10);
     /// ```
     pub fn with_capacity(capacity: usize) -> HashMap<K, V> {
@@ -260,7 +260,7 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     /// use std::hash::RandomState;
     ///
     /// let s = RandomState::new();
@@ -289,7 +289,7 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     /// use std::hash::RandomState;
     ///
     /// let s = RandomState::new();
@@ -368,7 +368,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::new();
     ///
@@ -386,7 +386,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::new();
     /// assert!(map.is_empty());
@@ -411,7 +411,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::new();
     /// map.pin().insert(1, "a");
@@ -438,7 +438,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::new();
     /// map.pin().insert(1, "a");
@@ -469,7 +469,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::new();
     /// map.pin().insert(1, "a");
@@ -498,7 +498,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::new();
     /// assert_eq!(map.pin().insert(37, "a"), None);
@@ -526,7 +526,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::new();
     /// let map = map.pin();
@@ -567,7 +567,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::new();
     /// let map = map.pin();
@@ -599,7 +599,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::new();
     /// assert_eq!(map.pin().get_or_insert("a", 3), &3);
@@ -626,7 +626,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::new();
     /// assert_eq!(map.pin().get_or_insert_with("a", || 3), &3);
@@ -661,7 +661,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::new();
     /// map.pin().insert("a", 1);
@@ -690,7 +690,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::new();
     /// assert_eq!(*map.pin().update_or_insert("a", |i| i + 1, 0), 0);
@@ -723,7 +723,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::new();
     /// assert_eq!(*map.pin().update_or_insert_with("a", |i| i + 1, || 0), 0);
@@ -762,7 +762,7 @@ where
     /// # Examples
     ///
     /// ```rust
-    /// use papaya::{HashMap, Operation, Compute};
+    /// use superhashmap::{HashMap, Operation, Compute};
     ///
     /// let map = HashMap::new();
     /// let map = map.pin();
@@ -814,7 +814,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::new();
     /// map.pin().insert(1, "a");
@@ -843,7 +843,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::new();
     /// map.pin().insert(1, "a");
@@ -874,7 +874,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::new();
     /// map.pin().insert(1, "a");
@@ -914,7 +914,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map: HashMap<&str, i32> = HashMap::new();
     /// map.pin().reserve(10);
@@ -933,7 +933,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::new();
     ///
@@ -961,7 +961,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let mut map: HashMap<i32, i32> = (0..8).map(|x| (x, x * 10)).collect();
     /// map.pin().retain(|&k, _| k % 2 == 0);
@@ -985,7 +985,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::from([
     ///     ("a", 1),
@@ -1016,7 +1016,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::from([
     ///     ("a", 1),
@@ -1048,7 +1048,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use papaya::HashMap;
+    /// use superhashmap::HashMap;
     ///
     /// let map = HashMap::from([
     ///     ("a", 1),

@@ -25,7 +25,7 @@
 //! `papaya` aims to provide an ergonomic API without sacrificing performance. [`HashMap`] exposes a lock-free API, enabling it to hand out direct references to objects in the map without the need for wrapper types that are clunky and prone to deadlocks. However, you can't hold on to references forever due to concurrent removals. Because of this, the `HashMap` API is structured around *pinning*. Through a pin you can access the map just like a standard `HashMap`. A pin is similar to a lock guard, so any references that are returned will be tied to the lifetime of the guard. Unlike a lock however, pinning is cheap and can never cause deadlocks.
 //!
 //! ```rust
-//! use papaya::HashMap;
+//! use superhashmap::HashMap;
 //!
 //! // Create a map.
 //! let map = HashMap::new();
@@ -42,7 +42,7 @@
 //! As expected of a concurrent `HashMap`, all operations take a shared reference. This allows the map to be freely pinned and accessed from multiple threads:
 //!
 //! ```rust
-//! use papaya::HashMap;
+//! use superhashmap::HashMap;
 //!
 //! // Use a map from multiple threads.
 //! let map = HashMap::new();
@@ -87,7 +87,7 @@
 //! As mentioned above, `papaya` does not support locking keys to prevent access, which makes performing complex operations more challenging. Instead, `papaya` exposes a number of atomic operations. The most basic of these is [`HashMap::update`], which can be used to update an existing value in the map using a closure:
 //!
 //! ```rust
-//! let map = papaya::HashMap::new();
+//! let map = superhashmap::HashMap::new();
 //! map.pin().insert("poneyland", 42);
 //! assert_eq!(map.pin().update("poneyland", |e| e + 1), Some(&43));
 //! ```
@@ -119,7 +119,7 @@
 //! However, implementing this with a concurrent `HashMap` is tricky as the entry may be modified in-between operations. Instead, you can write the above operation using [`HashMap::update_or_insert`]:
 //!
 //! ```rust
-//! use papaya::HashMap;
+//! use superhashmap::HashMap;
 //!
 //! let map = HashMap::new();
 //! // Insert `poneyland` with the value `42` if it doesn't exist,
@@ -137,7 +137,7 @@
 //!
 //! ```rust
 //! # use std::sync::Arc;
-//! use papaya::HashMap;
+//! use superhashmap::HashMap;
 //!
 //! async fn run(map: Arc<HashMap<i32, String>>) {
 //!     tokio::spawn(async move {
@@ -156,7 +156,7 @@
 //!
 //! ```rust
 //! # use std::sync::Arc;
-//! use papaya::HashMap;
+//! use superhashmap::HashMap;
 //!
 //! async fn run(map: Arc<HashMap<i32, String>>) {
 //!     tokio::spawn(async move {
@@ -173,7 +173,7 @@
 //!
 //! ```rust,compile_fail
 //! pub struct Metrics {
-//!     map: papaya::HashMap<String, Vec<u64>>
+//!     map: superhashmap::HashMap<String, Vec<u64>>
 //! }
 //!
 //! impl Metrics {
@@ -187,10 +187,10 @@
 //! The solution is to accept a guard in the method directly, tying the lifetime to the caller's stack frame:
 //!
 //! ```rust
-//! use papaya::Guard;
+//! use superhashmap::Guard;
 //!
 //! pub struct Metrics {
-//!     map: papaya::HashMap<String, Vec<u64>>
+//!     map: superhashmap::HashMap<String, Vec<u64>>
 //! }
 //!
 //! impl Metrics {
