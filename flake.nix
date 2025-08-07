@@ -11,14 +11,14 @@
       systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
       forAllSystems = nixpkgs.lib.genAttrs systems;
     in {
-      devShells = forAllSystems (system:
+      # For Nix 2.6 compatibility - use devShell instead of devShells
+      devShell = forAllSystems (system:
         let
           pkgs = import nixpkgs {
             inherit system;
             overlays = [ rust-overlay.overlays.default ];
           };
-        in {
-          default = pkgs.mkShell {
+        in pkgs.mkShell {
             packages = with pkgs; [
               # Rust toolchain - use stable latest for now
               rust-bin.stable.latest.default
@@ -65,7 +65,6 @@
             env = {
               RUST_BACKTRACE = "1";
             };
-          };
         });
     };
 }
