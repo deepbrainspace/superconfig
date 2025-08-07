@@ -1,10 +1,10 @@
-# meta-rust
+# rusttoolkit
 
-[![Crates.io](https://img.shields.io/crates/v/meta-rust.svg)](https://crates.io/crates/meta-rust)
-[![Documentation](https://docs.rs/meta-rust/badge.svg)](https://docs.rs/meta-rust)
-[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](https://github.com/deepbrain/superconfig/tree/main/crates/meta-rust)
+[![Crates.io](https://img.shields.io/crates/v/rusttoolkit.svg)](https://crates.io/crates/rusttoolkit)
+[![Documentation](https://docs.rs/rusttoolkit/badge.svg)](https://docs.rs/rusttoolkit)
+[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](https://github.com/deepbrain/superconfig/tree/main/crates/rusttoolkit)
 
-Universal Rust meta-programming toolkit with advanced code generation macros.
+Rust meta-programming toolkit with advanced code generation macros.
 
 ## Features
 
@@ -21,7 +21,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-meta-rust = "0.1.0"
+rusttoolkit = "0.1.0"
 ```
 
 ## Examples - All Supported Scenarios
@@ -29,7 +29,7 @@ meta-rust = "0.1.0"
 ### 1. Single Items (Identifiers) - Generate Functions
 
 ```rust
-use meta_rust::for_each;
+use rusttoolkit::for_each;
 
 for_each!([error, warn, info], |level| {
     pub fn %{level}(msg: &str) {

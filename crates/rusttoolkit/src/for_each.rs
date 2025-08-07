@@ -13,7 +13,7 @@ use crate::transform::transform_tokens;
 /// # Examples
 ///
 /// ```rust
-/// use meta_rust::for_each;
+/// use rusttoolkit::for_each;
 ///
 /// // Single items - generates error, warn, info macros
 /// for_each!([error, warn, info], |level| {

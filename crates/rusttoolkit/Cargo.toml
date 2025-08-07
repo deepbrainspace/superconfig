@@ -1,17 +1,17 @@
 [package]
-name = "meta-rust"
+name = "rusttoolkit"
 version = "0.1.0"
 authors = ["Nayeem Syed"]
 categories = ["development-tools", "rust-patterns"]
-documentation = "https://docs.rs/meta-rust"
+documentation = "https://docs.rs/rusttoolkit"
 edition = "2024"
-homepage = "https://github.com/deepbrain/superconfig/tree/main/crates/meta-rust"
+homepage = "https://github.com/deepbrain/rusttoolkit"
 keywords = ["macros", "metaprogramming", "codegen", "proc-macro", "rust"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/deepbrain/superconfig"
+repository = "https://github.com/deepbrain/rusttoolkit"
 rust-version = "1.88"
-description = "Universal Rust meta-programming toolkit with advanced code generation macros"
+description = "Rust toolkit with cool useful procedural macros"
 
 [lib]
 proc-macro = true

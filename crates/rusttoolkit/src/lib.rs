@@ -1,4 +1,4 @@
-//! # meta-rust - Universal Rust Meta-Programming Toolkit
+//! # rusttoolkit - Universal Rust Meta-Programming Toolkit
 //!
 //! Provides the `for_each!` macro for eliminating repetitive code patterns through powerful iteration
 //! with built-in case transformation support.
@@ -15,7 +15,7 @@
 //! ## Quick Start
 //!
 //! ```rust
-//! use meta_rust::for_each;
+//! use rusttoolkit::for_each;
 //!
 //! // Single items - generates error(), warn(), info() functions
 //! for_each!([error, warn, info], |level| {
@@ -99,7 +99,7 @@ mod transform;
 ///
 /// ## Single Items
 /// ```rust
-/// # use meta_rust::for_each;
+/// # use rusttoolkit::for_each;
 /// for_each!([debug, info], |level| {
 ///     pub fn %{level}() -> &'static str {
 ///         stringify!(%{level})
@@ -111,7 +111,7 @@ mod transform;
 ///
 /// ## Array Items with Indexing
 /// ```rust
-/// # use meta_rust::for_each;
+/// # use rusttoolkit::for_each;
 /// for_each!([["users", 1], ["posts", 2]], |table| {
 ///     pub fn get_%{table[0]}_id() -> u32 {
 ///         %{table[1]}
@@ -123,7 +123,7 @@ mod transform;
 ///
 /// ## Case Transformations
 /// ```rust
-/// # use meta_rust::for_each;
+/// # use rusttoolkit::for_each;
 /// for_each!([getUserData, createPost], |method| {
 ///     fn %{method:snake}_handler() -> &'static str {
 ///         "%{method:upper}"
@@ -135,7 +135,7 @@ mod transform;
 ///
 /// ## Macro Generation
 /// ```rust
-/// # use meta_rust::for_each;
+/// # use rusttoolkit::for_each;
 /// for_each!([error, warn], |level| {
 ///     macro_rules! %{level}_msg {
 ///         ($msg:expr) => {
@@ -164,7 +164,7 @@ pub fn for_each(input: TokenStream) -> TokenStream {
 // ///
 // /// # Example
 // /// ```rust
-// /// use meta_rust::meta;
+// /// use rusttoolkit::meta;
 // ///
 // /// meta!(method = "getUserData") {
 // ///     fn %{method:snake}_handler() {

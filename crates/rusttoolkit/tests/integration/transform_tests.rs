@@ -1,4 +1,4 @@
-use meta_rust::for_each;
+use rusttoolkit::for_each;
 
 #[test]
 fn test_for_each_with_snake_transform() {

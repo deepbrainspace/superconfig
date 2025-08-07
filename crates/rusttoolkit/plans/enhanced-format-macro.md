@@ -2,7 +2,7 @@
 
 ## Overview
 
-Extend meta-rust with an enhanced `format!` macro that supports case transformations and string manipulations while maintaining full backward compatibility with `std::format!`.
+Extend rusttoolkit with an enhanced `format!` macro that supports case transformations and string manipulations while maintaining full backward compatibility with `std::format!`.
 
 ## Goals
 
@@ -187,7 +187,7 @@ fn kebab_case(s: &str) -> String {
 ### 1. Backward Compatibility
 
 ```rust
-use meta_rust::format;
+use rusttoolkit::format;
 
 // Works exactly like std::format!
 let msg = format!("Hello {}", name);
@@ -197,7 +197,7 @@ let num = format!("Value: {:.2}", 3.14159);
 ### 2. Enhanced Transformations
 
 ```rust
-use meta_rust::format;
+use rusttoolkit::format;
 
 // Title case transformation
 let msg = format!("Hello %{name:title}!", name = "john"); 
@@ -214,7 +214,7 @@ let api = format!("%{method:upper}_%{endpoint:snake}",
 ### 3. LogFFI Integration
 
 ```rust
-use meta_rust::{for_each, format};
+use rusttoolkit::{for_each, format};
 
 for_each!([error, warn, info, debug, trace], |level| {
     macro_rules! %{level} {
@@ -269,7 +269,7 @@ create_getter!(UserName);
 1. **Powerful utility** - addresses common macro string manipulation needs
 2. **Well-tested** - comprehensive test coverage
 3. **Documentation** - clear examples and use cases
-4. **Maintenance** - actively maintained as part of meta-rust
+4. **Maintenance** - actively maintained as part of rusttoolkit
 
 ## Testing Strategy
 
@@ -329,4 +329,4 @@ register_transform!("reverse_title", |s| title_case(&s.chars().rev().collect::<S
 - Caching for repeated transforms
 - SIMD string operations for large inputs
 
-This enhanced `format!` macro will make meta-rust a powerful meta-programming toolkit while solving the paste dependency issue for logffi and providing significant value to the Rust community.
+This enhanced `format!` macro will make rusttoolkit a powerful meta-programming toolkit while solving the paste dependency issue for logffi and providing significant value to the Rust community.

@@ -1,4 +1,4 @@
-use meta_rust::for_each;
+use rusttoolkit::for_each;
 
 // Generate functions at module level - use the new %{x} syntax
 for_each!([hello], |x| {
